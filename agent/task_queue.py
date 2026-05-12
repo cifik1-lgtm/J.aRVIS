@@ -31,6 +31,7 @@ class Task:
     error:       str        = field(compare=False, default="")
     speak:       Any        = field(compare=False, default=None)   
     on_complete: Any        = field(compare=False, default=None)  
+    preferred_brain: str    = field(compare=False, default=None)
     cancel_flag: threading.Event = field(compare=False, default_factory=threading.Event)
 
 
@@ -77,7 +78,14 @@ class TaskQueue:
         priority:    TaskPriority = TaskPriority.NORMAL,
         speak:       Callable | None = None,
         on_complete: Callable | None = None,
+        preferred_brain: str | None = None,
     ) -> str:
+
+        # ===== AUTO-ROUTING: Code tasks to Qwen =====
+        goal_lower = goal.lower()
+        if any(word in goal_lower for word in ["code", "python", "script", "file", "write", "create", "debug", "develop"]):
+            preferred_brain = "ollama"  # Use Qwen for code
+            print(f"[TaskQueue] 🧠 Auto-routed code task to Qwen coder")
 
         # ===== GATE KEEPER: Universal Cross-PC Routing =====
         # Check BEFORE queuing if this command is meant for another PC
@@ -115,6 +123,7 @@ class TaskQueue:
             goal        = goal,
             speak       = speak,
             on_complete = on_complete,
+            preferred_brain = preferred_brain,
         )
 
         with self._condition:
@@ -205,10 +214,11 @@ class TaskQueue:
         try:
             executor = self._get_executor()
             result   = executor.execute(
-                goal        = task.goal,
-                speak       = task.speak,
-                cancel_flag = task.cancel_flag,
-                dispatcher  = self.dispatcher,
+                goal            = task.goal,
+                speak           = task.speak,
+                cancel_flag     = task.cancel_flag,
+                dispatcher      = self.dispatcher,
+                preferred_brain = task.preferred_brain,
             )
 
             with self._lock:

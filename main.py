@@ -107,6 +107,7 @@ from actions.ghost_relay          import start_ghost_relay, publish_command
 from actions.routines             import start_routines
 from actions.telegram_bot          import start_telegram_bot
 from core.tools import ToolDispatcher, TOOL_DECLARATIONS
+from core.brain_router import BrainRouter
 
 # Face Recognition - optional module with fallback
 
@@ -470,6 +471,29 @@ class JarvisLive:
         # Modular Tool Dispatcher
         self.tools = ToolDispatcher(self)
 
+        # Multi-Brain Router (Hive Mind Engine)
+        self.brain_router = BrainRouter(API_CONFIG_PATH, self.ui)
+        self._detect_engines()
+
+        # Warm up Qwen for faster first response
+        try:
+            from core.local_llm import warm_up_qwen
+            threading.Thread(target=warm_up_qwen, daemon=True).start()
+        except: pass
+
+    def _detect_engines(self):
+        """Check which AI engines are available and update UI/Logs."""
+        engines = self.brain_router.detect_engines()
+        status = self.brain_router.get_status_report()
+        print(f"[JARVIS] 🧠 Engine Status: {status}")
+        self.ui.write_log(f"SYS: 🧠 Brains Detected -> {status}")
+        
+        # If no brains are online, warn the user
+        if not any(engines.values()):
+            self.ui.write_log("SYS: ⚠️ CRITICAL - No AI engines detected! Check your API keys and Internet.")
+        
+        return engines
+
     def _check_tool_rate_limit(self, rate_key: str) -> bool:
         """Returns True if this rate_key (tool name or tool:action) is limited."""
         now = datetime.now()
@@ -510,16 +534,19 @@ class JarvisLive:
             print(f"[JARVIS] ⚠️ Config update failed: {e}")
 
         # Update runtime flags
-        if "local" in brain:
+        if brain == "local" or brain == "ollama" or brain == "qwen":
+            # Only go full local if specifically requested as a mode switch
             self.force_local = True
             self.force_openrouter = False
-        elif "openrouter" in brain:
+        elif brain == "openrouter" or brain == "deepseek":
             self.force_local = True
             self.force_openrouter = True
-        elif "hive" in brain:
+        elif brain == "hive" or brain == "gemini" or brain == "groq":
             self.force_local = False
             self.force_openrouter = False
         else:
+            # For "Brain 3 (Local Qwen)" etc., keep as hive but set preferred? 
+            # Actually, let's keep it simple: if not explicitly local/openrouter, default to Hive
             self.force_local = False
             self.force_openrouter = False
 
@@ -613,6 +640,7 @@ class JarvisLive:
             self.voice_enabled = False
             self.ui.write_log("SYS: 🔇 MICROPHONE MUTED - JARVIS is deaf.")
             return
+
         
         # Handle confirmation responses
         if self._pending_action and self._pending_action_timeout:
@@ -875,14 +903,15 @@ class JarvisLive:
         # We only give Gemini Live the 'light' tools for conversation and delegation.
         # Expert tools (Browser, Code, etc.) are hidden from Live and used only by Expert Brains.
         live_tools = ["system_control", "delegate_task", "save_memory", "retrieve_memory", "preference_manager", "get_memory_stats", "forget_weak_memories"]
-        filtered_decls = [d for d in TOOL_DECLARATIONS if d["name"] in live_tools]
+        filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
+        print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
 
         return types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             output_audio_transcription={},
             input_audio_transcription={},
             system_instruction="\n".join(parts),
-            tools=[{"function_declarations": filtered_decls}],
+            tools=[types.Tool(function_declarations=filtered_decls)],
             session_resumption=types.SessionResumptionConfig(), 
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
@@ -1079,12 +1108,13 @@ class JarvisLive:
                             out_buf = []
 
                     if response.tool_call:
+                        print(f"[JARVIS] 📞 Tool call detected: {response.tool_call}")
                         fn_responses = []
                         for fc in response.tool_call.function_calls:
                             # Check for repeating same tool (AI loop detection)
                             if fc.name == last_tool_name:
                                 same_tool_count += 1
-                                if same_tool_count > 5:
+                                if same_tool_count > 10:
                                     print(f"[JARVIS] ⚠️ Too many repeated '{fc.name}' calls ({same_tool_count}), clearing session state")
                                     # Force reset the session state
                                     await self.session.send_client_content(

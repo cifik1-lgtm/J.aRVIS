@@ -5,6 +5,11 @@ import threading
 import json
 from datetime import datetime
 from google.genai import types
+from pathlib import Path
+
+# Path Configuration
+BASE_DIR = Path(__file__).resolve().parent.parent
+API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
 
 # ============================================================================
 # TOOL DECLARATIONS (Lazy-Loaded Registry)
@@ -12,17 +17,16 @@ from google.genai import types
 
 TOOL_DECLARATIONS = [
     {
-        "name": "system_control",
-        "description": "Control core systems",
+        "name": "delegate_task",
+        "description": "DELEGATE complex tasks (web searching, coding, file operations, browser control, detailed research) to the Expert Brains. Use this for ANY task that requires more than simple conversation.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "action": {"type": "STRING", "description": "switch_brain | toggle_silence | set_autonomous_mode"},
-                "brain": {"type": "STRING"},
-                "state": {"type": "BOOLEAN"},
-                "autonomous": {"type": "BOOLEAN"}
+                "goal": {"type": "STRING", "description": "The specific task or question to solve."},
+                "priority": {"type": "STRING", "enum": ["HIGH", "NORMAL", "LOW"]},
+                "context": {"type": "STRING", "description": "Any additional context needed for the task."}
             },
-            "required": ["action"]
+            "required": ["goal"]
         }
     },
     {
@@ -154,32 +158,64 @@ TOOL_DECLARATIONS = [
         }
     },
     {
-        "name": "delegate_task",
-        "description": "DELEGATE complex tasks (web searching, coding, file operations, browser control, detailed research) to the Expert Brains. Use this for ANY task that requires more than simple conversation.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "goal": {"type": "STRING", "description": "The specific task or question to solve."},
-                "priority": {"type": "STRING", "enum": ["HIGH", "NORMAL", "LOW"]},
-                "context": {"type": "STRING", "description": "Any additional context needed for the task."}
-            },
-            "required": ["goal"]
-        }
-    },
-    {
         "name": "system_control",
-        "description": "Controls JARVIS system states like silencing, autonomous mode, and brain switching.",
+        "description": "Controls JARVIS system states like silencing, autonomous mode, and brain switching. WARNING: DO NOT use this to switch to 'local' or 'openrouter' for tasks; use 'delegate_task' instead to keep your voice active.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "action": {"type": "STRING", "enum": ["toggle_silence", "set_autonomous_mode", "switch_brain", "system_diagnostic"]},
                 "state": {"type": "BOOLEAN"},
                 "autonomous": {"type": "BOOLEAN"},
-                "brain": {"type": "STRING"},
+                "brain": {"type": "STRING", "description": "gemini | hive. (DO NOT switch to local/qwen here)"},
                 "confirmed": {"type": "STRING"},
                 "auto": {"type": "BOOLEAN"}
             },
             "required": ["action"]
+        }
+    },
+    {
+        "name": "save_memory",
+        "description": "Saves a specific fact, user preference, or project detail to long-term memory.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "key": {"type": "STRING", "description": "The name of the fact to remember."},
+                "value": {"type": "STRING", "description": "The details of the fact."},
+                "category": {"type": "STRING", "description": "identity | preferences | projects | relationships | notes"}
+            },
+            "required": ["key", "value"]
+        }
+    },
+    {
+        "name": "retrieve_memory",
+        "description": "Recalls specific information from long-term memory by key.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "key": {"type": "STRING"},
+                "category": {"type": "STRING"}
+            },
+            "required": ["key"]
+        }
+    },
+    {
+        "name": "get_memory_stats",
+        "description": "Returns statistics about the size and composition of the memory database.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "forget_weak_memories",
+        "description": "Cleans up old or irrelevant memories that haven't been accessed recently.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "threshold": {"type": "NUMBER", "description": "0.0 to 1.0"}
+            },
+            "required": []
         }
     },
     {
@@ -229,20 +265,6 @@ TOOL_DECLARATIONS = [
                 "auto": {"type": "BOOLEAN"}
             },
             "required": ["action"]
-        }
-    },
-    {
-        "name": "save_memory",
-        "description": "Save important facts to JARVIS memory.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "category": {"type": "STRING"},
-                "key": {"type": "STRING"},
-                "value": {"type": "STRING"},
-                "auto": {"type": "BOOLEAN"}
-            },
-            "required": ["category", "key", "value"]
         }
     },
     {
@@ -640,8 +662,12 @@ class ToolDispatcher:
         result = "Done."
         
         try:
-            # Execution Watchdog: 30-60s timeout threshold
-            timeout = 60 if name in ["browser_control", "python_sandbox", "web_automation"] else 30
+            # Execution Watchdog: Load from config or use smart defaults
+            with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+                timeouts = json.load(f).get("tool_timeouts", {})
+            
+            default_t = timeouts.get("default", 30)
+            timeout = timeouts.get(name, 180 if name in ["browser_control", "python_sandbox", "web_automation", "code_helper"] else default_t)
             
             async def _execute_logic():
                 # 1. CORE SYSTEM TOOLS
@@ -670,24 +696,9 @@ class ToolDispatcher:
                         self.orch._restart_connection()
                         return f"Switched to {brain} brain, sir."
                     elif action == "system_diagnostic":
-                        results = []
-                        try:
-                            from agent.planner import _get_api_key
-                            if _get_api_key("gemini"): results.append("Gemini: Online ✅")
-                            else: results.append("Gemini: Missing Key ❌")
-                        except: results.append("Gemini: Error ❌")
-                        try:
-                            if _get_api_key("openrouter"): results.append("OpenRouter: Online ✅")
-                            else: results.append("OpenRouter: Missing Key ❌")
-                        except: results.append("OpenRouter: Error ❌")
-                        try:
-                            from core.local_llm import is_ollama_online
-                            if is_ollama_online(): results.append("Ollama (Local): Online ✅")
-                            else: results.append("Ollama (Local): Offline ❌")
-                        except: results.append("Ollama (Local): Error ❌")
-                        
-                        summary = " | ".join(results)
-                        return f"System Diagnostic: {summary}"
+                        self.orch._detect_engines() # Trigger a fresh scan
+                        status = self.orch.brain_router.get_status_report()
+                        return f"System Diagnostic: {status}"
 
                 # 2. TASK DELEGATION (HIVE MIND ROUTER)
                 if name == "delegate_task":
@@ -695,16 +706,26 @@ class ToolDispatcher:
                     priority = args.get("priority", "NORMAL")
                     context = args.get("context", "")
                     
+                    # Smart Brain Routing
+                    goal_l = goal.lower()
+                    if any(x in goal_l for x in ["code", "python", "script", "develop", "debug"]):
+                        brain_hint = "ollama"
+                    elif any(x in goal_l for x in ["search", "web", "find", "google", "browse", "research"]):
+                        brain_hint = "openrouter"
+                    else:
+                        brain_hint = self.orch.brain_router.get_active_brain()
+
                     from agent.task_queue import get_queue, TaskPriority
                     prio_map = {"HIGH": TaskPriority.HIGH, "NORMAL": TaskPriority.NORMAL, "LOW": TaskPriority.LOW}
                     
-                    # Submit to the Hive Mind Task Queue
+                    # Submit to the Hive Mind Task Queue with brain hint
                     get_queue().submit(
                         goal=goal, 
                         priority=prio_map.get(priority, TaskPriority.NORMAL),
+                        preferred_brain=brain_hint,
                         speak=lambda m: self.orch.speak(f"Sir, regarding your request for {goal[:30]}... {m}")
                     )
-                    return f"Task delegated to Expert Brains. I'm working on '{goal}' now, sir."
+                    return f"Task delegated to Expert Brains ({brain_hint}). I'm working on '{goal}' now, sir."
 
                 elif name == "preference_manager":
                     from memory.memory_manager import remember, get_memory_manager
@@ -876,7 +897,7 @@ class ToolDispatcher:
                         return f"Tool '{name}' is not yet fully wired in modular core."
 
             result = await asyncio.wait_for(_execute_logic(), timeout=timeout)
-        except asyncio.TimeoutExpired:
+        except asyncio.TimeoutError:
             result = f"Tool '{name}' timed out after {timeout} seconds. Process aborted for safety."
             print(f"[JARVIS] ⚠️ {result}")
         except Exception as e:

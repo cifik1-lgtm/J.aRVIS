@@ -24,7 +24,7 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash") -> 
     
     # Order of attempt based on choice
     attempts = [forced]
-    for b in ["gemini", "openrouter", "minimax"]:
+    for b in ["gemini", "groq", "openrouter", "minimax"]:
         if b not in attempts:
             attempts.append(b)
 
@@ -40,15 +40,32 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash") -> 
                 )
                 return response.text
 
+            elif brain == "groq":
+                from groq import Groq
+                api_key = config.get("groq_api_key", "")
+                if not api_key: continue
+                client = Groq(api_key=api_key)
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": system_prompt or "You are a helpful assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2048
+                )
+                return response.choices[0].message.content
+
             elif brain == "openrouter":
                 import requests
                 api_key = config.get("openrouter_api_key", "")
                 if not api_key: continue
+                model_name = config.get("openrouter_model", "deepseek/deepseek-chat")
                 resp = requests.post(
                     url="https://openrouter.ai/api/v1/chat/completions",
                     headers={"Authorization": f"Bearer {api_key}"},
                     data=json.dumps({
-                        "model": "deepseek/deepseek-chat",
+                        "model": model_name,
                         "messages": [
                             {"role": "system", "content": system_prompt or "You are a helpful assistant."},
                             {"role": "user", "content": prompt}

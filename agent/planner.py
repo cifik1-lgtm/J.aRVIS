@@ -192,6 +192,8 @@ def _get_api_key(provider="gemini") -> str:
             return config.get("openrouter_api_key", "")
         if provider == "minimax":
             return config.get("minimax_api_key", "")
+        if provider == "groq":
+            return config.get("groq_api_key", "")
         return config.get("gemini_api_key", "")
 
 def _is_rate_limit(e: Exception) -> bool:
@@ -231,8 +233,15 @@ def create_plan_hive(goal: str, context: str = "") -> dict:
     if any(w in g for w in local_keywords):
         from core.local_llm import call_ollama, is_ollama_online
         if is_ollama_online():
-            print("[Planner] 🧠 ROUTER: Selecting LOCAL OLLAMA for file/code task.")
-            l_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT)
+            # Load model from config
+            try:
+                with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+                    local_model = json.load(f).get("local_model", "qwen2.5-coder:7b")
+            except:
+                local_model = "qwen2.5-coder:7b"
+                
+            print(f"[Planner] 🧠 ROUTER: Selecting LOCAL OLLAMA ({local_model}) for file/code task.")
+            l_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model=local_model)
             try:
                 l_plan = _parse_and_validate_plan(l_resp)
                 if l_plan: return l_plan
@@ -247,82 +256,83 @@ def create_plan_hive(goal: str, context: str = "") -> dict:
     
     # 3. BRAIN 1: GEMINI (Fallback or Simple Reasoning)
     print("[Planner] 🧠 ROUTER: Falling back to GEMINI.")
-    return create_plan_gemini(goal, context) or _fallback_plan(goal)
+    return create_plan_gemini(goal, context) or create_plan_groq(goal, context) or _fallback_plan(goal)
 
 
-def create_plan(goal: str, context: str = "") -> dict:
-    # Check for manual brain override in config
+def create_plan(goal: str, context: str = "", preferred_brain: str | None = None) -> dict:
+    """Create a plan using available brains - Qwen priority for maximum reliability."""
+    
+    # 1. Check for manual brain override in config (Force Brain)
     try:
         with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
-            forced = json.load(f).get("force_brain", "gemini")
-            if forced == "hive":
-                return create_plan_hive(goal, context)
-            elif forced == "openrouter":
-                print("[Planner] 🧠 Manual Override: Using OpenRouter...")
-                return create_plan_openrouter(goal, context)
-            elif forced == "minimax":
-                print("[Planner] 🧠 Manual Override: Using MiniMax (Coding Brain)...")
-                return create_plan_minimax(goal, context)
-            elif forced == "local":
-                print("[Planner] 🧠 Manual Override: Using Local Ollama...")
-                from core.local_llm import call_ollama, is_ollama_online
-                if is_ollama_online():
-                    local_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT)
-                    if local_resp: return _parse_and_validate_plan(local_resp)
+            forced = json.load(f).get("force_brain", "hive")
+            if forced != "hive" and forced != "gemini": # If manually set to a specific expert brain
+                if forced == "openrouter":
+                    print("[Planner] 🧠 Manual Override: Using OpenRouter...")
+                    return create_plan_openrouter(goal, context)
+                elif forced == "minimax":
+                    print("[Planner] 🧠 Manual Override: Using MiniMax (Coding Brain)...")
+                    return create_plan_minimax(goal, context)
+                elif forced == "groq":
+                    print("[Planner] 🧠 Manual Override: Using Groq (High-Speed)...")
+                    return create_plan_groq(goal, context)
+                elif forced == "local":
+                    print("[Planner] 🧠 Manual Override: Using Local Ollama...")
+                    from core.local_llm import call_ollama, is_ollama_online
+                    if is_ollama_online():
+                        local_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT)
+                        if local_resp: return _parse_and_validate_plan(local_resp)
     except: pass
 
-    # Default to Gemini but with fallback
+    brain_target = preferred_brain
+
+    # 3. PRIORITY 2: GROQ (Ultra-Fast Planning)
+    if _get_api_key("groq"):
+        print("[Planner] ⚡ PRIORITY 2: Using Groq (Ultra-Fast)")
+        g_plan = create_plan_groq(goal, context)
+        if g_plan: return g_plan
+
+    # 4. PRIORITY 3: OPENROUTER (High performance, No Google Rate Limits)
+    if _get_api_key("openrouter"):
+        print("[Planner] 🌐 PRIORITY 3: Using OpenRouter (DeepSeek)")
+        or_plan = create_plan_openrouter(goal, context)
+        if or_plan: return or_plan
+
+    # 5. PRIORITY 4: MINIMAX (Fallback Reasoning)
+    if _get_api_key("minimax"):
+        print("[Planner] 🎨 PRIORITY 4: Using MiniMax")
+        mm_plan = create_plan_minimax(goal, context)
+        if mm_plan: return mm_plan
+
+    # 6. PRIORITY 5: GEMINI (Last resort for planning due to rate limits)
+    print("[Planner] ⚠️ PRIORITY 5: Falling back to Gemini (Rate Limited)")
     try:
         plan = create_plan_gemini(goal, context)
         if plan: return plan
-    except Exception as e:
-        if _is_rate_limit(e):
-            print("[Planner] ⚠️ Gemini is busy. Switching to OpenRouter Brain...")
-            or_plan = create_plan_openrouter(goal, context)
-            if or_plan: return or_plan
-            
-            print("[Planner] ⚠️ OpenRouter unavailable. Attempting MiniMax...")
-            mm_plan = create_plan_minimax(goal, context)
-            if mm_plan: return mm_plan
+    except:
+        pass
 
-            print("[Planner] ⚠️ Cloud Brains unavailable. Attempting LOCAL OLLAMA brain...")
-            from core.local_llm import call_ollama, is_ollama_online
-            if is_ollama_online():
-                local_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT)
-                if local_resp:
-                    try:
-                        return _parse_and_validate_plan(local_resp)
-                    except: pass
+    # 6. PRIORITY 6: LOCAL QWEN (Last Resort)
+    from core.local_llm import call_ollama, is_ollama_online
+    if is_ollama_online():
+        try:
+            with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+                local_model = json.load(f).get("local_model", "qwen2.5-coder:7b")
+            print(f"[Planner] 🧠 PRIORITY 6: Using LOCAL QWEN ({local_model}) as last resort.")
+            l_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model=local_model)
+            if l_resp:
+                l_plan = _parse_and_validate_plan(l_resp)
+                if l_plan: return l_plan
+        except: pass
 
-            print("[Planner] ⚠️ All AI brains offline. Using 'Fast-Brain' regex fallback...")
-            # FAST-BRAIN: Handle simple "Open App" or "Search" commands without LLM
-            goal_lower = goal.lower()
-            if goal_lower.startswith("cloud command:"):
-                goal_lower = goal_lower.replace("cloud command:", "").strip()
-                
-            # If it's a web-related goal, use browser_control instead of open_app to avoid duplicates
-            if any(x in goal_lower for x in ["youtube", "google", "wikipedia", "facebook", "instagram", "twitter", "website", ".com", ".org", "http"]):
-                if "youtube" in goal_lower:
-                     return {
-                        "goal": goal,
-                        "steps": [{"step": 1, "tool": "youtube_video", "description": f"Play {goal_lower}", "parameters": {"action": "play", "query": goal_lower}}]
-                    }
-                return {
-                    "goal": goal,
-                    "steps": [{"step": 1, "tool": "browser_control", "description": f"Go to {goal_lower}", "parameters": {"action": "go_to", "url": goal_lower}}]
-                }
-
-            if "open" in goal_lower:
-                app = goal_lower.replace("open", "").strip()
-                return {
-                    "goal": goal,
-                    "steps": [{"step": 1, "tool": "open_app", "description": f"Open {app}", "parameters": {"app_name": app}}]
-                }
-            if "search" in goal_lower or "what" in goal_lower or "who" in goal_lower:
-                return _fallback_plan(goal)
-        
-        print(f"[Planner] ⚠️ Planning failed: {e}")
-        return _fallback_plan(goal)
+    print("[Planner] ❌ All AI engines failed! Using regex fallback.")
+    # FAST-BRAIN: Handle simple commands without LLM
+    goal_lower = goal.lower()
+    if "open" in goal_lower:
+        app = goal_lower.replace("open", "").strip()
+        return {"goal": goal, "steps": [{"step": 1, "tool": "open_app", "description": f"Open {app}", "parameters": {"app_name": app}}]}
+    
+    return _fallback_plan(goal)
 
 def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
     """Uses OpenRouter as a high-performance fallback for planning."""
@@ -334,6 +344,10 @@ def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
     if context: user_input += f"\n\nContext: {context}"
 
     try:
+        # Load model from config
+        with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+            model_name = json.load(f).get("openrouter_model", "deepseek/deepseek-chat")
+
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
@@ -342,7 +356,7 @@ def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
                 "X-Title": "JARVIS Cifik Intelegents (cifikAI)",
             },
             data=json.dumps({
-                "model": "deepseek/deepseek-chat", # High reasoning, low cost
+                "model": model_name,
                 "messages": [
                     {"role": "system", "content": PLANNER_PROMPT},
                     {"role": "user", "content": user_input}
@@ -355,6 +369,33 @@ def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
         return _parse_and_validate_plan(text)
     except Exception as e:
         print(f"[OpenRouter] ❌ Error: {e}")
+        return None
+
+def create_plan_groq(goal: str, context: str = "") -> dict | None:
+    """Uses Groq's high-speed LPU infrastructure for planning."""
+    from groq import Groq
+    api_key = _get_api_key("groq")
+    if not api_key: return None
+
+    user_input = f"Goal: {goal}"
+    if context: user_input += f"\n\nContext: {context}"
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": PLANNER_PROMPT},
+                {"role": "user", "content": user_input}
+            ],
+            temperature=0.3, # Lower temperature for planning precision
+            max_tokens=2048,
+            response_format={"type": "json_object"}
+        )
+        text = response.choices[0].message.content.strip()
+        return _parse_and_validate_plan(text)
+    except Exception as e:
+        print(f"[Groq Planner] ❌ Error: {e}")
         return None
 
 def create_plan_minimax(goal: str, context: str = "") -> dict | None:
@@ -392,6 +433,9 @@ def create_plan_minimax(goal: str, context: str = "") -> dict | None:
         return None
 
 def _parse_and_validate_plan(text: str) -> dict:
+    if not text:
+        return None
+        
     # Remove markdown blocks if present
     text = re.sub(r"```(?:json)?", "", text).strip().rstrip("`").strip()
     
@@ -399,8 +443,12 @@ def _parse_and_validate_plan(text: str) -> dict:
     if not text.startswith("{"):
         match = re.search(r"(\{.*\})", text, re.DOTALL)
         if match: text = match.group(1)
+        else: return None
 
-    plan = json.loads(text)
+    try:
+        plan = json.loads(text)
+    except:
+        return None
 
     if "steps" not in plan or not isinstance(plan["steps"], list):
         raise ValueError("Invalid plan structure")
@@ -433,13 +481,10 @@ def _fallback_plan(goal: str) -> dict:
 
 
 def replan(goal: str, completed_steps: list, failed_step: dict, error: str) -> dict:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
 
-    genai.configure(api_key=_get_api_key())
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
-        system_instruction=PLANNER_PROMPT
-    )
+    client = genai.Client(api_key=_get_api_key())
 
     completed_summary = "\n".join(
         f"  - Step {s['step']} ({s['tool']}): DONE" for s in completed_steps
@@ -456,7 +501,13 @@ Error: {error}
 Create a REVISED plan for the remaining work only. Do not repeat completed steps."""
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=PLANNER_PROMPT,
+            )
+        )
         text     = response.text.strip()
         return _parse_and_validate_plan(text)
     except Exception as e:
