@@ -44,7 +44,8 @@ class TaskQueue:
         self._worker_thread: threading.Thread | None = None
         self._max_concurrent = max_concurrent
         self._active_count   = 0
-        self._executor       = None  
+        self._executor       = None
+        self.dispatcher      = None  
 
     def _get_executor(self):
         if self._executor is None:
@@ -77,6 +78,34 @@ class TaskQueue:
         speak:       Callable | None = None,
         on_complete: Callable | None = None,
     ) -> str:
+
+        # ===== GATE KEEPER: Universal Cross-PC Routing =====
+        # Check BEFORE queuing if this command is meant for another PC
+        goal_lower = goal.lower()
+        # Skip if it's already a cloud relay command (prevent loops)
+        if not goal.startswith("Cloud command:"):
+            try:
+                import json, re
+                from pathlib import Path
+                import sys
+                cfg_path = Path(__file__).resolve().parent.parent / "config" / "api_keys.json"
+                my_name = json.loads(cfg_path.read_text(encoding="utf-8")).get("device_name", "").upper()
+                
+                # Detect if the command targets another specific PC
+                target_pc = None
+                if re.search(r"\b(?:on|in|to|for)?\s*eva\b", goal_lower) and my_name != "EVA": target_pc = "EVA"
+                elif re.search(r"\b(?:on|in|to|for)?\s*cifik\b", goal_lower) and my_name != "CIFIK": target_pc = "CIFIK"
+                
+                if target_pc:
+                    # Clean the command
+                    clean = re.sub(r"(?i)\s*(?:on|in|to|for)\s+(eva|cifik)(\s+pc)?", "", goal).strip()
+                    print(f"[TaskQueue] 🔀 GATE KEEPER: Rerouting '{clean}' to {target_pc}. Stopping locally.")
+                    from actions.ghost_relay import publish_command
+                    publish_command(target_pc, clean)
+                    return "relayed"  # Stop here — do NOT execute locally
+            except Exception as ge:
+                pass  # If routing check fails, fall through to normal execution
+        # ===== END GATE KEEPER =====
 
         task_id = str(uuid.uuid4())[:8]
         task    = Task(
@@ -179,6 +208,7 @@ class TaskQueue:
                 goal        = task.goal,
                 speak       = task.speak,
                 cancel_flag = task.cancel_flag,
+                dispatcher  = self.dispatcher,
             )
 
             with self._lock:

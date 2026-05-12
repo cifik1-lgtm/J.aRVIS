@@ -393,6 +393,26 @@ def open_system_settings():
                 subprocess.Popen(cmd)
                 return
 
+
+def open_control_panel():
+    """Classic Windows Control Panel (control.exe), not the Win+I Settings app."""
+    if _OS == "Windows":
+        try:
+            subprocess.Popen(["control.exe"])
+        except Exception as e:
+            print(f"[Settings] control.exe failed: {e}")
+            pyautogui.hotkey("win", "r")
+            time.sleep(0.35)
+            type_text("control", press_enter_after=True)
+    elif _OS == "Darwin":
+        subprocess.Popen(["open", "-a", "System Settings"])
+    else:
+        for cmd in [["gnome-control-center"], ["xfce4-settings-manager"]]:
+            if subprocess.run(["which", cmd[0]], capture_output=True).returncode == 0:
+                subprocess.Popen(cmd)
+                return
+
+
 def open_file_explorer():
     if _OS == "Windows":
         pyautogui.hotkey("win", "e")
@@ -502,6 +522,59 @@ def shutdown_computer():
     else:
         subprocess.run(["systemctl", "poweroff"], capture_output=True)
 
+
+def optimize_performance():
+    """Windows: open Performance Options + try High performance power plan."""
+    if _OS == "Windows":
+        try:
+            subprocess.Popen(
+                ["SystemPropertiesPerformance.exe"],
+                cwd=str(Path.home()),
+            )
+        except Exception as e:
+            print(f"[Settings] optimize_performance UI: {e}")
+        try:
+            subprocess.run(
+                ["powercfg", "/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"],
+                capture_output=True,
+                timeout=15,
+            )
+        except Exception as e:
+            print(f"[Settings] optimize_performance powercfg: {e}")
+    elif _OS == "Darwin":
+        try:
+            subprocess.Popen(["open", "x-apple.systempreferences:com.apple.preference.battery"])
+        except Exception:
+            subprocess.Popen(["open", "-a", "Activity Monitor"])
+    else:
+        for cmd in [["powerprofilesctl", "set", "performance"], ["cpupower", "frequency-set", "-g", "performance"]]:
+            try:
+                if subprocess.run(["which", cmd[0]], capture_output=True, timeout=2).returncode == 0:
+                    subprocess.run(cmd, capture_output=True, timeout=5)
+                    return
+            except Exception:
+                continue
+
+
+def open_resource_monitor():
+    """Live CPU/memory/disk graphs (Resource Monitor on Windows)."""
+    if _OS == "Windows":
+        try:
+            subprocess.Popen(["resmon.exe"])
+        except Exception as e:
+            print(f"[Settings] resmon failed: {e}, falling back to Task Manager")
+            open_task_manager()
+    elif _OS == "Darwin":
+        subprocess.Popen(["open", "-a", "Activity Monitor"])
+    else:
+        for cmd in [["gnome-system-monitor"], ["xfce4-taskmanager"], ["ksysguard"]]:
+            try:
+                if subprocess.run(["which", cmd[0]], capture_output=True, timeout=2).returncode == 0:
+                    subprocess.Popen(cmd)
+                    return
+            except Exception:
+                continue
+
 ACTION_MAP: dict[str, callable] = {
     "volume_up":           volume_up,
     "volume_down":         volume_down,
@@ -556,12 +629,21 @@ ACTION_MAP: dict[str, callable] = {
     "screenshot":          take_screenshot,
     "lock_screen":         lock_screen,
     "open_settings":       open_system_settings,
+    "open_control_panel":  open_control_panel,
+    "control_panel":     open_control_panel,
     "file_explorer":       open_file_explorer,
     "open_run":            open_run,
     "dark_mode":           dark_mode,
     "toggle_wifi":         toggle_wifi,
     "restart":             restart_computer,
     "shutdown":            shutdown_computer,
+    "optimize_performance": optimize_performance,
+    "boost_performance":   optimize_performance,
+    "speed_up_pc":         optimize_performance,
+    "open_resource_monitor": open_resource_monitor,
+    "monitor_performance":   open_resource_monitor,
+    "performance_monitor":   open_resource_monitor,
+    "resource_monitor":      open_resource_monitor,
 }
 
 _DANGEROUS_ACTIONS = {"restart", "shutdown"}
@@ -569,19 +651,48 @@ _DANGEROUS_ACTIONS = {"restart", "shutdown"}
 
 
 def _detect_action(description: str) -> dict:
+    text = (description or "").strip()
+    if not text:
+        return {"action": "", "value": None}
 
-    import google.generativeai as genai
-    genai.configure(api_key=_get_api_key())
-    model = genai.GenerativeModel("gemini-2.5-flash-lite")
+    dl = text.lower()
+    if "control panel" in dl:
+        return {"action": "open_control_panel", "value": None}
+    if any(
+        p in dl
+        for p in (
+            "resource monitor",
+            "resmon",
+            "performance monitor",
+            "cpu graph",
+            "memory graph",
+        )
+    ):
+        return {"action": "monitor_performance", "value": None}
 
-    available = ", ".join(sorted(ACTION_MAP.keys())) + \
-                ", volume_set, type_text, press_key, reload_n"
+    api_key = _get_api_key()
+    if not api_key:
+        print("[Settings] Intent detection skipped: no API key")
+        return {"action": text.lower().replace(" ", "_"), "value": None}
 
-    prompt = f"""You are an intent detector for a computer control assistant.
+    try:
+        from google import genai
 
-The user issued a command (possibly in any language): "{description}"
+        available = (
+            ", ".join(sorted(ACTION_MAP.keys()))
+            + ", volume_set, type_text, press_key, reload_n"
+        )
+
+        prompt = f"""You are an intent detector for a computer shortcuts assistant.
+
+The user issued a command (possibly in any language): "{text}"
 
 Available actions: {available}
+
+Important:
+- "Control Panel" (classic Windows applets) -> open_control_panel, NOT monitor_performance.
+- "Settings" / "Windows settings" / gear app -> open_settings.
+- Live CPU/memory graphs / Resource Monitor -> monitor_performance or open_resource_monitor.
 
 Return ONLY a valid JSON object:
 {{"action": "action_name", "value": null_or_value}}
@@ -592,16 +703,18 @@ Rules:
 - For type_text: value is the exact text to type.
 - For press_key: value is the key name (e.g. "f5", "tab", "enter").
 - For reload_n: value is an integer (number of times to reload).
-- If no clear match, pick the closest action.
 - Return ONLY the JSON, no explanation, no markdown."""
 
-    try:
-        resp = model.generate_content(prompt)
-        text = re.sub(r"```(?:json)?", "", resp.text).strip().rstrip("`").strip()
-        return json.loads(text)
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=prompt,
+        )
+        raw = re.sub(r"```(?:json)?", "", (response.text or "")).strip().rstrip("`").strip()
+        return json.loads(raw)
     except Exception as e:
         print(f"[Settings] Intent detection failed: {e}")
-        return {"action": description.lower().replace(" ", "_"), "value": None}
+        return {"action": text.lower().replace(" ", "_"), "value": None}
 
 def computer_settings(
     parameters: dict = None,
@@ -677,9 +790,61 @@ def computer_settings(
         scroll_down(int(value or 500))
         return "Scrolled down."
 
+    _special = {
+        "volume_set",
+        "type_text",
+        "write_on_screen",
+        "type",
+        "write",
+        "press_key",
+        "reload_n",
+        "reload_page_n",
+        "refresh_n",
+    }
+    func = ACTION_MAP.get(action)
+    if (
+        not func
+        and action not in _special
+        and not params.get("_settings_intent_retry")
+    ):
+        human = (raw_action or "").replace("_", " ").strip()
+        if human:
+            detected = _detect_action(
+                f"The assistant used an invalid action id '{raw_action}'. "
+                f"Map the user's intent to one supported action. Goal: {human}"
+            )
+            mapped = (
+                (detected.get("action") or "")
+                .lower()
+                .strip()
+                .replace(" ", "_")
+                .replace("-", "_")
+            )
+            val2 = detected.get("value")
+            if (
+                mapped
+                and mapped != action
+                and (mapped in ACTION_MAP or mapped in _special)
+            ):
+                np = dict(params)
+                np["_settings_intent_retry"] = True
+                np["action"] = mapped
+                if val2 is not None:
+                    np["value"] = val2
+                return computer_settings(
+                    parameters=np,
+                    response=response,
+                    player=player,
+                    session_memory=session_memory,
+                )
+
     func = ACTION_MAP.get(action)
     if not func:
-        return f"Unknown action: '{raw_action}'."
+        return (
+            f"Unknown action: '{raw_action}'. "
+            f"Use a known action name, or pass natural language in `description` "
+            f"(with `action` empty) so intent can be detected."
+        )
 
     try:
         func()

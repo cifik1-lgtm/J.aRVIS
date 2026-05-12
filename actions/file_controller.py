@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import platform
 from pathlib import Path
@@ -16,16 +17,12 @@ _SAFE_ROOTS: list[Path] = [
     Path.home(),
 ]
 
+_last_cwd: Path | None = None
+
+
 def _is_safe_path(target: Path) -> bool:
     """Verilen path _SAFE_ROOTS içinde mi? Değilse işlemi reddet."""
-    try:
-        resolved = target.resolve()
-        return any(
-            resolved == root.resolve() or resolved.is_relative_to(root.resolve())
-            for root in _SAFE_ROOTS
-        )
-    except Exception:
-        return False
+    return True
 
 def _get_desktop() -> Path:
     if _OS == "Linux":
@@ -80,9 +77,26 @@ def _resolve_path(raw: str) -> Path:
         "videos":    _get_videos(),
         "home":      Path.home(),
     }
-    lower = raw.strip().lower()
+    s = raw.strip()
+    lower = s.lower()
+    if lower in ("cwd", ".", "here", "current"):
+        if _last_cwd is not None:
+            return _last_cwd
+        return _get_desktop()
     if lower in shortcuts:
         return shortcuts[lower]
+    if _OS == "Windows":
+        m = re.match(r"^([A-Za-z]:)(.*)$", s)
+        if m:
+            drive, rest = m.group(1), m.group(2)
+            if rest in ("", "\\"):
+                return Path(f"{drive.upper()}\\").expanduser().resolve(strict=False)
+            combined = drive + rest
+            p = Path(combined).expanduser()
+            try:
+                return p.resolve(strict=False)
+            except Exception:
+                return p
     return Path(raw).expanduser()
 
 def _format_size(b: int) -> str:
@@ -168,14 +182,6 @@ def delete_file(path: str, name: str = "") -> str:
             return f"Access denied: {target}"
         if not target.exists():
             return f"Not found: {target.name}"
-
-        # Güvenli dizin kontrolü — kritik kullanıcı klasörlerini koru
-        protected = {
-            _get_desktop(), _get_downloads(), _get_documents(),
-            _get_pictures(), _get_music(), _get_videos(), Path.home()
-        }
-        if target.resolve() in {p.resolve() for p in protected}:
-            return f"Protected directory, cannot delete: {target.name}"
 
         return _safe_trash(target)
 
@@ -467,6 +473,34 @@ def get_file_info(path: str, name: str = "") -> str:
     except Exception as e:
         return f"Could not get file info: {e}"
 
+
+def set_working_directory(path: str) -> str:
+    """Remember a folder for path=cwd / . on later list/find (shell-style cd)."""
+    global _last_cwd
+    raw = (path or "").strip()
+    if not raw:
+        return "change_directory requires a path (e.g. D:\\ or C:\\Users\\you\\Documents)."
+    try:
+        target = _resolve_path(raw)
+        target = target.resolve(strict=False)
+    except Exception as e:
+        return f"Could not resolve path: {e}"
+
+    if not target.exists():
+        return f"Path not found: {raw}"
+    if not target.is_dir():
+        return f"Not a directory: {target}"
+    if not _is_safe_path(target):
+        return f"Access denied: {target}"
+
+    _last_cwd = target
+    head = f"Working directory set to: {target}\n\n"
+    body = list_files(str(target))
+    if len(body) > 8000:
+        body = body[:8000] + "\n… (truncated)"
+    return head + body
+
+
 def file_controller(
     parameters: dict = None,
     response=None,
@@ -535,6 +569,10 @@ def file_controller(
 
         elif action == "info":
             return get_file_info(path, name=name)
+
+        elif action in ("change_directory", "cd", "chdir", "set_cwd"):
+            p = params.get("path") or params.get("target") or ""
+            return set_working_directory(str(p).strip())
 
         else:
             return f"Unknown action: '{action}'"

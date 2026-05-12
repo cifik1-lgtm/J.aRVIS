@@ -16,6 +16,7 @@ except ImportError:
     _PYAUTOGUI = False
 
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
+_CREATE_NO_WINDOW = 0x08000000 if _OS == "Windows" else 0
 
 
 def _get_base_dir() -> Path:
@@ -193,7 +194,7 @@ def set_wallpaper(image_path: str) -> str:
                 subprocess.run([
                     "gsettings", "set", "org.gnome.desktop.background",
                     "picture-uri-dark", uri
-                ], capture_output=True)
+                ], capture_output=True, creationflags=_CREATE_NO_WINDOW)
 
             elif "kde" in desktop_env:
                 # KDE Plasma
@@ -209,7 +210,7 @@ for (var i = 0; i < allDesktops.length; i++) {{
                 subprocess.run(
                     ["qdbus", "org.kde.plasmashell", "/PlasmaShell",
                      "org.kde.PlasmaShell.evaluateScript", script],
-                    capture_output=True
+                    capture_output=True, creationflags=_CREATE_NO_WINDOW
                 )
 
             elif "xfce" in desktop_env:
@@ -217,12 +218,12 @@ for (var i = 0; i < allDesktops.length; i++) {{
                     "xfconf-query", "-c", "xfce4-desktop",
                     "-p", "/backdrop/screen0/monitor0/workspace0/last-image",
                     "-s", str(path)
-                ], capture_output=True)
+                ], capture_output=True, creationflags=_CREATE_NO_WINDOW)
 
             else:
                 result = subprocess.run(
                     ["feh", "--bg-scale", str(path)],
-                    capture_output=True
+                    capture_output=True, creationflags=_CREATE_NO_WINDOW
                 )
                 if result.returncode != 0:
                     return (

@@ -27,6 +27,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QPushButton, QScrollArea, QSizePolicy, QTextEdit,
     QVBoxLayout, QWidget, QProgressBar,
 )
+from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
 def _base_dir() -> Path:
     if getattr(sys, "frozen", False):
@@ -43,6 +44,7 @@ _LEFT_W  = 148
 _RIGHT_W = 340
 
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
+_CREATE_NO_WINDOW = 0x08000000 if _OS == "Windows" else 0
 
 
 class C:
@@ -92,7 +94,7 @@ class _SysMetrics:
                 self._update()
             except Exception:
                 pass
-            time.sleep(1.5)
+            time.sleep(3.0) # Reduced frequency to save CPU
 
     def _update(self):
         cpu = psutil.cpu_percent(interval=None)
@@ -127,7 +129,8 @@ class _SysMetrics:
             r = subprocess.run(
                 ["nvidia-smi", "--query-gpu=utilization.gpu",
                  "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, timeout=2
+                capture_output=True, text=True, timeout=2,
+                creationflags=_CREATE_NO_WINDOW
             )
             if r.returncode == 0:
                 vals = [float(v.strip()) for v in r.stdout.strip().split("\n") if v.strip()]
@@ -136,12 +139,16 @@ class _SysMetrics:
         except Exception:
             pass
 
+        # AMD (Windows) — Try using 'dxdiag' or similar? No, too slow.
+        # We'll skip for now to save CPU, as rx580 on Windows is hard to poll without extra libs.
+        
         # AMD (Linux)
         if _OS == "Linux":
             try:
                 r = subprocess.run(
                     ["rocm-smi", "--showuse", "--csv"],
-                    capture_output=True, text=True, timeout=2
+                    capture_output=True, text=True, timeout=2,
+                    creationflags=_CREATE_NO_WINDOW
                 )
                 if r.returncode == 0:
                     for line in r.stdout.strip().split("\n"):
@@ -158,7 +165,8 @@ class _SysMetrics:
             try:
                 r = subprocess.run(
                     ["intel_gpu_top", "-J", "-s", "500"],
-                    capture_output=True, text=True, timeout=1
+                    capture_output=True, text=True, timeout=1,
+                    creationflags=_CREATE_NO_WINDOW
                 )
                 if r.returncode == 0 and "Render/3D" in r.stdout:
                     import re
@@ -174,7 +182,8 @@ class _SysMetrics:
                 r = subprocess.run(
                     ["sudo", "-n", "powermetrics", "-n", "1", "-i", "500",
                      "--samplers", "gpu_power"],
-                    capture_output=True, text=True, timeout=2
+                    capture_output=True, text=True, timeout=2,
+                    creationflags=_CREATE_NO_WINDOW
                 )
                 if r.returncode == 0 and "GPU" in r.stdout:
                     import re
@@ -204,7 +213,8 @@ class _SysMetrics:
         if _OS == "Darwin":
             try:
                 r = subprocess.run(
-                    ["osx-cpu-temp"], capture_output=True, text=True, timeout=2
+                    ["osx-cpu-temp"], capture_output=True, text=True, timeout=2,
+                    creationflags=_CREATE_NO_WINDOW
                 )
                 if r.returncode == 0:
                     import re
@@ -214,19 +224,8 @@ class _SysMetrics:
             except Exception:
                 pass
 
-        if _OS == "Windows":
-            try:
-                r = subprocess.run(
-                    ["powershell", "-Command",
-                     "(Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace root/wmi).CurrentTemperature"],
-                    capture_output=True, text=True, timeout=3
-                )
-                if r.returncode == 0 and r.stdout.strip():
-                    raw = float(r.stdout.strip().split("\n")[0])
-                    return (raw / 10.0) - 273.15
-            except Exception:
-                pass
-
+        # Skipping PowerShell temperature check on Windows to save CPU. 
+        # Launching a shell process every few seconds is very expensive.
         return -1.0
 
     def snapshot(self) -> dict:
@@ -242,16 +241,20 @@ class _SysMetrics:
 
 _metrics = _SysMetrics()
 
-class HudCanvas(QWidget):
+class HudCanvas(QOpenGLWidget):
+    _toggle_cam_sig = pyqtSignal(bool)
+
     def __init__(self, face_path: str, parent=None):
         super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
+        # OpenGL optimizations
+        self.setUpdateBehavior(QOpenGLWidget.UpdateBehavior.NoPartialUpdate)
         self.setMinimumSize(300, 300)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         self.muted    = False
         self.speaking = False
         self.state    = "INITIALISING"
+        self.camera_index = 0
 
         self._tick       = 0
         self._scale      = 1.0
@@ -267,13 +270,41 @@ class HudCanvas(QWidget):
         self._blink_tick = 0
         self._particles: list[list[float]] = []
         self._face_px: QPixmap | None = None
+        self._original_face: QPixmap | None = None
+        self._static_px: QPixmap | None = None
+        
+        self._cam_cap = None
+        self.cap = None
+        self.camera_running = False
+        self.cap_backend = 0 # cv2.CAP_ANY or cv2.CAP_DSHOW
+        self._cam_tmr = QTimer(self)
+        self._cam_tmr.timeout.connect(self._update_hud_frame)
+        self._last_frame = None
+        
+        # Threaded Camera Worker
+        self._cam_worker_running = False
+        self._cam_thread = None
+        self._latest_rgb = None
+        self._cam_lock = threading.Lock()
+        
+        self._toggle_cam_sig.connect(self._do_toggle_camera)
+        
         self._load_face(face_path)
 
         self._tmr = QTimer(self)
         self._tmr.timeout.connect(self._step)
-        self._tmr.start(16)
+        self._tmr.start(33) # 30 FPS — Sufficient for visual smoothness and uses 50% less CPU
 
     def _load_face(self, path: str):
+        if not path or not os.path.exists(path):
+            if path == "face.png":
+                print("[HUD] Using procedural holographic core.")
+            else:
+                print(f"[HUD] Asset not found: {path}")
+            self._face_px = None
+            self._original_face = None
+            return
+
         try:
             from PIL import Image, ImageDraw
             import io
@@ -285,10 +316,196 @@ class HudCanvas(QWidget):
             img.putalpha(mk)
             buf = io.BytesIO()
             img.save(buf, format="PNG")
-            px = QPixmap(); px.loadFromData(buf.getvalue())
+            
+            from PyQt6.QtGui import QPixmap
+            px = QPixmap()
+            px.loadFromData(buf.getvalue())
+            
             self._face_px = px
-        except Exception:
+            self._original_face = px
+        except Exception as e:
+            print(f"[HUD] Error loading face '{path}': {e}")
             self._face_px = None
+            self._original_face = None
+
+    def toggle_camera(self, state: bool):
+        self._toggle_cam_sig.emit(state)
+
+    def switch_camera(self, index: int):
+        """Properly switch to a different camera."""
+        try:
+            was_running = self._cam_tmr.isActive()
+            if was_running:
+                self.stop_camera()
+            
+            import time
+            time.sleep(0.2)
+            
+            self.camera_index = index
+            
+            if was_running:
+                self.start_camera()
+                
+            print(f"[HUD] Switched to camera {index}")
+            return True
+        except Exception as e:
+            print(f"[HUD] Camera switch failed: {e}")
+            return False
+
+    def start_camera(self):
+        """Start the camera feed."""
+        self.toggle_camera(True)
+
+    def stop_camera(self):
+        """Stop the camera feed."""
+        self.toggle_camera(False)
+
+    def _do_toggle_camera(self, state: bool):
+        if state:
+            try:
+                import cv2
+                import platform
+                # MSMF (1800) is required for virtual cameras like Iriun on Windows
+                # DirectShow (700) fails with virtual camera drivers
+                if platform.system() == "Windows":
+                    backends_to_try = [
+                        cv2.CAP_MSMF,  # Media Foundation - best for virtual cams
+                        cv2.CAP_ANY,   # Let Windows decide
+                        cv2.CAP_DSHOW, # Legacy fallback
+                    ]
+                else:
+                    backends_to_try = [cv2.CAP_ANY]
+                
+                if self.cap_backend != 0:
+                    backends_to_try = [self.cap_backend] + backends_to_try
+                
+                self.cap = None
+                for backend in backends_to_try:
+                    print(f"[HUD] Trying camera {self.camera_index} with backend {backend}")
+                    cap_attempt = cv2.VideoCapture(self.camera_index, backend)
+                    if cap_attempt.isOpened():
+                        # Verify it can actually produce a frame
+                        ret, frame = cap_attempt.read()
+                        if ret and frame is not None and frame.size > 0:
+                            self.cap = cap_attempt
+                            print(f"[HUD] Camera {self.camera_index} working with backend {backend}")
+                            break
+                        else:
+                            cap_attempt.release()
+                    else:
+                        cap_attempt.release()
+                
+                if self.cap and self.cap.isOpened():
+                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                    
+                    self.camera_running = True
+                    self._cam_cap = self.cap
+                    
+                    # Start background worker thread
+                    self._cam_worker_running = True
+                    self._cam_thread = threading.Thread(target=self._camera_worker, daemon=True)
+                    self._cam_thread.start()
+                    
+                    print(f"[HUD] Camera {self.camera_index} thread started.")
+                    self._cam_tmr.start(33)
+                else:
+                    self.camera_running = False
+                    print(f"[HUD] Failed to open camera {self.camera_index}")
+            except Exception as e:
+                self.camera_running = False
+                print(f"[HUD] Failed to start camera: {e}")
+        else:
+            self._cam_worker_running = False
+            self._cam_tmr.stop()
+            self.camera_running = False
+            if self.cap:
+                self.cap.release()
+                self.cap = None
+            self._cam_cap = None
+            self._last_frame = None
+            self._face_px = self._original_face
+            print("[HUD] Camera stopped.")
+
+    def _camera_worker(self):
+        """Background thread to read frames without freezing UI."""
+        import cv2
+        while self._cam_worker_running and self.cap:
+            try:
+                ret, frame = self.cap.read()
+                if ret and frame is not None:
+                    # Process to RGB in background
+                    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    with self._cam_lock:
+                        self._latest_rgb = rgb
+                        self._last_frame = frame
+                else:
+                    time.sleep(0.01)
+            except Exception:
+                break
+        print("[HUD] Camera worker thread exiting.")
+
+    def _update_hud_frame(self):
+        """Picks up the latest frame processed by the background thread."""
+        if not self.camera_running:
+            return
+            
+        rgb = None
+        with self._cam_lock:
+            if self._latest_rgb is not None:
+                rgb = self._latest_rgb
+                self._latest_rgb = None # Consume it
+        
+        if rgb is not None:
+            from PyQt6.QtGui import QImage
+            h, w, ch = rgb.shape
+            bytes_per_line = ch * w
+            # CRITICAL: bytes() forces a copy of the buffer. Without this, QImage holds
+            # a raw pointer to the numpy array which the camera thread overwrites → glitches.
+            img_bytes = bytes(rgb.tobytes())
+            qimg = QImage(img_bytes, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            self._face_px = QPixmap.fromImage(qimg)
+            self.update()  # Trigger widget repaint with the new frame
+
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._render_static()
+
+    def _render_static(self):
+        W, H = self.width(), self.height()
+        if W <= 0 or H <= 0: return
+        self._static_px = QPixmap(W, H)
+        self._static_px.fill(Qt.GlobalColor.transparent)
+        p = QPainter(self._static_px)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        cx, cy = W / 2, H / 2
+        fw = min(W, H)
+        # grid dots
+        p.setPen(QPen(qcol(C.PRI_GHO), 1))
+        for x in range(0, W, 48):
+            for y in range(0, H, 48):
+                p.drawPoint(x, y)
+        # tick marks
+        t_out, t_in = fw * 0.497, fw * 0.474
+        p.setPen(QPen(qcol(C.PRI, 140), 1))
+        for deg in range(0, 360, 10):
+            rad = math.radians(deg)
+            inn = t_in if deg % 30 == 0 else t_in + 6
+            p.drawLine(
+                QPointF(cx + t_out * math.cos(rad), cy - t_out * math.sin(rad)),
+                QPointF(cx + inn  * math.cos(rad), cy - inn  * math.sin(rad)),
+            )
+        # corner brackets
+        bl = 24
+        bc = qcol(C.PRI, 210)
+        hl, hr = cx - fw // 2, cx + fw // 2
+        ht, hb = cy - fw // 2, cy + fw // 2
+        p.setPen(QPen(bc, 2))
+        for bx, by, dx, dy in [(hl,ht,1,1),(hr,ht,-1,1),(hl,hb,1,-1),(hr,hb,-1,-1)]:
+            p.drawLine(QPointF(bx, by), QPointF(bx + dx * bl, by))
+            p.drawLine(QPointF(bx, by), QPointF(bx, by + dy * bl))
+        p.end()
 
     def _step(self):
         self._tick += 1
@@ -348,15 +565,12 @@ class HudCanvas(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.fillRect(self.rect(), qcol(C.BG))
 
+        if self._static_px:
+            p.drawPixmap(0, 0, self._static_px)
+
         W, H = self.width(), self.height()
         cx, cy = W / 2, H / 2
         fw = min(W, H)
-
-        # grid dots
-        p.setPen(QPen(qcol(C.PRI_GHO), 1))
-        for x in range(0, W, 48):
-            for y in range(0, H, 48):
-                p.drawPoint(x, y)
 
         r_face = fw * 0.31
 
@@ -402,17 +616,6 @@ class HudCanvas(QWidget):
         p.setPen(QPen(qcol(C.ACC, sa // 2), 1.5))
         p.drawArc(srect, int(self._scan2 * 16), int(ex * 16))
 
-        # tick marks
-        t_out, t_in = fw * 0.497, fw * 0.474
-        p.setPen(QPen(qcol(C.PRI, 140), 1))
-        for deg in range(0, 360, 10):
-            rad = math.radians(deg)
-            inn = t_in if deg % 30 == 0 else t_in + 6
-            p.drawLine(
-                QPointF(cx + t_out * math.cos(rad), cy - t_out * math.sin(rad)),
-                QPointF(cx + inn  * math.cos(rad), cy - inn  * math.sin(rad)),
-            )
-
         # crosshair
         ch_r, gap_h = fw * 0.51, fw * 0.16
         p.setPen(QPen(qcol(C.PRI, int(self._halo * 0.5)), 1))
@@ -421,39 +624,73 @@ class HudCanvas(QWidget):
         p.drawLine(QPointF(cx, cy - ch_r), QPointF(cx, cy - gap_h))
         p.drawLine(QPointF(cx, cy + gap_h), QPointF(cx, cy + ch_r))
 
-        # corner brackets
-        bl = 24
-        bc = qcol(C.PRI, 210)
-        hl, hr = cx - fw // 2, cx + fw // 2
-        ht, hb = cy - fw // 2, cy + fw // 2
-        p.setPen(QPen(bc, 2))
-        for bx, by, dx, dy in [(hl,ht,1,1),(hr,ht,-1,1),(hl,hb,1,-1),(hr,hb,-1,-1)]:
-            p.drawLine(QPointF(bx, by), QPointF(bx + dx * bl, by))
-            p.drawLine(QPointF(bx, by), QPointF(bx, by + dy * bl))
-
         # face
         if self._face_px:
             fsz    = int(fw * 0.62 * self._scale)
+            # Center the pixmap
+            pm_w = self._face_px.width()
+            pm_h = self._face_px.height()
+            
+            # If camera is active, it might be larger, so we draw it scaled
             scaled = self._face_px.scaled(
                 fsz, fsz,
-                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             )
-            p.drawPixmap(int(cx - fsz / 2), int(cy - fsz / 2), scaled)
+            
+            # Draw cropped to circle
+            p.save()
+            path = QPainterPath()
+            path.addEllipse(cx - fsz/2, cy - fsz/2, fsz, fsz)
+            p.setClipPath(path)
+            
+            p.drawPixmap(int(cx - scaled.width() / 2), int(cy - scaled.height() / 2), scaled)
+            p.restore()
         else:
-            orb_r = int(fw * 0.27 * self._scale)
-            oc    = (200, 0, 50) if self.muted else (0, 60, 110)
-            for i in range(8, 0, -1):
-                r2  = int(orb_r * i / 8)
-                frc = i / 8
-                a   = max(0, min(255, int(self._halo * 1.1 * frc)))
-                p.setBrush(QBrush(QColor(int(oc[0]*frc), int(oc[1]*frc), int(oc[2]*frc), a)))
-                p.setPen(Qt.PenStyle.NoPen)
-                p.drawEllipse(QRectF(cx - r2, cy - r2, r2 * 2, r2 * 2))
+            # Fallback stylized Robotic Core
+            orb_r = int(fw * 0.28 * self._scale)
+            
+            # 1. Main Glow Orb
+            oc = (200, 0, 50) if self.muted else (0, 110, 200)
+            grad = QRadialGradient(cx, cy, orb_r)
+            grad.setColorAt(0.0, QColor(oc[0], oc[1], oc[2], 160))
+            grad.setColorAt(1.0, Qt.GlobalColor.transparent)
+            p.setBrush(QBrush(grad))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.drawEllipse(QRectF(cx - orb_r, cy - orb_r, orb_r * 2, orb_r * 2))
+
+            # 2. Geometric "Head" Silhouette
+            p.setPen(QPen(qcol(C.PRI, 120), 1))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            # Stylized Stark Silhouette
+            path = QPainterPath()
+            path.moveTo(cx - 30, cy - 40); path.lineTo(cx + 30, cy - 40) # Top
+            path.lineTo(cx + 45, cy - 10); path.lineTo(cx + 25, cy + 35) # Right Side
+            path.lineTo(cx - 25, cy + 35); path.lineTo(cx - 45, cy - 10) # Left Side
+            path.closeSubpath()
+            p.drawPath(path)
+
+            # 3. Reactive Eyes
+            eye_a = 255 if self._blink else 100
+            p.setBrush(QBrush(qcol(C.WHITE, eye_a)))
+            p.drawRect(QRectF(cx - 22, cy - 15, 10, 2))
+            p.drawRect(QRectF(cx + 12, cy - 15, 10, 2))
+
+            # 4. Central Audio Spectrum (Inside the "Head")
+            if self.speaking:
+                p.setPen(QPen(qcol(C.ACC, 200), 2))
+                for i in range(-3, 4):
+                    h_val = random.randint(10, 35)
+                    p.drawLine(QPointF(cx + i * 8, cy + 10 - h_val/2), QPointF(cx + i * 8, cy + 10 + h_val/2))
+            else:
+                # "Breathing" brain line
+                bw = 30 * abs(math.sin(self._tick * 0.05))
+                p.setPen(QPen(qcol(C.PRI_DIM, 150), 1))
+                p.drawLine(QPointF(cx - bw/2, cy + 10), QPointF(cx + bw/2, cy + 10))
+
             p.setPen(QPen(qcol(C.PRI, min(255, int(self._halo * 2))), 1))
-            p.setFont(QFont("Courier New", 13, QFont.Weight.Bold))
-            p.drawText(QRectF(cx - 80, cy - 14, 160, 28),
-                       Qt.AlignmentFlag.AlignCenter, "J.A.R.V.I.S")
+            p.setFont(QFont("Courier New", 10, QFont.Weight.Bold))
+            p.drawText(QRectF(cx - 80, cy + 45, 160, 20), Qt.AlignmentFlag.AlignCenter, "J.A.R.V.I.S")
 
         # particles
         for pt in self._particles:
@@ -987,10 +1224,12 @@ class SetupOverlay(QWidget):
 class MainWindow(QMainWindow):
     _log_sig   = pyqtSignal(str)
     _state_sig = pyqtSignal(str)
+    _mute_sig  = pyqtSignal(bool)
+    _cam_sig   = pyqtSignal(int)
 
     def __init__(self, face_path: str):
         super().__init__()
-        self.setWindowTitle("J.A.R.V.I.S — MARK XXXIX")
+        self.setWindowTitle("J.A.R.V.I.S — CIFIK Intelegents")
         self.setMinimumSize(_MIN_W, _MIN_H)
         self.resize(_DEFAULT_W, _DEFAULT_H)
 
@@ -999,13 +1238,31 @@ class MainWindow(QMainWindow):
             (screen.width()  - _DEFAULT_W) // 2,
             (screen.height() - _DEFAULT_H) // 2,
         )
+        
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.on_text_command  = None
         self._muted           = False
         self._current_file: str | None = None
 
+        # Load UI Labels from config
+        self._ui_labels = {
+            "mark": "CIFIK AI Power",
+            "company": "CIFIK Intelegents",
+            "protocol": "PROTOCOL\nPower"
+        }
+        if API_FILE.exists():
+            try:
+                import json
+                conf = json.loads(API_FILE.read_text(encoding="utf-8"))
+                self._ui_labels["mark"]     = conf.get("ui_mark_version", "CIFIK Intelegents")
+                self._ui_labels["company"]  = conf.get("ui_company_name", "CIFIK Intelegents")
+                self._ui_labels["protocol"] = conf.get("ui_protocol_name", "PROTOCOL\nPower")
+            except: pass
+
         central = QWidget()
-        central.setStyleSheet(f"background: {C.BG};")
+        central.setStyleSheet(f"background: rgba(0, 6, 10, 220); border-radius: 14px; border: 1px solid {C.BORDER};")
         self.setCentralWidget(central)
 
         root = QVBoxLayout(central)
@@ -1043,6 +1300,8 @@ class MainWindow(QMainWindow):
 
         self._log_sig.connect(self._log.append_log)
         self._state_sig.connect(self._apply_state)
+        self._mute_sig.connect(self._set_mute_state)
+        self._cam_sig.connect(self._set_camera)
 
         self._overlay: SetupOverlay | None = None
         self._ready = self._check_config()
@@ -1053,6 +1312,20 @@ class MainWindow(QMainWindow):
         sc_mute.activated.connect(self._toggle_mute)
         sc_full = QShortcut(QKeySequence("F11"), self)
         sc_full.activated.connect(self._toggle_fullscreen)
+        
+        # Block Alt+F4
+        sc_altf4 = QShortcut(QKeySequence("Alt+F4"), self)
+        sc_altf4.activated.connect(lambda: None)
+
+    def closeEvent(self, event):
+        # Prevent closing via Alt+F4 or X button unless confirmed via AI command
+        # or if we want to allow the X button, we can check the sender.
+        # But for now, let's block it to satisfy "not work on jarvis app".
+        event.ignore()
+
+    def force_close(self):
+        # This can be called from JARVIS shutdown logic
+        QApplication.quit()
 
     def _toggle_fullscreen(self):
         if self.isFullScreen():
@@ -1070,6 +1343,17 @@ class MainWindow(QMainWindow):
                 (cw.height() - oh) // 2,
                 ow, oh,
             )
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.MouseButton.LeftButton and hasattr(self, '_drag_pos'):
+            self.move(event.globalPosition().toPoint() - self._drag_pos)
+            event.accept()
+
 
     def _update_metrics(self):
         snap = _metrics.snapshot()
@@ -1135,7 +1419,7 @@ class MainWindow(QMainWindow):
             l.setStyleSheet(f"color: {color}; background: transparent;")
             return l
 
-        lay.addWidget(_badge("MARK XXXIX", C.PRI_DIM))
+        lay.addWidget(_badge(self._ui_labels["mark"], C.PRI_DIM))
         lay.addStretch()
 
         mid = QVBoxLayout(); mid.setSpacing(1)
@@ -1164,6 +1448,20 @@ class MainWindow(QMainWindow):
         self._date_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
         right_col.addWidget(self._date_lbl)
         lay.addLayout(right_col)
+
+        lay.addSpacing(12)
+        win_ctrls = QVBoxLayout(); win_ctrls.setSpacing(4); win_ctrls.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        def _btn(txt, col, func):
+            b = QPushButton(txt); b.setFixedSize(18, 18)
+            b.setFont(QFont("Arial", 8, QFont.Weight.Bold))
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setStyleSheet(f"QPushButton {{ background: transparent; color: {col}; border: 1px solid {C.BORDER}; border-radius: 9px; }} QPushButton:hover {{ border: 1px solid {col}; background: rgba(255,255,255,10); }}")
+            b.clicked.connect(func)
+            return b
+        win_ctrls.addWidget(_btn("✕", C.RED, self.close))
+        win_ctrls.addWidget(_btn("—", C.PRI, self.showMinimized))
+        lay.addLayout(win_ctrls)
+
         return w
 
     def _tick_clock(self):
@@ -1227,7 +1525,7 @@ class MainWindow(QMainWindow):
         for txt, col in [
             ("AI CORE\nACTIVE",     C.GREEN),
             ("SEC\nCLEARED",        C.PRI),
-            ("PROTOCOL\nXXXVIII",   C.TEXT_DIM),
+            (self._ui_labels["protocol"],   C.TEXT_DIM),
         ]:
             lbl = QLabel(txt)
             lbl.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
@@ -1349,9 +1647,9 @@ class MainWindow(QMainWindow):
 
         lay.addWidget(_fl("[F4] Mute  ·  [F11] Fullscreen"))
         lay.addStretch()
-        lay.addWidget(_fl("FatihMakes Industries  ·  MARK XXXIX  ·  CLASSIFIED"))
+        lay.addWidget(_fl(f"{self._ui_labels['company']}  ·  {self._ui_labels['mark']}  ·  CLASSIFIED"))
         lay.addStretch()
-        lay.addWidget(_fl("© FATIHMAKES", C.PRI_DIM))
+        lay.addWidget(_fl("© CIFIK Intelegents", C.PRI_DIM))
         return w
 
     def _on_file_selected(self, path: str):
@@ -1371,8 +1669,11 @@ class MainWindow(QMainWindow):
             )
             threading.Thread(target=self.on_text_command, args=(msg,), daemon=True).start()
 
-    def _toggle_mute(self):
-        self._muted = not self._muted
+    def _set_mute_state(self, state: bool):
+        """Internal thread-safe mute state setter."""
+        if self._muted == state:
+            return
+        self._muted = state
         self.hud.muted = self._muted
         self._style_mute_btn()
         if self._muted:
@@ -1381,6 +1682,14 @@ class MainWindow(QMainWindow):
         else:
             self._apply_state("LISTENING")
             self._log.append_log("SYS: Microphone active.")
+
+    def _set_camera(self, index: int):
+        """Thread-safe camera switcher."""
+        if hasattr(self, 'hud') and hasattr(self.hud, 'switch_camera'):
+            self.hud.switch_camera(index)
+
+    def _toggle_mute(self):
+        self._set_mute_state(not self._muted)
 
     def _style_mute_btn(self):
         if self._muted:
@@ -1417,7 +1726,8 @@ class MainWindow(QMainWindow):
         if not API_FILE.exists(): return False
         try:
             d = json.loads(API_FILE.read_text(encoding="utf-8"))
-            return bool(d.get("gemini_api_key")) and bool(d.get("os_system"))
+            # Just ensure gemini key is there, the rest is optional/added by us
+            return bool(d.get("gemini_api_key"))
         except Exception:
             return False
 
@@ -1436,8 +1746,17 @@ class MainWindow(QMainWindow):
 
     def _on_setup_done(self, key: str, os_name: str):
         os.makedirs(CONFIG_DIR, exist_ok=True)
+        # Load existing if possible to MERGE instead of overwrite
+        data = {"gemini_api_key": key, "os_system": os_name}
+        if API_FILE.exists():
+            try:
+                existing = json.loads(API_FILE.read_text(encoding="utf-8"))
+                existing.update(data)
+                data = existing
+            except: pass
+            
         API_FILE.write_text(
-            json.dumps({"gemini_api_key": key, "os_system": os_name}, indent=4),
+            json.dumps(data, indent=4),
             encoding="utf-8",
         )
         self._ready = True
@@ -1465,13 +1784,16 @@ class JarvisUI:
         self.root = _RootShim(self._app)
 
     @property
+    def hud(self):
+        return self._win.hud
+
+    @property
     def muted(self) -> bool:
         return self._win._muted
 
     @muted.setter
     def muted(self, v: bool):
-        if v != self._win._muted:
-            self._win._toggle_mute()
+        self._win._mute_sig.emit(v)
 
     @property
     def current_file(self) -> str | None:
@@ -1480,6 +1802,14 @@ class JarvisUI:
     @property
     def on_text_command(self):
         return self._win.on_text_command
+
+    @property
+    def camera(self) -> int:
+        return 0 # Default
+
+    @camera.setter
+    def camera(self, v: int):
+        self._win._cam_sig.emit(v)
 
     @on_text_command.setter
     def on_text_command(self, cb):

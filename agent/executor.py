@@ -6,10 +6,11 @@ import subprocess
 import tempfile
 import os
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Any
 
 from agent.planner       import create_plan, replan
 from agent.error_handler import analyze_error, generate_fix, ErrorDecision
+from google.genai        import types
 
 
 def get_base_dir() -> Path:
@@ -138,7 +139,12 @@ def _detect_language(text: str) -> str:
             f"Text: {text[:200]}"
         )
         return response.text.strip()
-    except Exception:
+    except Exception as e:
+        msg = str(e).lower()
+        if any(x in msg for x in ["429", "quota", "connection", "timeout", "offline"]):
+            from core.local_llm import call_ollama
+            res = call_ollama(f"What language is this text? Reply with 1 word: {text[:200]}", system_prompt="Reply with ONLY the language name.")
+            if res: return res
         return "English"
 
 
@@ -168,83 +174,66 @@ def _translate_to_goal_language(content: str, goal: str) -> str:
         print(f"[Executor] ✅ Translation done ({target_lang})")
         return translated
     except Exception as e:
+        msg = str(e).lower()
+        if any(x in msg for x in ["429", "quota", "connection", "timeout", "offline"]):
+            from core.local_llm import call_ollama
+            res = call_ollama(prompt)
+            if res: return res
         print(f"[Executor] ⚠️ Translation failed: {e}")
         return content
 
-def _call_tool(tool: str, parameters: dict, speak: Callable | None) -> str:
+async def _call_tool_async(dispatcher, tool: str, parameters: dict) -> str:
+    """Use the central ToolDispatcher to call tools asynchronously"""
+    if not dispatcher:
+        return f"Dispatcher not available for tool '{tool}'"
+    
+    # Create a mock FunctionCall for the dispatcher
+    try:
+        # Some tools expect 'parameters' as the key, some don't. Dispatcher handles this.
+        # We wrap it in a types.FunctionCall object
+        fc = types.FunctionCall(
+            name=tool,
+            args=parameters,
+            id="task_exec_" + os.urandom(4).hex()
+        )
+        response = await dispatcher.dispatch(fc)
+        return response.response.get("result", "Done.")
+    except Exception as e:
+        return f"Error executing tool '{tool}': {e}"
 
-    if tool == "open_app":
-        from actions.open_app import open_app
-        return open_app(parameters=parameters, player=None) or "Done."
-
-    elif tool == "web_search":
-        from actions.web_search import web_search
-        return web_search(parameters=parameters, player=None) or "Done."
-    elif tool == "game_updater":
-        from actions.game_updater import game_updater
-        return game_updater(parameters=parameters, player=None, speak=speak) or "Done."
-    elif tool == "browser_control":
-        from actions.browser_control import browser_control
-        return browser_control(parameters=parameters, player=None) or "Done."
-
-    elif tool == "file_controller":
-        from actions.file_controller import file_controller
-        return file_controller(parameters=parameters, player=None) or "Done."
-
-    elif tool == "code_helper":
-        from actions.code_helper import code_helper
-        return code_helper(parameters=parameters, player=None, speak=speak) or "Done."
-
-    elif tool == "dev_agent":
-        from actions.dev_agent import dev_agent
-        return dev_agent(parameters=parameters, player=None, speak=speak) or "Done."
-
-    elif tool == "screen_process":
-        from actions.screen_processor import screen_process
-        screen_process(parameters=parameters, player=None)
-        return "Screen captured and analyzed."
-
-    elif tool == "send_message":
-        from actions.send_message import send_message
-        return send_message(parameters=parameters, player=None) or "Done."
-
-    elif tool == "reminder":
-        from actions.reminder import reminder
-        return reminder(parameters=parameters, player=None) or "Done."
-
-    elif tool == "youtube_video":
-        from actions.youtube_video import youtube_video
-        return youtube_video(parameters=parameters, player=None) or "Done."
-
-    elif tool == "weather_report":
-        from actions.weather_report import weather_action
-        return weather_action(parameters=parameters, player=None) or "Done."
-
-    elif tool == "computer_settings":
-        from actions.computer_settings import computer_settings
-        return computer_settings(parameters=parameters, player=None) or "Done."
-
-    elif tool == "desktop_control":
-        from actions.desktop import desktop_control
-        return desktop_control(parameters=parameters, player=None) or "Done."
-
-    elif tool == "computer_control":
-        from actions.computer_control import computer_control
-        return computer_control(parameters=parameters, player=None) or "Done."
-
-    elif tool == "generated_code":
+def _call_tool(tool: str, parameters: dict, speak: Callable | None, dispatcher=None) -> str:
+    """Wrapper to run the async tool call in the executor's sync context"""
+    import asyncio
+    
+    # Special case for generated code which is still handled here for now
+    if tool == "generated_code":
         description = parameters.get("description", "")
         if not description:
             raise ValueError("generated_code requires a 'description' parameter.")
         return _run_generated_code(description, speak=speak)
+    
+    if tool == "talk":
+        text = parameters.get("text", "")
+        if speak: speak(text)
+        return text
 
-    elif tool == "flight_finder":
-        from actions.flight_finder import flight_finder
-        return flight_finder(parameters=parameters, player=None, speak=speak) or "Done."
-
-    else:
-        print(f"[Executor] ⚠️ Unknown tool '{tool}' — falling back to generated_code")
+    if not dispatcher:
+        print(f"[Executor] ⚠️ No dispatcher provided for tool '{tool}' — falling back to generated_code")
         return _run_generated_code(f"Accomplish this task: {parameters}", speak=speak)
+
+    try:
+        # Run the async tool call in the loop
+        # We need to find the running loop or create one
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+        return loop.run_until_complete(_call_tool_async(dispatcher, tool, parameters))
+    except Exception as e:
+        print(f"[Executor] ❌ Tool call failed: {e}")
+        return f"Tool failed: {e}"
 
 class AgentExecutor:
 
@@ -255,6 +244,7 @@ class AgentExecutor:
         goal:        str,
         speak:       Callable | None        = None,
         cancel_flag: threading.Event | None = None,
+        dispatcher  = None,
     ) -> str:
         print(f"\n[Executor] 🎯 Goal: {goal}")
 
@@ -296,7 +286,7 @@ class AgentExecutor:
                     if cancel_flag and cancel_flag.is_set():
                         break
                     try:
-                        result = _call_tool(tool, params, speak)
+                        result = _call_tool(tool, params, speak, dispatcher=dispatcher)
                         step_results[step_num] = result 
                         completed_steps.append(step)
                         print(f"[Executor] ✅ Step {step_num} done: {str(result)[:100]}")
@@ -339,7 +329,8 @@ class AgentExecutor:
                                     res = _call_tool(
                                         fixed_step["tool"],
                                         fixed_step["parameters"],
-                                        speak
+                                        speak,
+                                        dispatcher=dispatcher
                                     )
                                     step_results[step_num] = res
                                     completed_steps.append(step)
@@ -376,21 +367,29 @@ class AgentExecutor:
 
     def _summarize(self, goal: str, completed_steps: list, speak: Callable | None) -> str:
         fallback = f"All done, sir. Completed {len(completed_steps)} steps for: {goal[:60]}."
+        steps_str = "\n".join(f"- {s.get('description', '')}" for s in completed_steps)
+        prompt    = (
+            f'User goal: "{goal}"\n'
+            f"Completed steps:\n{steps_str}\n\n"
+            "Write a single natural sentence summarizing what was accomplished. "
+            "Address the user as 'sir'. Be direct and positive."
+        )
+
         try:
             import google.generativeai as genai
             genai.configure(api_key=_get_api_key())
             model     = genai.GenerativeModel(model_name="gemini-2.5-flash-lite")
-            steps_str = "\n".join(f"- {s.get('description', '')}" for s in completed_steps)
-            prompt    = (
-                f'User goal: "{goal}"\n'
-                f"Completed steps:\n{steps_str}\n\n"
-                "Write a single natural sentence summarizing what was accomplished. "
-                "Address the user as 'sir'. Be direct and positive."
-            )
             response = model.generate_content(prompt)
             summary  = response.text.strip()
             if speak: speak(summary)
             return summary
-        except Exception:
+        except Exception as e:
+            msg = str(e).lower()
+            if any(x in msg for x in ["429", "quota", "connection", "timeout", "offline"]):
+                from core.local_llm import call_ollama
+                res = call_ollama(prompt)
+                if res:
+                    if speak: speak(res)
+                    return res
             if speak: speak(fallback)
             return fallback

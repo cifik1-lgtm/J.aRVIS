@@ -171,27 +171,34 @@ def _get_camera_index() -> int:
     return _detect_camera_index()
 
 
-def _capture_camera() -> tuple[bytes, str]:
+def _capture_camera(player=None) -> tuple[bytes, str]:
     if not _CV2:
         raise RuntimeError("OpenCV (cv2) is not installed. Run: pip install opencv-python")
 
-    index   = _get_camera_index()
-    backend = _cv2_backend()
-    cap     = cv2.VideoCapture(index, backend)
+    frame = None
+    if player and hasattr(player, "hud") and hasattr(player.hud, "_last_frame"):
+        if player.hud._last_frame is not None:
+            frame = player.hud._last_frame
 
-    if not cap.isOpened():
-        raise RuntimeError(f"Camera index {index} could not be opened.")
+    if frame is None:
+        index   = _get_camera_index()
+        backend = _cv2_backend()
+        cap     = cv2.VideoCapture(index, backend)
 
-    for _ in range(10):
-        cap.read()
+        if not cap.isOpened():
+            raise RuntimeError(f"Camera index {index} could not be opened.")
 
-    ret, frame = cap.read()
-    cap.release()
+        for _ in range(10):
+            cap.read()
 
-    if not ret or frame is None:
-        raise RuntimeError("Camera returned no frame.")
+        ret, f = cap.read()
+        cap.release()
+        if not ret or f is None:
+            raise RuntimeError("Camera returned no frame.")
+        frame = f
 
     if _PIL:
+
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = PIL.Image.fromarray(rgb)
         img.thumbnail((_IMG_MAX_W, _IMG_MAX_H), PIL.Image.BILINEAR)
@@ -318,6 +325,10 @@ class _VisionSession:
                 print(f"[Vision] 📤 Sent {len(image_bytes):,} bytes — '{user_text[:60]}'")
             except Exception as e:
                 print(f"[Vision] ⚠️  Send error: {e}")
+                # Put the item back in the queue so it gets sent after reconnect
+                await self._out_queue.put((image_bytes, mime_type, user_text))
+                # Raise the error to force the TaskGroup to cancel and restart the connection
+                raise
 
     async def _recv_loop(self) -> None:
         transcript: list[str] = []
@@ -406,7 +417,7 @@ def screen_process(
 
     try:
         if angle == "camera":
-            image_bytes, mime_type = _capture_camera()
+            image_bytes, mime_type = _capture_camera(player=player)
             print(f"[Vision] 📷 Camera: {len(image_bytes):,} bytes")
         else:
             image_bytes, mime_type = _capture_screen()

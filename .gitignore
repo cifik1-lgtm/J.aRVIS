@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+ENV/
+
+# Configuration & Secrets (CRITICAL)
+config/api_keys.json
+config/email_keys.json
+config/spotify_keys.json
+MASTER_CONFIG_BACKUP.json
+*.spec
+
+# Memory & Data
+memory/conversation_history.json
+memory/long_term.json
+memory/faces/
+camera_state.txt
+recordings/
+scratch/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+TEST_SHARE.txt
+installed_packages.txt
+camera_state.txt
+python

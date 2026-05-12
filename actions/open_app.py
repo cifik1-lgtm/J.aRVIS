@@ -10,6 +10,7 @@ except ImportError:
     _PSUTIL = False
 
 _SYSTEM = platform.system()
+_CREATE_NO_WINDOW = 0x08000000 if _SYSTEM == "Windows" else 0
 
 _APP_ALIASES: dict[str, dict[str, str]] = {
 
@@ -28,7 +29,6 @@ _APP_ALIASES: dict[str, dict[str, str]] = {
     "teams":              {"Windows": "msteams",                 "Darwin": "Microsoft Teams",      "Linux": "teams"},
     "skype":              {"Windows": "skype",                   "Darwin": "Skype",                "Linux": "skype"},
     "signal":             {"Windows": "signal",                  "Darwin": "Signal",               "Linux": "signal"},
-    "spotify":            {"Windows": "Spotify",                 "Darwin": "Spotify",              "Linux": "spotify"},
     "vlc":                {"Windows": "vlc",                     "Darwin": "VLC",                  "Linux": "vlc"},
     "netflix":            {"Windows": "Netflix",                 "Darwin": "Netflix",              "Linux": "firefox"},
     "vscode":             {"Windows": "code",                    "Darwin": "Visual Studio Code",   "Linux": "code"},
@@ -86,6 +86,7 @@ def _launch_windows(app_name: str) -> bool:
                 shell=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                creationflags=_CREATE_NO_WINDOW
             )
             time.sleep(1.5)
             return True
@@ -94,7 +95,7 @@ def _launch_windows(app_name: str) -> bool:
 
     if ":" in app_name:
         try:
-            subprocess.Popen(f"start {app_name}", shell=True)
+            subprocess.Popen(f"start {app_name}", shell=True, creationflags=_CREATE_NO_WINDOW)
             time.sleep(1.0)
             return True
         except Exception:
@@ -237,7 +238,7 @@ def open_app(
         return f"Unsupported operating system: {_SYSTEM}"
 
     normalized = _normalize(app_name)
-    print(f"[open_app] Launching: '{app_name}' → '{normalized}' ({_SYSTEM})")
+    print(f"[open_app] Launching: '{app_name}' ! '{normalized}' ({_SYSTEM})")
 
     if player:
         player.write_log(f"[open_app] {app_name}")

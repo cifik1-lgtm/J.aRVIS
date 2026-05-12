@@ -7,7 +7,53 @@ import subprocess
 import sys
 import time
 import random
+import platform
 from pathlib import Path
+
+_SYSTEM = platform.system()
+_CREATE_NO_WINDOW = 0x08000000 if _SYSTEM == "Windows" else 0
+
+# Shown to the Live model as the tool description (keep in sync with dispatch below).
+COMPUTER_CONTROL_REFERENCE = """
+Desktop automation via PyAutoGUI. Always set `action` to one of the names below. Use `keys` with + between modifiers (e.g. ctrl+c, win+r). Coordinates are screen pixels.
+
+| action | Required / typical parameters |
+|--------|-------------------------------|
+| type | text |
+| write | text (same as type) |
+| smart_type | text, clear_first (optional bool) |
+| click, left_click | x, y optional (omit to click at cursor) |
+| double_click | x, y optional |
+| triple_click | x, y optional |
+| right_click | x, y optional |
+| middle_click | x, y optional |
+| move | x, y — move pointer |
+| move_rel, move_relative | dx, dy — move from current position; duration (optional, default 0.2) |
+| drag | x1, y1, x2, y2 |
+| hotkey | keys e.g. alt+tab, win+r |
+| press | key e.g. enter, esc, f5 |
+| key_down | key — hold modifier before click/hotkey |
+| key_up | key — release after key_down |
+| scroll | direction up|down|left|right, amount (optional) |
+| copy | (reads clipboard; may use ctrl+c fallback) |
+| paste | text — put text on clipboard and paste |
+| screenshot | path optional (must stay under user home) |
+| screen_find | description — returns x,y or NOT_FOUND (vision) |
+| screen_click | description — find element and left-click |
+| screen_double_click | description — find element and double-click |
+| wait | seconds (max 30) |
+| clear_field | — ctrl+a delete on focused field |
+| focus_window | title — substring of window title |
+| open_folder, open_directory | folder or path or description with drive/path |
+| diagnose_system | — text CPU/RAM/disk summary |
+| random_data | type e.g. name, email, phone, password |
+| user_data | field — value from long_term memory identity |
+| mouse_position, get_position, cursor_position | — returns current x,y |
+| run | only if description/path implies opening a folder; else returns guidance |
+
+Do not invent other action names. For OS shortcuts (volume, brightness, Control Panel) use computer_settings.
+""".strip()
+
 
 try:
     import pyautogui
@@ -168,11 +214,17 @@ def _smart_type(text: str, clear_first: bool = True) -> str:
 
 def _click(x=None, y=None, button: str = "left", clicks: int = 1) -> str:
     _require_pyautogui()
+    if clicks >= 3:
+        verb = "Triple-c"
+    elif clicks == 2:
+        verb = "Double-c"
+    else:
+        verb = "C"
     if x is not None and y is not None:
         pyautogui.click(x, y, button=button, clicks=clicks)
-        return f"{'Double-c' if clicks == 2 else 'C'}licked ({x}, {y}) [{button}]"
+        return f"{verb}licked ({x}, {y}) [{button}]"
     pyautogui.click(button=button, clicks=clicks)
-    return f"Clicked at current position [{button}]"
+    return f"{verb}licked at current position [{button}]"
 
 
 def _hotkey(*keys) -> str:
@@ -250,6 +302,7 @@ def _focus_window(title: str) -> str:
             subprocess.run(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
                 capture_output=True, timeout=5,
+                creationflags=_CREATE_NO_WINDOW
             )
             time.sleep(0.3)
             return f"Focused window: {title}"
@@ -342,6 +395,268 @@ def _screen_find(description: str) -> tuple[int, int] | None:
 
     return None
 
+
+def _extract_folder_from_text(text: str) -> str | None:
+    """Pull a Windows/UNC-ish path from natural language (e.g. 'open D: directory')."""
+    if not text or not isinstance(text, str):
+        return None
+    t = text.strip().strip('"').strip("'")
+    m = re.search(r"(\\\\[^\s]+)", t)
+    if m:
+        return m.group(1).rstrip("\\")
+    if _SYSTEM == "Windows":
+        m = re.search(r"(?i)\b([a-z]:(?:\\[^:*?\"<>|\s]*)*)", t)
+        if m:
+            s = m.group(1).replace("/", "\\")
+            if re.fullmatch(r"(?i)[a-z]:", s):
+                return s.upper() + "\\"
+            return s
+        m = re.search(r"(?i)\bdrive\s+([a-z])\b", t)
+        if m:
+            return m.group(1).upper() + ":\\"
+    if t.startswith("~/") or (t.startswith("/") and "/" in t[1:]):
+        m = re.search(r"(~/[^\s]+|/[^\s]+)", t)
+        if m:
+            try:
+                return str(Path(m.group(1)).expanduser())
+            except Exception:
+                return None
+    return None
+
+
+def _folder_hint_from_params(params: dict) -> str | None:
+    for k in ("path", "folder", "target"):
+        v = params.get(k)
+        if isinstance(v, str) and v.strip():
+            h = _extract_folder_from_text(v)
+            if h:
+                return h
+    desc = params.get("description")
+    if isinstance(desc, str):
+        return _extract_folder_from_text(desc)
+    return None
+
+
+def _open_folder(folder: str) -> str:
+    """Open a folder in the OS file manager (Explorer on Windows)."""
+    raw = (folder or "").strip().strip('"').strip("'")
+    if not raw:
+        return "open_folder needs path or folder (e.g. D:\\\\)."
+    p = Path(raw).expanduser()
+    try:
+        p = p.resolve(strict=False)
+    except Exception:
+        p = Path(raw).expanduser()
+    try:
+        if _SYSTEM == "Windows":
+            subprocess.Popen(["explorer.exe", str(p)])
+        elif _SYSTEM == "Darwin":
+            subprocess.Popen(["open", str(p)])
+        else:
+            subprocess.Popen(["xdg-open", str(p)])
+    except Exception as e:
+        return f"Could not open folder: {e}"
+    return f"Opened in file manager: {p}"
+
+
+_VALID_CONTROL_ACTIONS = frozenset(
+    {
+        "type",
+        "write",
+        "smart_type",
+        "click",
+        "left_click",
+        "double_click",
+        "triple_click",
+        "right_click",
+        "middle_click",
+        "move",
+        "move_rel",
+        "move_relative",
+        "drag",
+        "hotkey",
+        "press",
+        "key_down",
+        "key_up",
+        "scroll",
+        "copy",
+        "paste",
+        "screenshot",
+        "screen_find",
+        "screen_click",
+        "screen_double_click",
+        "wait",
+        "clear_field",
+        "focus_window",
+        "random_data",
+        "user_data",
+        "diagnose_system",
+        "open_folder",
+        "mouse_position",
+        "get_position",
+        "cursor_position",
+    }
+)
+
+
+def _diagnose_system() -> str:
+    try:
+        import psutil
+    except ImportError:
+        return "Install psutil for diagnostics: pip install psutil"
+
+    import platform as plat
+
+    lines = [f"OS: {plat.system()} {plat.release()} ({plat.machine()})"]
+    try:
+        lines.append(
+            f"CPU: {psutil.cpu_percent(interval=0.35)}% "
+            f"({psutil.cpu_count(logical=True)} logical cores)"
+        )
+        vm = psutil.virtual_memory()
+        lines.append(
+            f"RAM: {vm.percent}% used — "
+            f"{vm.used // (1024**3)} / {vm.total // (1024**3)} GiB"
+        )
+        root = "C:\\" if _SYSTEM == "Windows" else "/"
+        du = psutil.disk_usage(root)
+        lines.append(
+            f"Disk: {du.percent}% used, "
+            f"{du.free // (1024**3)} GiB free of {du.total // (1024**3)} GiB"
+        )
+    except Exception as e:
+        lines.append(f"(System metrics error: {e})")
+
+    lines.append("Top processes by working set:")
+    try:
+        rows: list[tuple[int, str]] = []
+        for p in psutil.process_iter(["name", "memory_info"]):
+            try:
+                mi = p.info.get("memory_info")
+                rss = mi.rss if mi else 0
+                if rss:
+                    rows.append((rss, p.info.get("name") or "?"))
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        rows.sort(key=lambda x: x[0], reverse=True)
+        for rss, name in rows[:10]:
+            lines.append(f"  {name}: {rss // (1024 * 1024)} MiB")
+    except Exception as e:
+        lines.append(f"  (process list failed: {e})")
+
+    lines.append(
+        "For live graphs: use computer_settings with action monitor_performance "
+        "(opens Resource Monitor on Windows)."
+    )
+    return "\n".join(lines)
+
+
+def _infer_computer_control_action(goal: str) -> dict:
+    """Map a bogus or vague action string to a valid computer_control action (one retry)."""
+    goal = (goal or "").strip()
+    if not goal:
+        return {}
+
+    gl = goal.lower()
+    hint = _extract_folder_from_text(goal)
+    if hint and any(
+        w in gl
+        for w in (
+            "open",
+            "folder",
+            "directory",
+            "drive",
+            "explorer",
+            "browse",
+            "file manager",
+            "show ",
+        )
+    ):
+        return {"action": "open_folder", "folder": hint}
+
+    api_key = _get_api_key()
+    if not api_key:
+        print("[ComputerControl] ⚠️ No API key for intent inference")
+        return {}
+
+    try:
+        from google import genai
+
+        names = ", ".join(sorted(_VALID_CONTROL_ACTIONS))
+        prompt = f"""The assistant called tool computer_control with a bad or vague action / text:
+\"\"\"{goal}\"\"\"
+
+Pick EXACTLY ONE action from this list only:
+{names}
+
+Heuristics (do NOT guess clear_field unless the user clearly wants to clear the focused text field):
+- diagnose, health, performance, slow, cpu, memory, system check -> diagnose_system
+- open a disk path, drive letter, folder in Explorer -> open_folder (include JSON key "folder" with Windows path like D:\\\\ or C:\\\\Users\\\\...)
+- screenshot, capture screen -> screenshot
+- click something described in words -> screen_click (needs "description"); double-click element -> screen_double_click
+- middle mouse / middle click -> middle_click
+- triple click -> triple_click
+- mouse position, cursor x y -> mouse_position
+- hold shift/ctrl for drag -> key_down then key_up with key
+- nudge mouse relative -> move_rel with dx dy
+- type or write text -> type or write with "text"
+- key combination -> hotkey (needs "keys" like ctrl+shift+esc)
+- delay, wait, pause -> wait (needs "seconds" number)
+- bring window to front -> focus_window (needs "title")
+
+Return ONLY minified JSON. Required: "action". Optional: text, description, keys, key, title, seconds, folder, x, y, x1, y1, x2, y2, dx, dy, duration, amount, direction, path, type, field, clear_first. Use null for unused fields.
+Example: {{"action":"diagnose_system"}}"""
+
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=prompt,
+        )
+        text = re.sub(r"```(?:json)?", "", (response.text or "")).strip().rstrip("`").strip()
+        data = json.loads(text)
+        if not isinstance(data, dict):
+            return {}
+        act = str(data.get("action", "")).lower().strip()
+        if act not in _VALID_CONTROL_ACTIONS:
+            return {}
+        out: dict = {"action": act}
+        for k in (
+            "text",
+            "description",
+            "keys",
+            "key",
+            "title",
+            "seconds",
+            "folder",
+            "x",
+            "y",
+            "x1",
+            "y1",
+            "x2",
+            "y2",
+            "amount",
+            "direction",
+            "path",
+            "type",
+            "field",
+            "button",
+            "clear_first",
+            "dx",
+            "dy",
+            "duration",
+        ):
+            if k not in data:
+                continue
+            v = data[k]
+            if v is None or v == "":
+                continue
+            out[k] = v
+        return out
+    except Exception as e:
+        print(f"[ComputerControl] intent inference failed: {e}")
+        return {}
+
+
 def computer_control(
     parameters: dict,
     response=None,
@@ -349,46 +664,12 @@ def computer_control(
     session_memory=None,
 ) -> str:
     """
-    Dispatch table for all computer control actions.
+    PyAutoGUI-backed desktop control. Authoritative action + parameter table for the Live model:
+    see module constant `COMPUTER_CONTROL_REFERENCE`.
 
-    parameters keys (all optional unless noted):
-      action        : (required) one of the actions listed below
-      text          : text to type or paste
-      x, y          : screen coordinates
-      button        : 'left' | 'right' (default: left)
-      keys          : hotkey string, e.g. 'ctrl+c'
-      key           : single key name, e.g. 'enter'
-      direction     : 'up' | 'down' | 'left' | 'right'
-      amount        : scroll amount (default: 3)
-      seconds       : wait duration
-      title         : window title fragment for focus_window
-      description   : natural-language element description for screen_find/click
-      type          : data type for random_data
-      field         : memory field name for user_data
-      clear_first   : bool, clear field before typing (default: true)
-      path          : save path for screenshot (must be inside home dir)
-
-    Actions:
-      type          — type text at cursor
-      smart_type    — clear field + type (clipboard-backed)
-      click         — left click
-      double_click  — double left click
-      right_click   — right click
-      move          — move mouse
-      drag          — click-drag between two points
-      hotkey        — key combination
-      press         — single key
-      scroll        — scroll the wheel
-      copy          — read clipboard
-      paste         — write + paste clipboard
-      screenshot    — capture screen (safe path only)
-      wait          — sleep N seconds
-      clear_field   — select-all + delete
-      focus_window  — bring window to foreground
-      screen_find   — AI element finder (returns x,y)
-      screen_click  — AI element finder + click
-      random_data   — generate fake form data
-      user_data     — pull real data from memory
+    Common parameters: action (required), text, x, y, x1, y1, x2, y2, dx, dy, duration, keys, key,
+    title, description, folder, path, seconds, amount, direction, type (for random_data), field,
+    clear_first, path (screenshot save under home only).
     """
     params = parameters or {}
     action = params.get("action", "").lower().strip()
@@ -403,7 +684,33 @@ def computer_control(
 
     try:
 
+        if action == "run":
+            hint = _folder_hint_from_params(params)
+            if hint:
+                return _open_folder(hint)
+            return (
+                "The 'run' action cannot execute arbitrary shell commands. "
+                "To open a drive or folder, use action open_folder with path or folder "
+                "(e.g. D:\\\\) or put the path in description. "
+                "For file listings use file_controller (change_directory / list)."
+            )
+
+        if action in ("open_folder", "open_directory", "explorer", "browse_folder"):
+            fp = params.get("folder") or params.get("path") or ""
+            if isinstance(fp, str) and fp.strip():
+                return _open_folder(fp.strip())
+            hint = _extract_folder_from_text(params.get("description", "") or "")
+            if hint:
+                return _open_folder(hint)
+            return (
+                "open_folder needs folder, path, or description naming a drive or path "
+                "(e.g. open D: drive)."
+            )
+
         if action == "type":
+            return _type(params.get("text", ""))
+
+        if action == "write":
             return _type(params.get("text", ""))
 
         if action == "smart_type":
@@ -418,11 +725,26 @@ def computer_control(
         if action == "double_click":
             return _click(params.get("x"), params.get("y"), "left", 2)
 
+        if action == "triple_click":
+            return _click(params.get("x"), params.get("y"), "left", 3)
+
+        if action == "middle_click":
+            return _click(params.get("x"), params.get("y"), "middle", 1)
+
         if action == "right_click":
             return _click(params.get("x"), params.get("y"), "right", 1)
 
         if action == "move":
             return _move(int(params.get("x", 0)), int(params.get("y", 0)))
+
+        if action in ("move_rel", "move_relative"):
+            _require_pyautogui()
+            dx = int(params.get("dx", params.get("x", 0)) or 0)
+            dy = int(params.get("dy", params.get("y", 0)) or 0)
+            dur = float(params.get("duration", 0.2) or 0.2)
+            dur = max(0.05, min(dur, 5.0))
+            pyautogui.moveRel(dx, dy, duration=dur)
+            return f"Moved relative ({dx}, {dy}) over {dur}s"
 
         if action == "drag":
             return _drag(
@@ -437,6 +759,22 @@ def computer_control(
 
         if action == "press":
             return _press(params.get("key", "enter"))
+
+        if action == "key_down":
+            _require_pyautogui()
+            k = str(params.get("key", "")).strip()
+            if not k:
+                return "key_down requires key."
+            pyautogui.keyDown(k)
+            return f"Key down: {k}"
+
+        if action == "key_up":
+            _require_pyautogui()
+            k = str(params.get("key", "")).strip()
+            if not k:
+                return "key_up requires key."
+            pyautogui.keyUp(k)
+            return f"Key up: {k}"
 
         if action == "scroll":
             return _scroll(
@@ -466,6 +804,15 @@ def computer_control(
                 return f"Clicked '{desc}' at {coords}"
             return f"Element not found on screen: '{desc}'"
 
+        if action == "screen_double_click":
+            desc = params.get("description", "")
+            coords = _screen_find(desc)
+            if coords:
+                time.sleep(0.2)
+                _click(x=coords[0], y=coords[1], clicks=2)
+                return f"Double-clicked '{desc}' at {coords}"
+            return f"Element not found on screen: '{desc}'"
+
         if action == "wait":
             secs = float(params.get("seconds", 1.0))
             secs = min(secs, 30.0)
@@ -493,7 +840,33 @@ def computer_control(
                 print(f"[ComputerControl] ⚠️ No '{field}' in memory, using random: {value}")
             return value
 
-        return f"Unknown action: '{action}'"
+        if action == "diagnose_system":
+            return _diagnose_system()
+
+        if action in ("mouse_position", "get_position", "cursor_position"):
+            _require_pyautogui()
+            pos = pyautogui.position()
+            return f"Mouse position: x={int(pos.x)}, y={int(pos.y)}"
+
+        if action not in _VALID_CONTROL_ACTIONS:
+            if not params.get("_cc_infer"):
+                goal = f"{params.get('action', '')} {params.get('description', '')}".strip()
+                inferred = _infer_computer_control_action(goal)
+                if inferred.get("action") in _VALID_CONTROL_ACTIONS:
+                    merged = dict(params)
+                    merged.update(inferred)
+                    merged["_cc_infer"] = True
+                    return computer_control(
+                        merged,
+                        response=response,
+                        player=player,
+                        session_memory=session_memory,
+                    )
+            hint = ", ".join(sorted(_VALID_CONTROL_ACTIONS))
+            return (
+                f"Unknown action: '{params.get('action', action)}'. "
+                f"Valid actions: {hint}."
+            )
 
     except Exception as e:
         print(f"[ComputerControl] ❌ {action}: {e}")
