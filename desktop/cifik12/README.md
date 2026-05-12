@@ -1,1 +1,0 @@
-Details on Sir Peter, family, dogs, and the JARVIS project
