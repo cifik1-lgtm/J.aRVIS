@@ -28,7 +28,7 @@ def neural_inspector(parameters: dict, player=None) -> str:
         from actions.screen_processor import screen_process
         # We use screen_process to capture, but we need the file path
         # In this environment, we'll assume a standard temp path for now
-        temp_dir = Path.home() / "Desktop" / "JARVIS_SHARE" / "Mark-XXXIX" / "temp"
+        temp_dir = Path.home() / "Desktop" / "JARVIS_SHARE" / "Cifik_Intelegents" / "temp"
         temp_dir.mkdir(parents=True, exist_ok=True)
         image_path = temp_dir / "neural_capture.jpg"
         

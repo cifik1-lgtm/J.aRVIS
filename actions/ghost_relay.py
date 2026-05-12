@@ -26,7 +26,7 @@ def get_relay_path():
     # 1. Try local network share (Instant Speed) ONLY if we are NOT CIFIK
     # If CIFIK tries to access its own share via UNC, Windows SMB loopback will block os.listdir!
     if my_name != "CIFIK":
-        paths.append(Path(r"\\DESKTOP-9JBLGJ6.local\share\Mark-XXXIX\memory\relay"))
+        paths.append(Path(r"\\DESKTOP-9JBLGJ6.local\share\Cifik_Intelegents\memory\relay"))
     
     # 2. Try the local memory folder relative to the project
     local_relay = get_base_dir() / "memory" / "relay"

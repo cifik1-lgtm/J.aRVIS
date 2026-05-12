@@ -1,7 +1,7 @@
-# JARVIS Mark-XXXIX
+# JARVIS Cifik Intelegents
 **The Ultimate Autonomous AI Orchestrator**
 
-JARVIS Mark-XXXIX is a high-performance, multi-brain agentic system designed for seamless automation, software development, and real-time interaction. Powered by the latest Gemini 2.0 Multimodal Live technology and a resilient cloud/local fallback architecture.
+JARVIS Cifik Intelegents is a high-performance, multi-brain agentic system designed for seamless automation, software development, and real-time interaction. Powered by the latest Gemini 2.0 Multimodal Live technology and a resilient cloud/local fallback architecture.
 
 ## 🚀 Key Features
 - **Multimodal Intelligence**: Real-time voice and vision capabilities via Gemini 2.0.

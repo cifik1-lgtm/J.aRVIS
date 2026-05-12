@@ -4,7 +4,7 @@ import os
 import shutil
 
 def build():
-    print("Starting Build Process for JARVIS Mark-XXXIX...")
+    print("Starting Build Process for JARVIS Cifik Intelegents...")
     
     # 1. Install PyInstaller if not present
     try:
@@ -16,7 +16,7 @@ def build():
     # 2. Define the build command
     cmd = [
         sys.executable, "-m", "PyInstaller",
-        "--name", "JARVIS_Mark_XXXIX",
+        "--name", "Cifik_Intelegents",
         "--windowed",             # No console window
         "--onefile",              # COMPACT MODE: One single EXE
         "--noconfirm",            # Overwrite existing dist
@@ -33,7 +33,7 @@ def build():
 
     print("\nBUILD COMPLETE!")
     print(f"Your standalone EXE is located in: {os.path.abspath('dist')}")
-    print("You can now move the JARVIS_Mark_XXXIX.exe anywhere!")
+    print("You can now move the Cifik_Intelegents.exe anywhere!")
 
 if __name__ == "__main__":
     build()

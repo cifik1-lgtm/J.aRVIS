@@ -14,7 +14,7 @@ BASE_DIR        = get_base_dir()
 API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
 
 
-PLANNER_PROMPT = """You are the planning module of MARK XXXIX, a personal AI assistant.
+PLANNER_PROMPT = """You are the planning module of Cifik Intelegents, a personal AI assistant.
 Your job: break any user goal into a sequence of steps using ONLY the tools listed below.
 
 ABSOLUTE RULES:
@@ -166,7 +166,7 @@ OUTPUT — return ONLY valid JSON, no markdown, no explanation, no code blocks:
 """
 
 # SIMPLIFIED PROMPT FOR LOCAL GPU FALLBACK (Phi-3 friendly)
-LOCAL_PLANNER_PROMPT = """You are the local fallback brain for JARVIS (Mark-XXXIX).
+LOCAL_PLANNER_PROMPT = """You are the local fallback brain for JARVIS (Cifik Intelegents).
 Convert the user's request into a JSON plan using ONLY these tools:
 
 1. computer_settings: { "action": "string", "description": "natural language" }
@@ -338,8 +338,8 @@ def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {api_key}",
-                "HTTP-Referer": "https://github.com/FatihMakes/Mark-XXXIX",
-                "X-Title": "JARVIS Mark-XXXIX",
+                "HTTP-Referer": "https://github.com/cifik1-lgtm/J.aRVIS",
+                "X-Title": "JARVIS Cifik Intelegents",
             },
             data=json.dumps({
                 "model": "deepseek/deepseek-chat", # High reasoning, low cost
