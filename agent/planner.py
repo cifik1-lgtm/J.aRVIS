@@ -338,8 +338,8 @@ def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {api_key}",
-                "HTTP-Referer": "https://github.com/cifik1-lgtm/J.aRVIS",
-                "X-Title": "JARVIS Cifik Intelegents",
+                "HTTP-Referer": "https://github.com/cifikAI/J.aRVIS",
+                "X-Title": "JARVIS Cifik Intelegents (cifikAI)",
             },
             data=json.dumps({
                 "model": "deepseek/deepseek-chat", # High reasoning, low cost

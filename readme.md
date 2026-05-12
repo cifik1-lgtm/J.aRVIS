@@ -35,4 +35,4 @@ JARVIS Cifik Intelegents is a high-performance, multi-brain agentic system desig
 - Active Internet for Cloud Brains (Gemini/MiniMax).
 
 ---
-*Built for the hive-mind by Antigravity.*
+*Built for the hive-mind by cifikAI & Antigravity.*
