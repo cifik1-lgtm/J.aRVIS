@@ -231,7 +231,14 @@ def _load_system_prompt() -> str:
     except Exception:
         main_prompt = "You are JARVIS, Tony Stark's AI assistant. You are a FULL BRITISH ACCENT AI. Address the user as 'Sir' or 'Sir Peter'. Be helpful, proactive, and efficient."
     
-    return personality + "\n\n" + main_prompt
+    return personality + "\n\n" + main_prompt + (
+        "\n\n[TRIPLE-BRAIN ARCHITECTURE]\n"
+        "You are the Voice Front-End (Brain 1). You handle natural conversation, personality, and memory.\n"
+        "For COMPLEX tasks (Web searches, browser control, coding, file operations, complex automation), "
+        "you MUST use the 'delegate_task' tool. Do not try to solve them yourself. "
+        "Once you delegate, tell the user you are putting the 'Expert Brains' on the job. "
+        "You will be notified once the task is complete."
+    )
 
 # ============================================================================
 # CONVERSATION HISTORY MANAGER
@@ -852,6 +859,8 @@ class JarvisLive:
                 "family information, preferences, or important facts, use the 'save_memory' "
                 "tool to record them immediately. Be a ghost assistant—watch and learn "
                 "everything so you can be more helpful when you are woken up.\n"
+                "IMPORTANT: You cannot deactivate silent mode yourself. Only the user can wake you up "
+                "by saying 'wake up'. Do not use system_control to try and unmute yourself.\n"
             )
         
         parts = [forced_instruction, autonomous_instruction, time_ctx]
@@ -861,12 +870,18 @@ class JarvisLive:
         # the Live API handles context via session_resumption and ongoing stream.
         parts.append(sys_prompt)
         
+        # TRIPLE-BRAIN ARCHITECTURE:
+        # We only give Gemini Live the 'light' tools for conversation and delegation.
+        # Expert tools (Browser, Code, etc.) are hidden from Live and used only by Expert Brains.
+        live_tools = ["system_control", "delegate_task", "save_memory", "retrieve_memory", "preference_manager", "get_memory_stats", "forget_weak_memories"]
+        filtered_decls = [d for d in TOOL_DECLARATIONS if d["name"] in live_tools]
+
         return types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             output_audio_transcription={},
             input_audio_transcription={},
             system_instruction="\n".join(parts),
-            tools=[{"function_declarations": TOOL_DECLARATIONS}],
+            tools=[{"function_declarations": filtered_decls}],
             session_resumption=types.SessionResumptionConfig(), 
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(

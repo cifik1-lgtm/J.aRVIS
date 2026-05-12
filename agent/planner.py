@@ -199,46 +199,55 @@ def _is_rate_limit(e: Exception) -> bool:
     return any(x in msg for x in ["429", "quota", "resource_exhausted", "connection", "timeout", "offline", "network"])
 
 def create_plan_gemini(goal: str, context: str = "") -> dict | None:
-    import google.generativeai as genai
-    genai.configure(api_key=_get_api_key("gemini"))
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash-exp",
-        system_instruction=PLANNER_PROMPT
-    )
-    user_input = f"Goal: {goal}"
-    if context: user_input += f"\n\nContext: {context}"
     try:
-        response = model.generate_content(user_input)
-        text     = response.text.strip()
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=_get_api_key("gemini"))
+        
+        user_input = f"Goal: {goal}"
+        if context: user_input += f"\n\nContext: {context}"
+        
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=user_input,
+            config=types.GenerateContentConfig(
+                system_instruction=PLANNER_PROMPT,
+            )
+        )
+        text = response.text.strip()
         return _parse_and_validate_plan(text)
     except Exception as e:
         print(f"[Gemini] ❌ Error: {e}")
         return None
 
+
 def create_plan_hive(goal: str, context: str = "") -> dict:
-    print("[Planner] 🐝 HIVE MIND: Consulting Gemini, OpenRouter, and Local GPU...")
+    """The 'Router' brain that decides which Expert Brain is best for the job."""
+    g = goal.lower()
     
-    g_plan = create_plan_gemini(goal, context)
+    # 1. BRAIN 3: LOCAL OLLAMA (Code, Files, Local Automation, Privacy)
+    # If the task mentions code, files, or local resources, prefer the local brain.
+    local_keywords = ["code", "script", "file", "folder", "directory", "local", "python", "debug", "path", "read", "write"]
+    if any(w in g for w in local_keywords):
+        from core.local_llm import call_ollama, is_ollama_online
+        if is_ollama_online():
+            print("[Planner] 🧠 ROUTER: Selecting LOCAL OLLAMA for file/code task.")
+            l_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT)
+            try:
+                l_plan = _parse_and_validate_plan(l_resp)
+                if l_plan: return l_plan
+            except: pass
+
+    # 2. BRAIN 2: OPENROUTER (Web Search, Browser Control, API Tasks)
+    # If it's a general complex task or needs the web, use OpenRouter.
+    print("[Planner] 🧠 ROUTER: Selecting OPENROUTER for complex/web task.")
     or_plan = create_plan_openrouter(goal, context)
-    
-    from core.local_llm import call_ollama, is_ollama_online
-    l_plan = None
-    if is_ollama_online():
-        l_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT)
-        try: l_plan = _parse_and_validate_plan(l_resp)
-        except: pass
-    
-    if g_plan and or_plan:
-        print("[Planner] ✅ Hive Consensus reached (Cloud & Local agree).")
-        return g_plan
-    elif g_plan:
-        print("[Planner] ⚠️ Hive partially active (Gemini only).")
-        return g_plan
-    elif or_plan:
-        print("[Planner] ⚠️ Hive partially active (OpenRouter only).")
+    if or_plan:
         return or_plan
     
-    return l_plan or _fallback_plan(goal)
+    # 3. BRAIN 1: GEMINI (Fallback or Simple Reasoning)
+    print("[Planner] 🧠 ROUTER: Falling back to GEMINI.")
+    return create_plan_gemini(goal, context) or _fallback_plan(goal)
 
 
 def create_plan(goal: str, context: str = "") -> dict:

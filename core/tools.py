@@ -148,10 +148,38 @@ TOOL_DECLARATIONS = [
                 "action": {"type": "STRING"},
                 "description": {"type": "STRING"},
                 "value": {"type": "STRING"},
+                "auto": {"type": "BOOLEAN"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "name": "delegate_task",
+        "description": "DELEGATE complex tasks (web searching, coding, file operations, browser control, detailed research) to the Expert Brains. Use this for ANY task that requires more than simple conversation.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "goal": {"type": "STRING", "description": "The specific task or question to solve."},
+                "priority": {"type": "STRING", "enum": ["HIGH", "NORMAL", "LOW"]},
+                "context": {"type": "STRING", "description": "Any additional context needed for the task."}
+            },
+            "required": ["goal"]
+        }
+    },
+    {
+        "name": "system_control",
+        "description": "Controls JARVIS system states like silencing, autonomous mode, and brain switching.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "enum": ["toggle_silence", "set_autonomous_mode", "switch_brain", "system_diagnostic"]},
+                "state": {"type": "BOOLEAN"},
+                "autonomous": {"type": "BOOLEAN"},
+                "brain": {"type": "STRING"},
                 "confirmed": {"type": "STRING"},
                 "auto": {"type": "BOOLEAN"}
             },
-            "required": []
+            "required": ["action"]
         }
     },
     {
@@ -620,11 +648,18 @@ class ToolDispatcher:
                 if name == "system_control":
                     action = args.get("action", "")
                     if action == "toggle_silence":
-                        state = args.get("state", not self.orch.voice_enabled)
-                        self.orch.voice_enabled = not state
-                        self.orch.silent_mode = state
-                        self.orch._restart_connection()
-                        return f"Silence mode {'activated' if state else 'deactivated'}, sir."
+                        target_state = args.get("state")
+                        if target_state is None:
+                            target_state = not self.orch.silent_mode
+                        
+                        # AI PROTECT: Prevent the AI from deactivating its own silent mode.
+                        # Only activation is allowed via tool. Deactivation must happen via 'wake up' voice command.
+                        if not target_state and self.orch.silent_mode:
+                            return "I cannot deactivate silent mode myself, sir. You must say 'wake up' to restore my voice."
+                        
+                        self.orch.voice_enabled = not target_state
+                        self.orch.silent_mode = target_state
+                        return f"Silence mode {'activated' if target_state else 'deactivated'}, sir."
                     elif action == "set_autonomous_mode":
                         auto = args.get("autonomous", True)
                         self.orch._update_config_autonomous(auto)
@@ -643,6 +678,33 @@ class ToolDispatcher:
                         except: results.append("Gemini: Error ❌")
                         try:
                             if _get_api_key("openrouter"): results.append("OpenRouter: Online ✅")
+                            else: results.append("OpenRouter: Missing Key ❌")
+                        except: results.append("OpenRouter: Error ❌")
+                        try:
+                            from core.local_llm import is_ollama_online
+                            if is_ollama_online(): results.append("Ollama (Local): Online ✅")
+                            else: results.append("Ollama (Local): Offline ❌")
+                        except: results.append("Ollama (Local): Error ❌")
+                        
+                        summary = " | ".join(results)
+                        return f"System Diagnostic: {summary}"
+
+                # 2. TASK DELEGATION (HIVE MIND ROUTER)
+                if name == "delegate_task":
+                    goal = args.get("goal", "")
+                    priority = args.get("priority", "NORMAL")
+                    context = args.get("context", "")
+                    
+                    from agent.task_queue import get_queue, TaskPriority
+                    prio_map = {"HIGH": TaskPriority.HIGH, "NORMAL": TaskPriority.NORMAL, "LOW": TaskPriority.LOW}
+                    
+                    # Submit to the Hive Mind Task Queue
+                    get_queue().submit(
+                        goal=goal, 
+                        priority=prio_map.get(priority, TaskPriority.NORMAL),
+                        speak=lambda m: self.orch.speak(f"Sir, regarding your request for {goal[:30]}... {m}")
+                    )
+                    return f"Task delegated to Expert Brains. I'm working on '{goal}' now, sir."
                             else: results.append("OpenRouter: Missing Key ❌")
                         except: results.append("OpenRouter: Error ❌")
                         try:
