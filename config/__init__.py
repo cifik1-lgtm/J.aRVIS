@@ -14,4 +14,4 @@ def get_os() -> str:
 
 def is_windows() -> bool: return get_os() == "windows"
 def is_mac()     -> bool: return get_os() == "mac"
-def is_linux()   -> bool: return get_os() == "linux"
+def is_linux()   -> bool: return get_os() == "linux"# Cifik Intelegents
