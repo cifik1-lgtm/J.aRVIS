@@ -705,15 +705,6 @@ class ToolDispatcher:
                         speak=lambda m: self.orch.speak(f"Sir, regarding your request for {goal[:30]}... {m}")
                     )
                     return f"Task delegated to Expert Brains. I'm working on '{goal}' now, sir."
-                            else: results.append("OpenRouter: Missing Key ❌")
-                        except: results.append("OpenRouter: Error ❌")
-                        try:
-                            from core.local_llm import is_ollama_online
-                            if is_ollama_online(): results.append("Local Ollama: Online ✅")
-                            else: results.append("Local Ollama: Offline ❌")
-                        except: results.append("Local Ollama: Not Found ❌")
-                        status = "\n".join(results)
-                        return f"System Diagnostic Complete, Sir:\n{status}"
 
                 elif name == "preference_manager":
                     from memory.memory_manager import remember, get_memory_manager
