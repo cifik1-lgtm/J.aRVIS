@@ -64,4 +64,4 @@ JARVIS operates using three specialized "brains" to maximize efficiency, speed, 
    ```
 
 ---
-*Built for the hive-mind by cifikAI & Antigravity.*
+*Built for the hive-mind by cifikAI.*
