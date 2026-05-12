@@ -1,3 +1,4 @@
+# JARVIS Cifik Intelegents - [cifikAI]
 import asyncio
 # Fix Qt DPI warning (harmless but annoying)
 import os
