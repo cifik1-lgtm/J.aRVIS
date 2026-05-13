@@ -23,6 +23,18 @@ try:
 except ImportError:
     HAS_SENTENCE_TRANSFORMERS = False
 
+# RAG Engine — lazy import to avoid circular dependency
+_rag = None
+def _get_rag():
+    global _rag
+    if _rag is None:
+        try:
+            from memory.rag_engine import get_rag_engine
+            _rag = get_rag_engine()
+        except Exception:
+            pass
+    return _rag
+
 
 class MemoryManager:
     """Memory manager that properly includes all memories in prompts"""
@@ -122,6 +134,12 @@ class MemoryManager:
         
         self._save()
         print(f"[Memory] 💾 Saved {category}/{key}")
+        
+        # Auto-index into RAG vector DB
+        rag = _get_rag()
+        if rag:
+            rag.index_memory(category, key, value)
+        
         return f"Remembered: {category}/{key}"
     
     def recall(self, key: str, category: str = None) -> Optional[Dict]:
@@ -137,8 +155,15 @@ class MemoryManager:
         
         return None
     
-    def semantic_search(self, query: str, top_k: int = 3) -> List[Tuple[str, str, str]]:
-        """Search memories by meaning"""
+    def semantic_search(self, query: str, top_k: int = 5) -> List[Tuple[str, str, str]]:
+        """Search memories by meaning — uses RAG engine if available, falls back to keyword."""
+        rag = _get_rag()
+        if rag and rag._ready:
+            hits = rag.search(query, top_k=top_k)
+            if hits:
+                return [(h["category"], h["key"], h["value"]) for h in hits]
+        
+        # Fallback: legacy sentence_transformer or keyword
         if self._semantic_model is None:
             return self._keyword_search(query, top_k)
         

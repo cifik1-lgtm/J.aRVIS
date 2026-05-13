@@ -29,9 +29,8 @@ YOUTUBE_SHORTCUTS = {
 def send_shortcut(shortcut: str):
     """Send keyboard shortcut to active window"""
     try:
-        # Give focus to the browser
-        pyautogui.click()
-        time.sleep(0.2)
+        # We assume the window is already focused by youtube_player's activate()
+        time.sleep(0.1)
         
         keys = shortcut.split('+')
         if len(keys) == 1:
@@ -131,10 +130,8 @@ def play_youtube_search(query: str, browser: str = "brave") -> str:
     open_browser(video_url, browser)
     time.sleep(2)
     
-    # Ensure video is playing
-    send_shortcut("k")  # Toggle play/pause to ensure playing
-    time.sleep(0.2)
-    send_shortcut("k")  # This should start playback
+    # Ensure video is playing (autoplay=1 usually handles this, so we just wait)
+    time.sleep(1.0)
     
     return f"Playing {query} on YouTube"
 

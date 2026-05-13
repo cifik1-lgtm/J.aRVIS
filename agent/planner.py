@@ -1,7 +1,10 @@
 import json
 import re
 import sys
+import os
 from pathlib import Path
+from typing import Optional
+from core.intent_classifier import IntentClassifier
 
 
 def get_base_dir() -> Path:
@@ -12,6 +15,7 @@ def get_base_dir() -> Path:
 
 BASE_DIR        = get_base_dir()
 API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
+_classifier = IntentClassifier()
 
 
 PLANNER_PROMPT = """You are the planning module of Cifik Intelegents, a personal AI assistant.
@@ -110,6 +114,12 @@ code_helper
 dev_agent
   description: string (required)
   language: string (optional)
+
+detect_monitors
+  action: "count" | "details" | "all" (required) — get number of screens or full resolutions
+
+gesture_control
+  action: "start" | "stop" | "toggle" (required) — enable/disable hand tracking
 EXAMPLES:
 
 Goal: "research mechanical engineering and save it to a notepad file"
@@ -194,6 +204,9 @@ def _get_api_key(provider="gemini") -> str:
             return config.get("minimax_api_key", "")
         if provider == "groq":
             return config.get("groq_api_key", "")
+        if provider == "poe":
+            # Prefer env var to keep secrets out of files
+            return os.environ.get("POE_API_KEY") or config.get("poe_api_key", "")
         return config.get("gemini_api_key", "")
 
 def _is_rate_limit(e: Exception) -> bool:
@@ -258,8 +271,98 @@ def create_plan_hive(goal: str, context: str = "") -> dict:
     print("[Planner] 🧠 ROUTER: Falling back to GEMINI.")
     return create_plan_gemini(goal, context) or create_plan_groq(goal, context) or _fallback_plan(goal)
 
+def create_plan_poe(goal: str, context: str = "") -> Optional[dict]:
+    """
+    Use Poe's OpenAI-compatible Chat Completions API for planning.
+    IMPORTANT: Poe expects Poe *bot names* for `model` (e.g. "Claude-Opus-4.6"), not Anthropic model IDs.
+    """
+    import requests
 
-def create_plan(goal: str, context: str = "", preferred_brain: str | None = None) -> dict:
+    api_key = _get_api_key("poe")
+    if not api_key:
+        return None
+
+    # Allow config override for which Poe bot to use for planning
+    poe_bot = "Claude-Opus-4.6"
+    try:
+        with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+            poe_bot = (
+                (cfg.get("poe_models") or {}).get("reasoning")
+                or cfg.get("poe_planner_bot")
+                or poe_bot
+            )
+    except Exception:
+        pass
+
+    user_input = f"Goal: {goal}"
+    if context:
+        user_input += f"\n\nContext: {context}"
+
+    try:
+        response = requests.post(
+            "https://api.poe.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps({
+                "model": poe_bot,
+                "messages": [
+                    {"role": "system", "content": PLANNER_PROMPT},
+                    {"role": "user", "content": user_input},
+                ],
+                "temperature": 0.3,
+                "max_tokens": 2000,
+            }),
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            print(f"[Poe] ❌ Error: {response.status_code} - {response.text[:200]}")
+            return None
+
+        data = response.json()
+        text = (data.get("choices", [{}])[0].get("message", {}) or {}).get("content", "")
+        if not isinstance(text, str):
+            return None
+        return _parse_and_validate_plan(text.strip())
+    except Exception as e:
+        print(f"[Poe] ❌ Exception: {e}")
+        return None
+
+def _poe_should_use(goal: str) -> bool:
+    """
+    Cost gate for Poe planning calls.
+    - Enabled when config has poe_api_key (or POE_API_KEY)
+    - Only used for "deep reasoning" keywords
+    - Optional points gate: poe_points_remaining >= poe_min_points_to_use
+      (points are user-maintained; Poe API doesn't expose a universal balance endpoint here)
+    """
+    g = (goal or "").lower()
+    deep_keywords = [
+        "analyse", "analyze", "debug", "complex", "plan", "planning",
+        "architecture", "review", "refactor", "design", "audit",
+    ]
+    if not any(k in g for k in deep_keywords):
+        return False
+
+    try:
+        cfg = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
+        points = int(cfg.get("poe_points_remaining", 0) or 0)
+        min_points = int(cfg.get("poe_min_points_to_use", 0) or 0)
+        # If min_points is 0, treat as "no points gating"
+        if min_points and points < min_points:
+            print(f"[Planner] 💰 Poe skipped: points {points} < min {min_points}")
+            return False
+    except Exception:
+        # If config can't be read, fall back to keyword-only gating
+        pass
+
+    return True
+
+
+def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = None) -> dict:
     """Create a plan using available brains - Qwen priority for maximum reliability."""
     
     # 1. Check for manual brain override in config (Force Brain)
@@ -286,39 +389,111 @@ def create_plan(goal: str, context: str = "", preferred_brain: str | None = None
 
     brain_target = preferred_brain
 
-    # 3. PRIORITY 2: GROQ (Ultra-Fast Planning)
+    # Optional: intent-based smart routing (does not bypass forced brain overrides above)
+    try:
+        cfg = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
+        use_intent_router = bool(cfg.get("use_intent_router", True))
+    except Exception:
+        use_intent_router = True
+
+    intent_order = None
+    if use_intent_router and not brain_target:
+        decision = _classifier.classify(goal).as_dict()
+        intent_order = [decision["agent"]] + decision.get("fallback_agents", [])
+        print(f"[Planner] 🧭 IntentRouter -> {decision['agent']} ({int(decision['confidence']*100)}%) {decision['reason']}")
+
+    # If intent router is enabled, try its ordered list first (with safe gating).
+    if intent_order:
+        for provider in intent_order:
+            if provider == "groq" and _get_api_key("groq"):
+                print("[Planner] ⚡ IntentRouter: Using Groq")
+                g_plan = create_plan_groq(goal, context)
+                if g_plan:
+                    return g_plan
+
+            if provider == "poe" and _get_api_key("poe") and (preferred_brain == "poe" or _poe_should_use(goal)):
+                print("[Planner] 🧠 IntentRouter: Using Poe")
+                p_plan = create_plan_poe(goal, context)
+                if p_plan:
+                    return p_plan
+
+            if provider == "openrouter" and _get_api_key("openrouter"):
+                print("[Planner] 🌐 IntentRouter: Using OpenRouter")
+                or_plan = create_plan_openrouter(goal, context)
+                if or_plan:
+                    return or_plan
+
+            if provider == "local_ollama":
+                from core.local_llm import call_ollama, is_ollama_online
+                if is_ollama_online():
+                    try:
+                        with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+                            local_model = json.load(f).get("local_model", "qwen2.5-coder:7b")
+                    except Exception:
+                        local_model = "qwen2.5-coder:7b"
+                    print(f"[Planner] 🧠 IntentRouter: Using LOCAL OLLAMA ({local_model})")
+                    l_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model=local_model)
+                    try:
+                        l_plan = _parse_and_validate_plan(l_resp)
+                        if l_plan:
+                            return l_plan
+                    except Exception:
+                        pass
+
+        # If intent router couldn't produce a plan, fall back to the legacy priority chain below.
+
+    # Legacy priority chain (kept for reliability)
+    if preferred_brain == "groq" and _get_api_key("groq"):
+        print("[Planner] ⚡ PRIORITY 2: Using Groq (Ultra-Fast)")
+        g_plan = create_plan_groq(goal, context)
+        if g_plan:
+            return g_plan
+
     if _get_api_key("groq"):
         print("[Planner] ⚡ PRIORITY 2: Using Groq (Ultra-Fast)")
         g_plan = create_plan_groq(goal, context)
-        if g_plan: return g_plan
+        if g_plan:
+            return g_plan
 
-    # 4. PRIORITY 3: OPENROUTER (High performance, No Google Rate Limits)
-    if _get_api_key("openrouter"):
-        print("[Planner] 🌐 PRIORITY 3: Using OpenRouter (DeepSeek)")
+    if _get_api_key("poe") and (preferred_brain == "poe" or _poe_should_use(goal)):
+        print("[Planner] 🧠 PRIORITY 3: Using Poe")
+        p_plan = create_plan_poe(goal, context)
+        if p_plan:
+            return p_plan
+
+    if preferred_brain == "openrouter" and _get_api_key("openrouter"):
+        print("[Planner] 🌐 PRIORITY 4: Using OpenRouter (DeepSeek)")
         or_plan = create_plan_openrouter(goal, context)
-        if or_plan: return or_plan
+        if or_plan:
+            return or_plan
 
-    # 5. PRIORITY 4: MINIMAX (Fallback Reasoning)
+    if _get_api_key("openrouter"):
+        print("[Planner] 🌐 PRIORITY 4: Using OpenRouter (DeepSeek)")
+        or_plan = create_plan_openrouter(goal, context)
+        if or_plan:
+            return or_plan
+
+    # 6. PRIORITY 5: MINIMAX (Fallback Reasoning)
     if _get_api_key("minimax"):
-        print("[Planner] 🎨 PRIORITY 4: Using MiniMax")
+        print("[Planner] 🎨 PRIORITY 5: Using MiniMax")
         mm_plan = create_plan_minimax(goal, context)
         if mm_plan: return mm_plan
 
-    # 6. PRIORITY 5: GEMINI (Last resort for planning due to rate limits)
-    print("[Planner] ⚠️ PRIORITY 5: Falling back to Gemini (Rate Limited)")
+    # 7. PRIORITY 6: GEMINI (Last resort for planning due to rate limits)
+    print("[Planner] ⚠️ PRIORITY 6: Falling back to Gemini (Rate Limited)")
     try:
         plan = create_plan_gemini(goal, context)
         if plan: return plan
     except:
         pass
 
-    # 6. PRIORITY 6: LOCAL QWEN (Last Resort)
+    # 8. PRIORITY 7: LOCAL QWEN (Last Resort)
     from core.local_llm import call_ollama, is_ollama_online
     if is_ollama_online():
         try:
             with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
                 local_model = json.load(f).get("local_model", "qwen2.5-coder:7b")
-            print(f"[Planner] 🧠 PRIORITY 6: Using LOCAL QWEN ({local_model}) as last resort.")
+            print(f"[Planner] 🧠 PRIORITY 7: Using LOCAL QWEN ({local_model}) as last resort.")
             l_resp = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model=local_model)
             if l_resp:
                 l_plan = _parse_and_validate_plan(l_resp)

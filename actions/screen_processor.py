@@ -82,12 +82,12 @@ _IMG_MAX_H = 360
 _JPEG_Q    = 60
 
 _SYSTEM_PROMPT = (
-    "You are JARVIS, an advanced AI assistant. "
-    "Analyze the provided image with precision and intelligence. "
-    "Be concise and direct — maximum two sentences unless the user's question "
-    "requires more detail. "
-    "Address the user respectfully. "
-    "Always call the appropriate tool; never simulate results."
+    "You are JARVIS, the advanced AI assistant built by Peter (Sir). "
+    "You are currently connected to a REAL-TIME MULTIMODAL VISION FEED. "
+    "When you see an image or camera frame, it is what is happening RIGHT NOW. "
+    "Acknowledge what you see with confidence. Do not claim you lack physical capabilities; "
+    "you ARE the system and you ARE seeing through the camera. "
+    "Be helpful, witty, and concise. Address the user as 'Sir'."
 )
 
 
@@ -119,45 +119,52 @@ def _capture_screen() -> tuple[bytes, str]:
     return _compress(png, "PNG")
 
 
-def _cv2_backend() -> int:
-    """Return the best OpenCV camera backend for the current OS."""
+def _cv2_backends() -> list[int]:
+    """Return a list of OpenCV camera backends to try."""
     if not _CV2:
-        return 0
+        return [0]
     os_name = _get_os()
     if os_name == "windows":
-        return cv2.CAP_DSHOW    
+        # MSMF is modern, DSHOW is legacy fallback
+        return [cv2.CAP_MSMF, cv2.CAP_DSHOW, cv2.CAP_ANY]
     if os_name == "mac":
-        return cv2.CAP_AVFOUNDATION  
-    return cv2.CAP_ANY
+        return [cv2.CAP_AVFOUNDATION, cv2.CAP_ANY]
+    return [cv2.CAP_ANY]
 
 
 def _probe_camera(index: int, backend: int, warmup: int = 5) -> bool:
-
     if not _CV2:
         return False
-    cap = cv2.VideoCapture(index, backend)
-    if not cap.isOpened():
-        cap.release()
+    cap = None
+    try:
+        cap = cv2.VideoCapture(index, backend)
+        if not cap.isOpened():
+            if cap: cap.release()
+            return False
+        for _ in range(warmup):
+            cap.read()
+        ret, frame = cap.read()
+        if cap: cap.release()
+        if not ret or frame is None:
+            return False
+        return bool(np.mean(frame) > 8)
+    except Exception as e:
+        print(f"[Vision] ⚠️ Error probing camera {index} with backend {backend}: {e}")
+        if cap: cap.release()
         return False
-    for _ in range(warmup):
-        cap.read()
-    ret, frame = cap.read()
-    cap.release()
-    if not ret or frame is None:
-        return False
-    return bool(np.mean(frame) > 8)
 
 
 def _detect_camera_index() -> int:
-
-    backend = _cv2_backend()
+    backends = _cv2_backends()
     print("[Vision] 🔍 Auto-detecting camera...")
-    for idx in range(6):
-        if _probe_camera(idx, backend):
-            print(f"[Vision] ✅ Camera found at index {idx}")
-            _save_config_key("camera_index", idx)
-            return idx
-        print(f"[Vision] ⚠️  Camera index {idx}: no usable frame")
+    for idx in range(4): # Try first 4 indices
+        for backend in backends:
+            if _probe_camera(idx, backend):
+                print(f"[Vision] ✅ Camera found at index {idx} with backend {backend}")
+                _save_config_key("camera_index", idx)
+                _save_config_key("camera_backend", backend)
+                return idx
+        print(f"[Vision] ⚠️  Camera index {idx}: no usable frame with any backend")
 
     print("[Vision] ⚠️  No camera found — defaulting to index 0")
     _save_config_key("camera_index", 0)
@@ -181,21 +188,31 @@ def _capture_camera(player=None) -> tuple[bytes, str]:
             frame = player.hud._last_frame
 
     if frame is None:
-        index   = _get_camera_index()
-        backend = _cv2_backend()
-        cap     = cv2.VideoCapture(index, backend)
+        index = _get_camera_index()
+        cfg = _load_config()
+        stored_backend = cfg.get("camera_backend")
+        backends = [stored_backend] if stored_backend is not None else _cv2_backends()
+        if stored_backend is None:
+            backends = _cv2_backends()
 
-        if not cap.isOpened():
-            raise RuntimeError(f"Camera index {index} could not be opened.")
+        cap = None
+        for backend in backends:
+            try:
+                print(f"[Vision] 🎥 Trying camera index {index} with backend {backend}")
+                cap = cv2.VideoCapture(index, backend)
+                if cap.isOpened():
+                    # Attempt to read a frame to confirm
+                    for _ in range(5): cap.read()
+                    ret, f = cap.read()
+                    if ret and f is not None:
+                        frame = f
+                        break
+                if cap: cap.release()
+            except:
+                if cap: cap.release()
 
-        for _ in range(10):
-            cap.read()
-
-        ret, f = cap.read()
-        cap.release()
-        if not ret or f is None:
-            raise RuntimeError("Camera returned no frame.")
-        frame = f
+        if frame is None:
+            raise RuntimeError(f"Camera index {index} could not be opened with any backend.")
 
     if _PIL:
 

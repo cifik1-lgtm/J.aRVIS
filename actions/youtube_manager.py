@@ -1,0 +1,231 @@
+"""
+Unified YouTube Manager for JARVIS
+Routes to the right sub-module based on user intent:
+- youtube_controller  → keyboard shortcuts (pause, next, previous, mute, like, theater)
+- youtube_player      → tab/browser management, system volume, playlists
+- youtube_video       → play by search query, summarize, get_info, trending
+"""
+
+from actions.youtube_controller import youtube_control
+from actions.youtube_player import get_youtube_player
+from actions.youtube_video import youtube_video
+
+import pyautogui
+import re
+from urllib.parse import quote_plus, urlparse, parse_qsl, urlencode, urlunparse
+from typing import Optional
+
+
+class YouTubeManager:
+    def __init__(self, ui):
+        self.ui = ui
+        self.player = get_youtube_player(ui)
+
+    def _with_autoplay(self, url: str) -> str:
+        """Add autoplay=1 without clobbering existing query params."""
+        try:
+            parsed = urlparse(url)
+            q = dict(parse_qsl(parsed.query, keep_blank_values=True))
+            q["autoplay"] = "1"
+            new_query = urlencode(q)
+            return urlunparse(parsed._replace(query=new_query))
+        except Exception:
+            # Worst case, just append
+            return url + ("&" if "?" in url else "?") + "autoplay=1"
+
+    def _resolve_direct_video_url(self, query: str) -> Optional[str]:
+        """
+        Resolve the first YouTube video URL for a query.
+        Prefers yt-dlp if available; falls back to scraping /results HTML.
+        """
+        query = (query or "").strip()
+        if not query:
+            return None
+
+        # 1) Best effort: yt-dlp (most resilient to YouTube markup changes)
+        try:
+            import subprocess
+            import sys
+
+            result = subprocess.run(
+                [sys.executable, "-m", "yt_dlp", "--print", "webpage_url", f"ytsearch1:{query}"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode == 0:
+                url = (result.stdout or "").strip()
+                if url.startswith("http"):
+                    self.ui.write_log(f"[YouTube] ✅ yt-dlp resolved: {url}")
+                    return url
+        except Exception as e:
+            self.ui.write_log(f"[YouTube] ⚠️ yt-dlp resolver failed: {e}")
+
+        # 2) Fallback: scrape the search results page for a videoId/watch URL
+        search_url = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
+        self.ui.write_log(f"[YouTube] 🔍 Scrape search: {query}")
+        html = ""
+
+        # Prefer requests if installed, otherwise urllib
+        try:
+            try:
+                import requests  # type: ignore
+
+                headers = {
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/120.0.0.0 Safari/537.36"
+                    )
+                }
+                resp = requests.get(search_url, headers=headers, timeout=10)
+                html = resp.text or ""
+            except Exception:
+                import urllib.request
+
+                req = urllib.request.Request(
+                    search_url,
+                    headers={
+                        "User-Agent": (
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                            "Chrome/120.0.0.0 Safari/537.36"
+                        )
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    html = r.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            self.ui.write_log(f"[YouTube] ⚠️ Search scrape failed: {e}")
+            return None
+
+        if not html:
+            return None
+
+        # Pattern 1: "videoId":"XXXXXXXXXXX"
+        m = re.search(r'"videoId":"([a-zA-Z0-9_-]{11})"', html)
+        if m:
+            video_id = m.group(1)
+            self.ui.write_log(f"[YouTube] ✅ Found videoId: {video_id}")
+            return f"https://www.youtube.com/watch?v={video_id}"
+
+        # Pattern 2: /watch?v=XXXXXXXXXXX
+        m = re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", html)
+        if m:
+            video_id = m.group(1)
+            self.ui.write_log(f"[YouTube] ✅ Found watch pattern: {video_id}")
+            return f"https://www.youtube.com/watch?v={video_id}"
+
+        return None
+
+    def handle_command(self, parameters: dict, speak=None) -> str:
+        """
+        Main entry point for all YouTube commands.
+        Routes to the appropriate sub-module based on action.
+        """
+        action = parameters.get("action", "play_song").lower()
+
+        # ── KEYBOARD SHORTCUT ACTIONS (youtube_controller) ──────────────────
+        # These send hotkeys directly to the active browser window
+        if action in ("pause", "resume", "next", "previous",
+                      "fullscreen", "mute", "volume_up", "volume_down",
+                      "like", "theater"):
+            return youtube_control({"action": action}, self.ui)
+
+        # ── BROWSER / TAB MANAGEMENT (youtube_player) ────────────────────────
+        if action == "open_tab":
+            url = parameters.get("url", "https://www.youtube.com")
+            self.player.open_brave_tab(url)
+            return f"Opened new tab: {url}, sir."
+
+        if action == "close_tab":
+            try:
+                pyautogui.hotkey("ctrl", "w")
+                return "Closed current tab, sir."
+            except Exception as e:
+                return f"Could not close tab, sir: {e}"
+
+        if action == "switch_tab":
+            try:
+                pyautogui.hotkey("ctrl", "tab")
+                return "Switched to next tab, sir."
+            except Exception as e:
+                return f"Could not switch tab, sir: {e}"
+
+        # ── SYSTEM-WIDE VOLUME (youtube_player / pycaw) ──────────────────────
+        if action == "set_volume":
+            level = int(parameters.get("level", 50))
+            return self.player.set_volume(level)
+
+        if action == "volume_up_system":
+            amount = int(parameters.get("amount", 10))
+            return self.player.volume_up(amount)
+
+        if action == "volume_down_system":
+            amount = int(parameters.get("amount", 10))
+            return self.player.volume_down(amount)
+
+        # ── PLAYLIST MANAGEMENT (youtube_player) ─────────────────────────────
+        if action == "create_playlist":
+            songs = parameters.get("songs", [])
+            if not songs:
+                return "Please provide a list of songs for the playlist, sir."
+            return self.player.play_playlist(songs)
+
+        if action == "next_song":
+            return self.player.play_next_in_playlist()
+
+        if action == "previous_song":
+            return self.player.play_previous_in_playlist()
+
+        # ── PLAY BY QUERY — open YouTube search directly in Brave ────────────
+        if action in ("play_song", "play"):
+            query = parameters.get("query", "").strip()
+            if not query:
+                return "What would you like me to play, sir?"
+            direct_url = self._resolve_direct_video_url(query)
+            if direct_url:
+                direct_url = self._with_autoplay(direct_url)
+                self.ui.write_log(f"[YouTube] 🎵 Playing directly: {direct_url}")
+                success = self.player.open_brave_tab(direct_url)
+                return f"Playing {query} on YouTube, sir." if success else f"Failed to open Brave for {query}, sir."
+
+            search_url = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
+            self.ui.write_log("[YouTube] ⚠️ Could not resolve direct video URL; opening search page")
+            success = self.player.open_brave_tab(search_url)
+            return (
+                f"Opening YouTube search for {query}, sir. Please click the first video to play."
+                if success
+                else f"Failed to open Brave for {query}, sir."
+            )
+
+        # ── SEARCH / INFO / TRANSCRIPT / TRENDING (youtube_video) ───────────
+        if action in ("summarize", "get_info", "trending"):
+            return youtube_video(parameters, player=self.ui, speak=speak)
+
+        if action == "search":
+            # Gemini sometimes uses 'search' when user says 'play' — treat it identically
+            query = parameters.get("query", "")
+            if not query:
+                return "What should I search for on YouTube, sir?"
+            # Delegate to play_song logic (scrape direct URL → open in Brave)
+            return self.handle_command({"action": "play_song", "query": query}, speak=speak)
+
+        return f"Unknown YouTube action: '{action}', sir."
+
+
+# ─── Singleton ────────────────────────────────────────────────────────────────
+_youtube_manager = None
+
+
+def get_youtube_manager(ui):
+    global _youtube_manager
+    if _youtube_manager is None:
+        _youtube_manager = YouTubeManager(ui)
+    return _youtube_manager
+
+
+def youtube_manager(parameters: dict, player=None, speak=None) -> str:
+    """Module-level entry point used by ToolDispatcher._get_tool() fallback."""
+    mgr = get_youtube_manager(player)
+    return mgr.handle_command(parameters, speak=speak)

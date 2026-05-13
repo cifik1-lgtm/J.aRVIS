@@ -30,6 +30,55 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "detect_monitors",
+        "description": "Detects how many monitors are connected and provides their specifications.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "enum": ["count", "details", "all"],
+                    "description": "What monitor info to retrieve"
+                }
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "name": "gesture_control",
+        "description": "Enable or disable hand gesture control via webcam. Gestures: fist=mute, open_palm=stop, pointing=click, peace=volume_up, thumbs_up=confirm, rock=volume_down.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "start | stop | toggle"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "name": "camera_viewer",
+        "description": "Opens a local camera feed window to show what the camera sees. Use this when the user wants to see the video feed.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "index": {"type": "INTEGER", "description": "Camera index (default 0)"}
+            }
+        }
+    },
+    {
+        "name": "workspace_architect",
+        "description": "Architect Protocol: Automatically snaps and resizes windows into optimized layouts. Layouts: 'coding' (VS Code + Browser + Terminal), 'social' (Telegram + Browser), 'cinema' (VLC/Full Screen).",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "layout": {"type": "STRING", "description": "coding | social | cinema"}
+            },
+            "required": ["layout"]
+        }
+    },
+
+
+    {
         "name": "preference_manager",
         "description": "Manage user-specific style, UI, and behavioral preferences.",
         "parameters": {
@@ -357,6 +406,54 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "youtube_manager",
+        "description": "UNIFIED YouTube control: playback (pause/next/mute), system volume, playlists, open/close tabs, video search, transcript summaries, and trending videos.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "description": "play_song | play | pause | resume | next | previous | fullscreen | mute | volume_up | volume_down | like | theater | set_volume | volume_up_system | volume_down_system | create_playlist | next_song | previous_song | search | summarize | get_info | trending | open_tab | close_tab | switch_tab"
+                },
+                "query": {"type": "STRING", "description": "Song, artist, or search query"},
+                "url": {"type": "STRING", "description": "YouTube video URL for summarize/get_info"},
+                "level": {"type": "INTEGER", "description": "Volume level 0-100"},
+                "amount": {"type": "INTEGER", "description": "Volume change amount (default 10)"},
+                "songs": {"type": "ARRAY", "items": {"type": "STRING"}, "description": "List of song names for playlist"},
+                "region": {"type": "STRING", "description": "Region code for trending (e.g. TR, US)"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "name": "generate_image",
+        "description": "Generate an image via Poe (e.g. nano-banana-2) and save it locally.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "prompt": {"type": "STRING", "description": "Image prompt"},
+                "model": {"type": "STRING", "description": "Poe image bot name (default: nano-banana-2)"},
+                "aspect_ratio": {"type": "STRING", "description": "Aspect ratio like 16:9, 1:1, 4:3 (optional)"},
+                "path": {"type": "STRING", "description": "Save directory: desktop | documents | absolute path (optional)"},
+                "filename": {"type": "STRING", "description": "Optional filename (e.g. my_image.png)"},
+                "size": {"type": "STRING", "description": "Optional size hint if supported by model (e.g. 1024x1024)"}
+            },
+            "required": ["prompt"]
+        }
+    },
+    {
+        "name": "codewords_agent",
+        "description": "Run complex automations and AI agents on CodeWords platform.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "service_id": {"type": "STRING", "description": "ID of the CodeWords workflow/service to run"},
+                "inputs": {"type": "OBJECT", "description": "Input parameters for the workflow"}
+            },
+            "required": ["service_id"]
+        }
+    },
+    {
         "name": "file_processor",
         "description": "AI-powered file analysis (OCR, summarization).",
         "parameters": {
@@ -592,6 +689,18 @@ TOOL_DECLARATIONS = [
             },
             "required": ["target", "command"]
         }
+    },
+    {
+        "name": "rag_search",
+        "description": "Search JARVIS's long-term vector memory for semantically relevant information. Use this when you need to recall something from past conversations, personal facts, or user preferences that aren't immediately in context.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {"type": "STRING", "description": "The question or topic to search memory for."},
+                "top_k": {"type": "INTEGER", "description": "Number of results to return (default 5)"}
+            },
+            "required": ["query"]
+        }
     }
 ]
 
@@ -609,7 +718,7 @@ class ToolDispatcher:
         
         # Classify tool risk level
         self._Tiers = {
-            "harmless": ["web_search", "weather_report", "ip_checker", "save_memory", "vision_inspector", "preference_manager"],
+            "harmless": ["web_search", "weather_report", "ip_checker", "save_memory", "vision_inspector", "preference_manager", "monitor_detection"],
             "state_changing": ["file_controller", "open_app", "browser_control", "face_manager", "desktop_control", "youtube_control"],
             "privileged": ["admin_controller", "reboot_jarvis", "shutdown_jarvis", "python_sandbox", "relay_command"]
         }
@@ -670,6 +779,25 @@ class ToolDispatcher:
             timeout = timeouts.get(name, 180 if name in ["browser_control", "python_sandbox", "web_automation", "code_helper"] else default_t)
             
             async def _execute_logic():
+                # 0. RAG SEARCH
+                if name == "rag_search":
+                    query = args.get("query", "")
+                    top_k = int(args.get("top_k", 5))
+                    try:
+                        from memory.rag_engine import get_rag_engine
+                        rag = get_rag_engine()
+                        if rag and rag._ready:
+                            results = rag.search(query, top_k=top_k)
+                            if results:
+                                lines = [f"🧠 RAG Memory Search — '{query}'"]
+                                for r in results:
+                                    lines.append(f"  • [{r['category'].upper()}] {r['key']}: {r['value']} (match: {r['score']:.0%})")
+                                return "\n".join(lines)
+                            return f"No relevant memories found for: '{query}'"
+                        return "RAG engine is still initializing, please try again shortly, sir."
+                    except Exception as e:
+                        return f"Memory search failed: {e}"
+
                 # 1. CORE SYSTEM TOOLS
                 if name == "system_control":
                     action = args.get("action", "")
@@ -699,6 +827,77 @@ class ToolDispatcher:
                         self.orch._detect_engines() # Trigger a fresh scan
                         status = self.orch.brain_router.get_status_report()
                         return f"System Diagnostic: {status}"
+
+                # 1.5 DISPLAY TOOLS
+                if name == "detect_monitors":
+                    action = args.get("action", "count")
+                    try:
+                        import win32api
+                        import win32con
+                        
+                        monitors = win32api.EnumDisplayMonitors()
+                        count = len(monitors)
+                        
+                        if action == "count":
+                            return f"You have {count} monitor(s) connected, sir."
+                        
+                        elif action == "details" or action == "all":
+                            details = []
+                            for i, monitor in enumerate(monitors, 1):
+                                monitor_info = win32api.GetMonitorInfo(monitor[0])
+                                monitor_rect = monitor_info.get('Monitor', (0,0,0,0))
+                                width = monitor_rect[2] - monitor_rect[0]
+                                height = monitor_rect[3] - monitor_rect[1]
+                                is_primary = bool(monitor_info.get('Flags', 0) & 1)
+                                details.append(f"Monitor {i}: {width}x{height}" + (" (Primary)" if is_primary else ""))
+                            
+                            if action == "details":
+                                return "; ".join(details)
+                            else:
+                                return f"You have {count} monitor(s) connected, sir.\n" + "\n".join(details)
+                        return f"Detection complete. Count: {count}."
+                    except ImportError:
+                        # Fallback using pymonctl if available (already installed)
+                        try:
+                            import pymonctl
+                            count = pymonctl.getMonitorsCount()
+                            if action == "count":
+                                return f"You have {count} monitor(s) connected, sir."
+                            else:
+                                monitors = pymonctl.getAllMonitors()
+                                details = [f"Monitor {i+1}: {m.getSize().width}x{m.getSize().height}" for i, m in enumerate(monitors)]
+                                return f"You have {count} monitor(s). " + "; ".join(details)
+                        except:
+                            return "Monitor detection failed, sir. Please check if pywin32 is installed."
+                    except Exception as e:
+                        return f"Monitor detection failed: {e}, sir."
+
+                if name == "camera_viewer":
+                    idx = args.get("index", 0)
+                    from actions.camera_viewer import camera_viewer
+                    return camera_viewer(self.orch, idx)
+
+                if name == "workspace_architect":
+                    layout = args.get("layout", "coding").lower()
+                    from actions.workspace_architect import workspace_architect
+                    return workspace_architect(self.orch, layout)
+
+                if name == "gesture_control":
+                    action = args.get("action", "toggle").lower()
+                    if not hasattr(self.orch, 'gesture_manager') or self.orch.gesture_manager is None:
+                        from actions.gesture_control import GestureControlManager
+                        self.orch.gesture_manager = GestureControlManager(self.orch)
+                    gm = self.orch.gesture_manager
+                    if action == "start":
+                        gm.start()
+                        return "Gesture control started, sir. Show me your hands."
+                    elif action == "stop":
+                        gm.stop()
+                        return "Gesture control deactivated, sir."
+                    else:  # toggle
+                        gm.toggle()
+                        status = "activated" if gm.enabled else "deactivated"
+                        return f"Gesture control {status}, sir."
 
                 # 2. TASK DELEGATION (HIVE MIND ROUTER)
                 if name == "delegate_task":
@@ -757,6 +956,28 @@ class ToolDispatcher:
                         if self.orch.silent_mode:
                             self.ui.write_log(f"SYS: 🧠 Ghost Memo: {key} -> {val[:40]}...")
                     return "Memory saved."
+
+                elif name == "retrieve_memory":
+                    from memory.memory_manager import retrieve_memory
+                    key = args.get("key", "")
+                    cat = args.get("category")
+                    if key:
+                        mem = retrieve_memory(key, cat)
+                        if mem:
+                            return f"Recall for '{key}': {mem.get('value')} (Updated: {mem.get('updated')})"
+                        return f"I have no record of '{key}' in my memory banks, sir."
+                    return "What should I recall, sir?"
+
+                elif name == "get_memory_stats":
+                    from memory.memory_manager import get_memory_stats
+                    stats = get_memory_stats()
+                    return f"Memory Database Stats: {stats['total_memories']} records. ({stats['identity_count']} identity, {stats['relationships_count']} relationships, {stats['preferences_count']} preferences, {stats['notes_count']} notes). Semantic search is {'enabled' if stats['semantic_enabled'] else 'disabled'}."
+
+                elif name == "forget_weak_memories":
+                    from memory.memory_manager import forget_weak_memories
+                    threshold = args.get("threshold", 0.15)
+                    count = forget_weak_memories(threshold)
+                    return f"Memory cleanup complete. {count} old or irrelevant memories purged."
 
                 elif name == "camera_feed":
                     camera_index = args.get("camera_index", None)
@@ -840,6 +1061,185 @@ class ToolDispatcher:
                 elif name == "youtube_control":
                     func = self._get_tool("youtube_controller", "youtube_control")
                     return await asyncio.get_event_loop().run_in_executor(None, lambda: func(parameters=args, player=self.ui)) or "Done."
+
+                elif name == "youtube_manager":
+                    from actions.youtube_manager import get_youtube_manager
+                    yt = get_youtube_manager(self.ui)
+                    return await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: yt.handle_command(args, speak=self.orch.speak)
+                    ) or "Done."
+
+                elif name == "youtube_video":
+                    func = self._get_tool("youtube_video", "youtube_video")
+                    return await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: func(parameters=args, player=self.ui, speak=self.orch.speak)
+                    ) or "Done."
+
+                elif name == "generate_image":
+                    import base64
+                    import os
+                    import requests
+                    from datetime import datetime
+                    from pathlib import Path
+
+                    api_key = os.environ.get("POE_API_KEY")
+                    if not api_key and API_CONFIG_PATH.exists():
+                        try:
+                            cfg = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
+                            api_key = cfg.get("poe_api_key", "")
+                        except Exception:
+                            api_key = ""
+
+                    if not api_key:
+                        return "Poe API key missing. Set POE_API_KEY env var or add poe_api_key to config/api_keys.json, sir."
+
+                    prompt = (args.get("prompt") or "").strip()
+                    if not prompt:
+                        return "Please provide an image prompt, sir."
+
+                    model = (args.get("model") or "").strip()
+                    if not model and API_CONFIG_PATH.exists():
+                        try:
+                            cfg = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
+                            model = ((cfg.get("poe_models") or {}).get("image_gen") or "").strip()
+                        except Exception:
+                            model = ""
+                    if not model:
+                        model = "nano-banana-2"
+                    aspect_ratio = (args.get("aspect_ratio") or "").strip()
+                    size = (args.get("size") or "").strip()
+
+                    payload = {"model": model, "prompt": prompt}
+                    # Optional parameters (only included if provided; models may ignore)
+                    params = {}
+                    if aspect_ratio:
+                        params["aspect_ratio"] = aspect_ratio
+                    if size:
+                        params["size"] = size
+                    if params:
+                        payload["parameters"] = params
+
+                    resp = requests.post(
+                        "https://api.poe.com/v1/images",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json=payload,
+                        timeout=60,
+                    )
+
+                    if resp.status_code != 200:
+                        return f"Image generation failed: {resp.status_code} — {resp.text[:200]}"
+
+                    data = resp.json()
+
+                    # Determine save directory
+                    save_dir = (args.get("path") or "desktop").strip().lower()
+                    if save_dir == "desktop":
+                        out_dir = Path.home() / "Desktop"
+                    elif save_dir == "documents":
+                        out_dir = Path.home() / "Documents"
+                    else:
+                        out_dir = Path(args.get("path")) if args.get("path") else (Path.home() / "Desktop")
+
+                    out_dir.mkdir(parents=True, exist_ok=True)
+
+                    # Determine filename
+                    filename = (args.get("filename") or "").strip()
+                    if not filename:
+                        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        safe_model = "".join(c for c in model if c.isalnum() or c in ("-", "_"))[:40]
+                        filename = f"poe_{safe_model}_{ts}.png"
+                    if not filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                        filename += ".png"
+                    out_path = out_dir / filename
+
+                    # Handle common response shapes:
+                    # - OpenAI-style: {"data":[{"url":...}]} or {"data":[{"b64_json":...}]}
+                    # - Some bots: {"url":...} / {"image_url":...}
+                    image_url = None
+                    b64 = None
+
+                    if isinstance(data, dict):
+                        if isinstance(data.get("data"), list) and data["data"]:
+                            item = data["data"][0] if isinstance(data["data"][0], dict) else {}
+                            image_url = item.get("url") or item.get("image_url")
+                            b64 = item.get("b64_json") or item.get("b64")
+                        image_url = image_url or data.get("url") or data.get("image_url")
+                        b64 = b64 or data.get("b64_json") or data.get("b64")
+
+                    if image_url:
+                        img_resp = requests.get(image_url, timeout=60)
+                        if img_resp.status_code != 200:
+                            return f"Image URL download failed: {img_resp.status_code}"
+                        out_path.write_bytes(img_resp.content)
+                        return f"Image generated and saved to {out_path}, sir."
+
+                    if b64:
+                        try:
+                            raw = base64.b64decode(b64)
+                            out_path.write_bytes(raw)
+                            return f"Image generated and saved to {out_path}, sir."
+                        except Exception as e:
+                            return f"Image generated but could not decode/save it: {e}"
+
+                    # As a last resort, try if API returned raw bytes (unlikely)
+                    try:
+                        out_path.write_bytes(resp.content)
+                        return f"Image generated and saved to {out_path}, sir."
+                    except Exception:
+                        return "Image generated, but the response format was not recognized, sir."
+
+                elif name == "codewords_agent":
+                    import requests
+
+                    service_id = (args.get("service_id") or "").strip()
+                    inputs = args.get("inputs") or {}
+                    if not service_id:
+                        return "Please provide a CodeWords service_id, sir."
+                    if not isinstance(inputs, dict):
+                        return "CodeWords inputs must be an object/dictionary, sir."
+
+                    # Load CodeWords config (env first, then api_keys.json)
+                    import os
+                    api_key = os.environ.get("CODEWORDS_API_KEY")
+                    base_url = os.environ.get("CODEWORDS_BASE_URL")
+
+                    if API_CONFIG_PATH.exists():
+                        try:
+                            cfg = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
+                            api_key = api_key or cfg.get("codewords_api_key", "")
+                            base_url = base_url or cfg.get("codewords_base_url", "")
+                        except Exception:
+                            pass
+
+                    api_key = (api_key or "").strip()
+                    base_url = (base_url or "https://runtime.codewords.ai").rstrip("/")
+
+                    if not api_key or api_key == "cwk-your-key-here":
+                        return "CodeWords API key missing. Set CODEWORDS_API_KEY or edit config/api_keys.json (codewords_api_key), sir."
+
+                    url = f"{base_url}/run/{service_id}"
+                    try:
+                        resp = requests.post(
+                            url,
+                            headers={"Authorization": f"Bearer {api_key}"},
+                            json=inputs,
+                            timeout=60,
+                        )
+                    except Exception as e:
+                        return f"CodeWords request failed: {e}"
+
+                    if resp.status_code == 200:
+                        # Keep it short; full JSON can be huge
+                        try:
+                            data = resp.json()
+                        except Exception:
+                            data = {"raw": resp.text[:400]}
+                        return f"CodeWords agent completed: {str(data)[:800]}"
+
+                    return f"CodeWords agent failed: {resp.status_code} — {resp.text[:200]}"
 
                 elif name == "desktop_control":
                     func = self._get_tool("desktop", "desktop_control")

@@ -3,7 +3,7 @@ import json
 import re
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "qwen2.5-coder:7b" # Much stronger for coding and logic than phi3
+DEFAULT_MODEL = "hermes3:8b" # High quality reasoning and chat model
 
 def call_ollama(prompt, system_prompt="", model=None):
     """Calls local Ollama API with a fallback mechanism."""
@@ -13,9 +13,9 @@ def call_ollama(prompt, system_prompt="", model=None):
         try:
             from core.llm_provider import get_config
             config = get_config()
-            model = config.get("local_model", "qwen2.5-coder:7b")
+            model = config.get("local_model", "hermes3:8b")
         except:
-            model = "qwen2.5-coder:7b"
+            model = "hermes3:8b"
 
     payload = {
         "model": model,
@@ -44,14 +44,14 @@ def is_ollama_online():
     except:
         return False
 
-def warm_up_qwen():
+def warm_up_local_brain():
     """Wakes up the local brain by sending a tiny test prompt."""
     if not is_ollama_online():
         return
-    print("[Qwen] 🧠 Warming up local brain...")
+    print("[Ollama] 🧠 Warming up local brain...")
     try:
         # Send a tiny prompt to force model loading into memory
         call_ollama("Respond with one word: ready", system_prompt="One word response only.")
-        print("[Qwen] ✅ Local brain warmed up and ready.")
+        print("[Ollama] ✅ Local brain warmed up and ready.")
     except Exception as e:
-        print(f"[Qwen] ⚠️ Warm-up failed: {e}")
+        print(f"[Ollama] ⚠️ Warm-up failed: {e}")

@@ -1,10 +1,39 @@
 # JARVIS Cifik Intelegents - [cifikAI]
-import asyncio
-# Fix Qt DPI warning (harmless but annoying)
 import os
-os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"
-os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "0"
 
+# ── MUST be set before ANY huggingface/transformers import ──────────────────
+# Fixes: 'utf-8' codec can't encode surrogates (Windows user profile path bug)
+_HF_CACHE = "C:\\JarvisCache\\ai_models"
+os.makedirs(_HF_CACHE, exist_ok=True)
+os.environ["HF_HOME"]                   = _HF_CACHE
+os.environ["TRANSFORMERS_CACHE"]        = _HF_CACHE
+os.environ["SENTENCE_TRANSFORMERS_HOME"] = _HF_CACHE
+os.environ["HF_DATASETS_CACHE"]        = _HF_CACHE
+# ───────────────────────────────────────────────────────────────────────────
+
+os.environ["QT_ENABLE_HIGHDPI_SCALING"]          = "0"
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"]        = "0"
+os.environ["QT_LOGGING_RULES"]                    = "*.debug=false;qt.qpa.window=false"
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+os.environ["TF_ENABLE_ONEDNN_OPTS"]              = "0"
+os.environ["TF_CPP_MIN_LOG_LEVEL"]               = "2"
+os.environ["TOKENIZERS_PARALLELISM"]             = "false"
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"]    = "1"
+os.environ["PYTHONIOENCODING"]                   = "utf-8"
+
+import warnings
+import logging
+
+# Silence all Python warnings (Deprecation, User, etc.)
+warnings.filterwarnings("ignore")
+# Silence specific library loggers
+logging.getLogger("google.genai").setLevel(logging.ERROR)
+logging.getLogger("chromadb").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+
+import asyncio
+from actions.gesture_controller import get_gesture_controller
 import re
 import threading
 import json
@@ -18,6 +47,28 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 import webrtcvad
 import psutil
+
+# ── GLOBAL CONSOLE FILTER ───────────────────────────────────────────────────
+class StreamFilter:
+    def __init__(self, stream, filters):
+        self.stream = stream
+        self.filters = filters
+    def write(self, data):
+        if not any(f in data for f in self.filters):
+            self.stream.write(data)
+    def flush(self):
+        self.stream.flush()
+
+# Suppress annoying persistent warnings that don't affect performance
+_FILTERS = [
+    "unauthenticated requests to the HF Hub",
+    "non-data parts in the response",
+    "SetProcessDpiAwarenessContext",
+    "pkg_resources is deprecated"
+]
+sys.stdout = StreamFilter(sys.stdout, _FILTERS)
+sys.stderr = StreamFilter(sys.stderr, _FILTERS)
+# ───────────────────────────────────────────────────────────────────────────
 
 def disable_quick_edit():
     """Disables Windows QuickEdit mode to prevent terminal from pausing on clicks."""
@@ -54,6 +105,8 @@ def get_working_camera_index(start_index=0, max_index=5):
 import sounddevice as sd
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="google.generativeai")
+warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pkg_resources")
 from google import genai
 from google.genai import types
 from ui import JarvisUI
@@ -106,8 +159,14 @@ from memory.memory_manager import (
 from actions.ghost_relay          import start_ghost_relay, publish_command
 from actions.routines             import start_routines
 from actions.telegram_bot          import start_telegram_bot
+from actions.youtube_player       import get_youtube_player
 from core.tools import ToolDispatcher, TOOL_DECLARATIONS
 from core.brain_router import BrainRouter
+from core.emotion_engine import EmotionEngine
+try:
+    from actions.monitor_manager import MonitorManager
+except ImportError:
+    MonitorManager = None
 
 # Face Recognition - optional module with fallback
 
@@ -141,33 +200,7 @@ try:
 except ImportError:
     HAS_TRANSFORMERS = False
 
-class EmotionAnalyzer:
-    def __init__(self):
-        self.classifier = None
-        if HAS_TRANSFORMERS:
-            try:
-                self.classifier = pipeline("text-classification", 
-                                         model="bhadresh-savani/bert-base-uncased-emotion")
-            except:
-                pass
-    
-    def analyze(self, text: str) -> str:
-        if not self.classifier or not text:
-            return "neutral"
-        try:
-            result = self.classifier(text[:512])[0]
-            return result['label']
-        except:
-            return "neutral"
-    
-    def adapt_response(self, emotion: str, response: str) -> str:
-        if emotion == "anger":
-            return f"I understand you're frustrated, sir. {response}"
-        elif emotion == "sadness":
-            return f"I'm sorry to hear that, sir. {response}"
-        elif emotion == "joy":
-            return f"I'm glad to see you're in high spirits, sir. {response}"
-        return response
+# The legacy EmotionAnalyzer is replaced by the new EmotionEngine for native performance.
 
 def get_base_dir():
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
@@ -359,6 +392,15 @@ def _save_conversation_turn(user_text: str, jarvis_response: str):
         
         remember("conversation", f"user_said_{user_text[:50]}", jarvis_response[:200])
         
+        # Index into RAG vector DB for long-term episodic memory
+        try:
+            from memory.rag_engine import get_rag_engine
+            rag = get_rag_engine()
+            if rag and rag._ready:
+                rag.index_conversation(user_text, jarvis_response)
+        except Exception:
+            pass
+
         if len(history) > 50 and len(history) % 25 == 0:
             _compact_old_conversations()
             
@@ -448,8 +490,11 @@ class JarvisLive:
         # VAD
         self.vad = VoiceActivityDetector(aggressiveness=1)
         
-        # Emotion Analyzer
-        self.emotion_analyzer = EmotionAnalyzer()
+        # Native Emotion Engine (Brain Emotion Integration)
+        self.emotion_engine = None
+
+        # Futuristic Desktop HUD Overlay (lazy reference - created externally)
+        self.hud_overlay = None
         
         # Voice enabled - THIS CONTROLS IF JARVIS SPEAKS
         self.voice_enabled = True
@@ -471,14 +516,30 @@ class JarvisLive:
         # Modular Tool Dispatcher
         self.tools = ToolDispatcher(self)
 
+        # Initialize YouTube player
+        self.youtube = get_youtube_player(ui)
+
         # Multi-Brain Router (Hive Mind Engine)
         self.brain_router = BrainRouter(API_CONFIG_PATH, self.ui)
         self._detect_engines()
 
-        # Warm up Qwen for faster first response
+        # Initialize Monitor Manager (Real-time Display Detection)
         try:
-            from core.local_llm import warm_up_qwen
-            threading.Thread(target=warm_up_qwen, daemon=True).start()
+            if MonitorManager:
+                self.monitor_manager = MonitorManager(self)
+            else:
+                self.monitor_manager = None
+        except:
+            self.monitor_manager = None
+
+        # Initialize Gesture Manager (lazy - only activates when called)
+        self.gesture_manager = None
+        self.gesture_enabled = False
+
+        # Warm up local brain for faster first response
+        try:
+            from core.local_llm import warm_up_local_brain
+            threading.Thread(target=warm_up_local_brain, daemon=True).start()
         except: pass
 
     def _detect_engines(self):
@@ -494,8 +555,75 @@ class JarvisLive:
         
         return engines
 
+    def start_gesture_control(self):
+        """Start hand gesture control with camera"""
+        import threading
+        import cv2
+        
+        self.gesture_enabled = True
+        
+        def gesture_loop():
+            cap = cv2.VideoCapture(0)
+            controller = get_gesture_controller()
+            
+            # Set camera resolution for better performance
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            
+            self.ui.write_log("🖐️ Gesture control started - use pinch to drag objects")
+            
+            while self.gesture_enabled:
+                ret, frame = cap.read()
+                if not ret:
+                    continue
+                
+                # Process frame and get commands
+                processed_frame, commands = controller.process_frame(frame)
+                
+                # Update Fullscreen HUD tracking data
+                if hasattr(controller, 'gaze_x') and hasattr(controller, 'hand_x'):
+                    self.ui.set_tracking(controller.gaze_x, controller.gaze_y, controller.hand_x, controller.hand_y)
+                elif hasattr(controller, 'hud') and controller.hud is None:
+                    # Alternative: set the tracking callback
+                    controller.set_hud(self.ui)
+                
+                # Execute commands
+                for cmd in commands:
+                    if cmd == "move_object":
+                        result = controller.move_object_under_cursor()
+                        self.ui.write_log(f"[Gesture] {result}")
+                    elif cmd.startswith("scroll"):
+                        # Scrolling already handled
+                        pass
+                
+                # Show camera feed with overlay
+                cv2.imshow("JARVIS Gesture Control", processed_frame)
+                
+                # Press 'q' to quit
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            
+            cap.release()
+            cv2.destroyAllWindows()
+            self.ui.write_log("🖐️ Gesture control stopped")
+        
+        threading.Thread(target=gesture_loop, daemon=True).start()
+
+    def stop_gesture_control(self):
+        """Stop gesture control"""
+        self.gesture_enabled = False
+
     def _check_tool_rate_limit(self, rate_key: str) -> bool:
         """Returns True if this rate_key (tool name or tool:action) is limited."""
+        # Load config to check for overrides
+        try:
+            with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                rate_cfg = config.get("rate_limits", {}).get(rate_key, {})
+                if rate_cfg.get("enabled") == False:
+                    return False
+        except: pass
+
         now = datetime.now()
 
         # Reset counters every 30 seconds
@@ -534,7 +662,7 @@ class JarvisLive:
             print(f"[JARVIS] ⚠️ Config update failed: {e}")
 
         # Update runtime flags
-        if brain == "local" or brain == "ollama" or brain == "qwen":
+        if brain in ["local", "ollama", "qwen", "minimax_ollama"]:
             # Only go full local if specifically requested as a mode switch
             self.force_local = True
             self.force_openrouter = False
@@ -567,6 +695,78 @@ class JarvisLive:
         self._last_user_text = text
         cmd = text.lower().strip()
         
+        # ===== YOUTUBE COMMANDS - HIGHEST PRIORITY =====
+        
+        # Volume control
+        if "volume up" in cmd or "increase volume" in cmd:
+            amount = self._extract_number(cmd, 10)
+            result = self.youtube.volume_up(amount)
+            self.speak(result)
+            return
+        
+        if "volume down" in cmd or "decrease volume" in cmd:
+            amount = self._extract_number(cmd, 10)
+            result = self.youtube.volume_down(amount)
+            self.speak(result)
+            return
+        
+        if "set volume to" in cmd or "volume to" in cmd:
+            level = self._extract_number(cmd, 50)
+            result = self.youtube.set_volume(level)
+            self.speak(result)
+            return
+        
+        # Playback control
+        if "pause" in cmd and ("youtube" in cmd or "music" in cmd or "song" in cmd):
+            result = self.youtube.pause_playback()
+            self.speak(result)
+            return
+        
+        if "resume" in cmd or "unpause" in cmd:
+            result = self.youtube.resume_playback()
+            self.speak(result)
+            return
+        
+        if "skip ad" in cmd:
+            result = self.youtube.skip_ad()
+            self.speak(result)
+            return
+        
+        if "fullscreen" in cmd:
+            result = self.youtube.fullscreen()
+            self.speak(result)
+            return
+        
+        # Playlist commands
+        if "playlist" in cmd and "create" in cmd:
+            # Extract songs from command
+            # Example: "Create playlist with songs: Song1, Song2, Song3"
+            songs_text = cmd.split("with songs:")[-1] if "with songs:" in cmd else ""
+            if songs_text:
+                songs = [s.strip() for s in songs_text.split(",")]
+                result = self.youtube.play_playlist(songs)
+                self.speak(result)
+            return
+        
+        if "next song" in cmd or "next track" in cmd:
+            result = self.youtube.play_next_in_playlist()
+            self.speak(result)
+            return
+        
+        if "previous song" in cmd or "previous track" in cmd:
+            result = self.youtube.play_previous_in_playlist()
+            self.speak(result)
+            return
+        
+        # Play music (intercept BEFORE AI)
+        if any(word in cmd for word in ["play", "listen to", "hear"]) and \
+           any(word in cmd for word in ["youtube", "song", "music", "video", "playlist"]):
+            query = self._extract_song_name(cmd)
+            if query:
+                result = self.youtube.play_song(query)
+                self.speak(result)
+                return
+
         # Wake command - comes out of silent mode
         if any(word in cmd for word in ["wake up", "jarvis wake up", "come back", "unmute"]):
             if self.silent_mode:
@@ -641,6 +841,19 @@ class JarvisLive:
             self.ui.write_log("SYS: 🔇 MICROPHONE MUTED - JARVIS is deaf.")
             return
 
+        # ===== DIRECT COMMANDS - BYPASS AI =====
+        if "move brave" in cmd:
+            target = "other_monitor" if any(x in cmd for x in ["other monitor", "secondary monitor", "monitor 2", "next screen"]) else None
+            try:
+                from actions.computer_control import _move_window
+                self.ui.write_log(f"⚡ Direct Command \u2192 Moving Brave to {target or 'coordinates'}")
+                result = _move_window(title="Brave", target=target)
+                self.speak(result)
+            except Exception as e:
+                self.ui.write_log(f"\u26a0\ufe0f Direct move failed: {e}")
+                self.speak("Direct window movement failed, sir.")
+            return
+
         
         # Handle confirmation responses
         if self._pending_action and self._pending_action_timeout:
@@ -708,6 +921,22 @@ class JarvisLive:
             self.ui.write_log("SYS: 🧠 Reverted to ONLINE mode")
             self._restart_connection()
             return
+
+        # Gesture Control
+        if "enable gesture control" in cmd or "start gesture control" in cmd:
+            self.start_gesture_control()
+            self.speak("Gesture control activated, sir. Use pinch to move objects.")
+            return
+
+        if "disable gesture control" in cmd or "stop gesture control" in cmd:
+            self.gesture_enabled = False
+            self.speak("Gesture control deactivated, sir.")
+            return
+
+        if "gesture status" in cmd:
+            status = "enabled" if self.gesture_enabled else "disabled"
+            self.speak(f"Gesture control is {status}, sir.")
+            return
         elif "diagnostic" in cmd or "check models" in cmd or "system status" in cmd:
             self.ui.write_log("SYS: 🔍 Running Hive Mind Diagnostic...")
             from core.tools import ToolDispatcher
@@ -736,20 +965,19 @@ class JarvisLive:
             self.ui.write_log(f"SYS: ⏸️ Silent mode active - Command ignored: {text[:50]}")
             return
         
-        if self.force_local or not self._loop or not self.session:
-            provider = "OpenRouter" if self.force_openrouter else ("Local GPU" if self.force_local else "Offline")
-            print(f"[JARVIS] 🔌 {provider} - Routing to backup brain...")
-            from agent.task_queue import get_queue, TaskPriority
-            get_queue().submit(goal=text, priority=TaskPriority.HIGH, speak=lambda m: self.ui.write_log(f"🧠 {m}"))
-            return
-            
-        asyncio.run_coroutine_threadsafe(
-            self.session.send_client_content(
-                turns={"parts": [{"text": text}]},
-                turn_complete=True
-            ),
-            self._loop
-        )
+        # Use auto-routing for everything else (Hive Mind Logic)
+        agent, response_data = self.brain_router.route_task(text)
+        
+        # Speak and log the response
+        response_text = response_data.get("response", "")
+        if response_text:
+            self.speak(response_text)
+            # If it wasn't already logged by some other mechanism
+            # (though speak() often logs)
+            # self.ui.write_log(f"🧠 {agent.upper()}: {response_text[:100]}...")
+        
+        return
+
 
     def _execute_shutdown(self, confirmed: bool = False):
         if confirmed or self.auto_confirm_destructive:
@@ -786,8 +1014,10 @@ class JarvisLive:
             self._is_speaking = value
         if value:
             self.ui.set_state("SPEAKING")
+            if self.hud_overlay: self.hud_overlay.set_status("SPEAKING")
         elif not self.ui.muted and not self.silent_mode:
             self.ui.set_state("LISTENING")
+            if self.hud_overlay: self.hud_overlay.set_status("LISTENING")
 
     def _restart_connection(self):
         """Restart the connection asynchronously to apply mode changes immediately."""
@@ -807,6 +1037,23 @@ class JarvisLive:
             # If no loop, just clear session and hope for the best
             self.session = None
             self.ui.write_log("SYS: ⚠️ Event loop not running. Resetting session state.")
+
+    def _extract_number(self, text: str, default: int = 50) -> int:
+        """Extract number from command text"""
+        import re
+        numbers = re.findall(r'\d+', text)
+        if numbers:
+            return int(numbers[0])
+        return default
+    
+    def _extract_song_name(self, text: str) -> str:
+        """Extract song/artist name from play command"""
+        # Remove action words
+        remove_words = ["play", "please", "can you", "could you", "on youtube", "song", "music", "video"]
+        query = text.lower()
+        for word in remove_words:
+            query = query.replace(word, "")
+        return query.strip()
 
     def speak(self, text: str):
         # If in silent mode, don't speak ANYTHING
@@ -879,6 +1126,20 @@ class JarvisLive:
         
         time_ctx = f"[CURRENT TIME]\nIt is: {time_str}\n"
         
+        # RAG: Retrieve top semantically relevant memories to prime the session
+        rag_context = ""
+        try:
+            from memory.rag_engine import get_rag_engine
+            rag = get_rag_engine()
+            if rag and rag._ready:
+                # Use last user text or a generic identity query
+                query = self._last_user_text or "user identity preferences family"
+                rag_context = rag.format_rag_context(query, top_k=5)
+                if rag_context:
+                    print(f"[RAG] 🔍 Injected {rag_context.count('•')} relevant memories into prompt.")
+        except Exception:
+            pass
+        
         silent_instruction = ""
         if self.silent_mode:
             silent_instruction = (
@@ -893,16 +1154,33 @@ class JarvisLive:
             )
         
         parts = [forced_instruction, autonomous_instruction, time_ctx]
+        if rag_context:
+            parts.append(rag_context)
         if silent_instruction:
             parts.append(silent_instruction)
-        # We no longer inject recent_conv and mem_str here because 
-        # the Live API handles context via session_resumption and ongoing stream.
+        # Core memories (identity, relationships, preferences) from the structured store
+        parts.append(mem_str)
         parts.append(sys_prompt)
         
         # TRIPLE-BRAIN ARCHITECTURE:
-        # We only give Gemini Live the 'light' tools for conversation and delegation.
-        # Expert tools (Browser, Code, etc.) are hidden from Live and used only by Expert Brains.
-        live_tools = ["system_control", "delegate_task", "save_memory", "retrieve_memory", "preference_manager", "get_memory_stats", "forget_weak_memories"]
+        # Gemini Live gets conversation tools + youtube_manager for direct media control.
+        # Heavy tools (Browser, Code, etc.) are only used by Expert Brains.
+        live_tools = [
+            "system_control", "delegate_task", "save_memory", "retrieve_memory",
+            "preference_manager", "get_memory_stats", "forget_weak_memories",
+            "youtube_manager",  # Unified YouTube: play, pause, volume, search, trending
+            "generate_image",  # Poe image generation (e.g. nano-banana-2)
+            "codewords_agent",  # CodeWords workflows/agents
+            "detect_monitors",  # Direct API display detection
+            "gesture_control",  # Hand gesture control
+            "camera_feed",      # Show/hide camera window
+            "camera_viewer",    # Open local camera viewer
+            "vision_inspector", # Analyze webcam/screen
+            "open_app",         # Open desktop apps
+            "web_search",       # Quick text search
+            "weather_report",   # Get weather
+            "ip_checker",       # Get IP info
+        ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
 
@@ -912,7 +1190,13 @@ class JarvisLive:
             input_audio_transcription={},
             system_instruction="\n".join(parts),
             tools=[types.Tool(function_declarations=filtered_decls)],
-            session_resumption=types.SessionResumptionConfig(), 
+            session_resumption=types.SessionResumptionConfig(),
+            generation_config=types.GenerationConfig(
+                temperature=0.7,
+                top_p=0.95,
+                top_k=64,
+                candidate_count=1
+            ),
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(
@@ -1013,7 +1297,7 @@ class JarvisLive:
                             is_voice_like = False
                         
                         if is_voice_like and interruption_count < 3:
-                            print(f"[JARVIS] 🎤 Interruption detected! (peak={peak}, energy={energy:.0f})")
+                            # print(f"[JARVIS] 🎤 Interruption detected! (peak={peak}, energy={energy:.0f})")
                             last_interruption_time = current_time
                             interruption_count += 1
                             
@@ -1087,23 +1371,35 @@ class JarvisLive:
                                 if not self.silent_mode:
                                     self.ui.write_log(f"You: {full_in}")
                                 
-                                # ONLY trigger _on_text_command for specific system shortcuts
-                                # to prevent double-processing with the audio stream
-                                shortcuts = ["switch to", "force", "diagnostic", "check models", "status", "reboot", "shutdown", "autonomous", "manual", "silent mode", "wake up"]
+                                # Trigger _on_text_command for SYSTEM shortcuts only.
+                                # Media/YouTube commands are handled by the youtube_manager tool via Gemini.
+                                # Adding media keywords here causes double-execution (tool + interceptor).
+                                shortcuts = [
+                                    "switch to", "force", "diagnostic", "check models", "status",
+                                    "reboot", "shutdown", "autonomous", "manual", "silent mode", "wake up",
+                                    "gesture control", "hand control", "activate hands",
+                                ]
                                 if any(s in full_in.lower() for s in shortcuts):
                                     self._on_text_command(full_in)
                             in_buf = []
                             full_out = " ".join(out_buf).strip()
                             if full_out and not self.silent_mode:
-                                emotion = self.emotion_analyzer.analyze(full_in) if full_in else "neutral"
-                                adapted_out = self.emotion_analyzer.adapt_response(emotion, full_out)
-                                self.ui.write_log(f"Jarvis: {adapted_out}")
+                                # Native Emotion Analysis
+                                self.emotion_engine.analyze_async(full_in) if full_in else None
+                                emotion = self.emotion_engine.get_emotion()
+                                if self.hud_overlay: self.hud_overlay.set_emotion(emotion)
+                                
+                                # Log with personality adaptation
+                                self.ui.write_log(f"Jarvis: {full_out}")
+                                
+                                # Update HUD status
+                                if self.hud_overlay: self.hud_overlay.set_status("RESPONDING")
                                 
                                 # Rate limit conversation saves - only every 5 seconds
                                 if full_in and full_out:
                                     now = datetime.now()
                                     if (now - self._last_save_time).seconds > 5:
-                                        _save_conversation_turn(full_in, adapted_out)
+                                        _save_conversation_turn(full_in, full_out)
                                         self._last_save_time = now
                             out_buf = []
 
@@ -1266,12 +1562,18 @@ class JarvisLive:
                     async with asyncio.TaskGroup() as tg:
                         self.session = session
                         self._loop = asyncio.get_event_loop()
+                        
+                        # Initialize Emotion Engine only after connection to ensure env is ready
+                        if not self.emotion_engine:
+                            self.emotion_engine = EmotionEngine()
+                        
                         self.audio_in_queue = asyncio.Queue()
                         self.out_queue = asyncio.Queue(maxsize=50)
                         self._turn_done_event = asyncio.Event()
                         
                         print("[JARVIS] ✅ Connected.")
                         self.ui.set_state("LISTENING")
+                        if self.hud_overlay: self.hud_overlay.set_status("LISTENING")
                         self.ui.write_log("SYS: Cloud connection established.")
                         
                         reconnect_delay = 1
@@ -1289,7 +1591,7 @@ class JarvisLive:
                             greeting = self._get_contextual_greeting()
                             # Send as a natural user prompt to trigger an audio greeting
                             await session.send_client_content(
-                                turns=[{"role": "user", "parts": [{"text": f"GREETING_PROTOCOL_START: {greeting}"}]}],
+                                turns=[{"role": "user", "parts": [{"text": f"GREETING_PROTOCOL_START: {greeting}\n\n[USER_EMOTION_UPDATE: {self.emotion_engine.get_emotion()}]"}]}],
                                 turn_complete=True
                             )
                         except Exception as ge:

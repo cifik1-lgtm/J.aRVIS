@@ -17,25 +17,32 @@ def get_config():
     except:
         return {}
 
-def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash") -> str:
+def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", brain: str = None) -> str:
     """Central router for all LLM calls in the JARVIS system with automatic fallback."""
     config = get_config()
     forced = config.get("force_brain", "gemini")
     
     # Order of attempt based on choice
-    attempts = [forced]
-    for b in ["gemini", "groq", "openrouter", "minimax"]:
-        if b not in attempts:
-            attempts.append(b)
+    if brain:
+        attempts = [brain]
+    else:
+        attempts = [forced]
+        for b in ["gemini", "groq", "openrouter", "minimax"]:
+            if b not in attempts:
+                attempts.append(b)
 
     last_error = None
     for brain in attempts:
         try:
             if brain == "gemini":
                 from google import genai
+                g_model = config.get("gemini_model", "gemini-2.0-flash-exp")
+                # If explicit model passed starts with gemini, use it
+                actual_model = model if model.startswith("gemini") else g_model
+                
                 client = genai.Client(api_key=config.get("gemini_api_key", ""))
                 response = client.models.generate_content(
-                    model=model,
+                    model=actual_model,
                     contents=f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
                 )
                 return response.text
@@ -44,9 +51,13 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash") -> 
                 from groq import Groq
                 api_key = config.get("groq_api_key", "")
                 if not api_key: continue
+                
+                g_model = config.get("groq_model", "llama-3.3-70b-versatile")
+                actual_model = model if "llama" in model or "mixtral" in model else g_model
+                
                 client = Groq(api_key=api_key)
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=actual_model,
                     messages=[
                         {"role": "system", "content": system_prompt or "You are a helpful assistant."},
                         {"role": "user", "content": prompt}
@@ -60,12 +71,16 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash") -> 
                 import requests
                 api_key = config.get("openrouter_api_key", "")
                 if not api_key: continue
-                model_name = config.get("openrouter_model", "deepseek/deepseek-chat")
+                
+                or_model = config.get("openrouter_model", "deepseek/deepseek-chat")
+                # Use passed model if it looks like a full provider/name, else config
+                actual_model = model if "/" in model else or_model
+                
                 resp = requests.post(
                     url="https://openrouter.ai/api/v1/chat/completions",
                     headers={"Authorization": f"Bearer {api_key}"},
                     data=json.dumps({
-                        "model": model_name,
+                        "model": actual_model,
                         "messages": [
                             {"role": "system", "content": system_prompt or "You are a helpful assistant."},
                             {"role": "user", "content": prompt}
@@ -98,12 +113,14 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash") -> 
 
             elif brain == "local":
                 import requests
+                l_model = config.get("local_model", "hermes3:8b")
                 resp = requests.post(
                     "http://localhost:11434/api/generate",
-                    json={"model": "phi3:mini", "prompt": f"{system_prompt}\n\n{prompt}", "stream": False},
+                    json={"model": l_model, "prompt": f"{system_prompt}\n\n{prompt}", "stream": False},
                     timeout=60
                 )
                 return resp.json()["response"]
+
 
         except Exception as e:
             print(f"[LLM] Brain '{brain}' failed: {e}. Trying next fallback...")

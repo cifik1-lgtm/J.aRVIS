@@ -10,6 +10,25 @@ import random
 import platform
 from pathlib import Path
 
+try:
+    import pygetwindow
+    _PYGETWINDOW = True
+except ImportError:
+    _PYGETWINDOW = False
+
+try:
+    import pymonctl
+    _PYMONCTL = True
+except ImportError:
+    _PYMONCTL = False
+
+try:
+    import win32gui
+    import win32con
+    _WIN32 = True
+except ImportError:
+    _WIN32 = False
+
 _SYSTEM = platform.system()
 _CREATE_NO_WINDOW = 0x08000000 if _SYSTEM == "Windows" else 0
 
@@ -27,7 +46,8 @@ Desktop automation via PyAutoGUI. Always set `action` to one of the names below.
 | triple_click | x, y optional |
 | right_click | x, y optional |
 | middle_click | x, y optional |
-| move | x, y — move pointer |
+| move | x, y — move pointer (if title or dx='other_monitor' is provided, moves window) |
+| move_window | title (optional), target='other_monitor' or x,y |
 | move_rel, move_relative | dx, dy — move from current position; duration (optional, default 0.2) |
 | drag | x1, y1, x2, y2 |
 | hotkey | keys e.g. alt+tab, win+r |
@@ -349,6 +369,92 @@ def _focus_window(title: str) -> str:
 
     return f"focus_window: unknown OS '{os_name}'"
 
+def _move_window(title: str | None = None, target: str | None = "other_monitor", x: int | None = None, y: int | None = None) -> str:
+    if not _PYGETWINDOW:
+        return "pygetwindow not installed. Cannot move windows."
+    
+    if title:
+        windows = pygetwindow.getWindowsWithTitle(title)
+        if not windows:
+            return f"No window found with title containing: '{title}'"
+        win = windows[0]
+    else:
+        win = pygetwindow.getActiveWindow()
+        if not win:
+            return "No active window found to move."
+
+    # Ensure window is not minimized/maximized in a way that prevents moving
+    if win.isMinimized:
+        win.restore()
+    
+    if target == "other_monitor":
+        if not _PYMONCTL:
+            return "pymonctl not installed. Cannot detect monitors."
+        
+        monitors = pymonctl.getAllMonitors()
+        if len(monitors) < 2:
+            return "Only one monitor detected. Cannot move to another monitor."
+        
+        # Get current window center to find current monitor
+        cx = win.left + win.width // 2
+        cy = win.top + win.height // 2
+        
+        current_mon = None
+        for mon in monitors:
+            m_pos = mon.getPosition()
+            m_size = mon.getSize()
+            if m_pos.x <= cx <= m_pos.x + m_size.width and m_pos.y <= cy <= m_pos.y + m_size.height:
+                current_mon = mon
+                break
+        
+        if not current_mon:
+            current_mon = monitors[0]
+            
+        target_mon = None
+        for mon in monitors:
+            if mon != current_mon:
+                target_mon = mon
+                break
+        
+        if not target_mon:
+            return "Could not identify target monitor."
+            
+        t_pos = target_mon.getPosition()
+        t_size = target_mon.getSize()
+        c_pos = current_mon.getPosition()
+        c_size = current_mon.getSize()
+
+        # Calculate relative position on current monitor to preserve it on the target
+        rel_x = (win.left - c_pos.x) / max(1, c_size.width)
+        rel_y = (win.top - c_pos.y) / max(1, c_size.height)
+        
+        new_x = t_pos.x + int(rel_x * t_size.width)
+        new_y = t_pos.y + int(rel_y * t_size.height)
+
+        # Keep window within target monitor bounds
+        new_x = max(t_pos.x, min(new_x, t_pos.x + t_size.width - win.width))
+        new_y = max(t_pos.y, min(new_y, t_pos.y + t_size.height - win.height))
+        
+        if _SYSTEM == "Windows" and _WIN32:
+            try:
+                # pygetwindow uses ._hWnd internally on Windows
+                hwnd = getattr(win, "_hWnd", None)
+                if hwnd:
+                    win32gui.SetWindowPos(hwnd, win32con.HWND_TOP, new_x, new_y, 0, 0, 
+                                          win32con.SWP_NOSIZE | win32con.SWP_NOZORDER)
+                    return f"Moved window '{win.title}' to {target_mon.name} at ({new_x}, {new_y}) (win32)"
+            except Exception:
+                pass
+
+        win.moveTo(new_x, new_y)
+        return f"Moved window '{win.title}' to {target_mon.name} at ({new_x}, {new_y})"
+
+    if x is not None and y is not None:
+        win.moveTo(x, y)
+        return f"Moved window '{win.title}' to ({x}, {y})"
+        
+    return "move_window requires target='other_monitor' or explicit x, y coordinates."
+
 def _screen_find(description: str) -> tuple[int, int] | None:
     api_key = _get_api_key()
     if not api_key:
@@ -471,6 +577,7 @@ _VALID_CONTROL_ACTIONS = frozenset(
         "right_click",
         "middle_click",
         "move",
+        "move_window",
         "move_rel",
         "move_relative",
         "drag",
@@ -603,6 +710,7 @@ Heuristics (do NOT guess clear_field unless the user clearly wants to clear the 
 - key combination -> hotkey (needs "keys" like ctrl+shift+esc)
 - delay, wait, pause -> wait (needs "seconds" number)
 - bring window to front -> focus_window (needs "title")
+- move window to other monitor, move app, reposition window -> move_window (needs "title" or uses active, "target" can be "other_monitor")
 
 Return ONLY minified JSON. Required: "action". Optional: text, description, keys, key, title, seconds, folder, x, y, x1, y1, x2, y2, dx, dy, duration, amount, direction, path, type, field, clear_first. Use null for unused fields.
 Example: {{"action":"diagnose_system"}}"""
@@ -735,7 +843,24 @@ def computer_control(
             return _click(params.get("x"), params.get("y"), "right", 1)
 
         if action == "move":
+            target = params.get("target") or params.get("dx")
+            title  = params.get("title")
+            if target == "other_monitor" or title:
+                return _move_window(
+                    title=title,
+                    target=target if target == "other_monitor" else None,
+                    x=params.get("x"),
+                    y=params.get("y")
+                )
             return _move(int(params.get("x", 0)), int(params.get("y", 0)))
+
+        if action == "move_window":
+            return _move_window(
+                title=params.get("title"),
+                target=params.get("target") or params.get("dx"),
+                x=params.get("x"),
+                y=params.get("y")
+            )
 
         if action in ("move_rel", "move_relative"):
             _require_pyautogui()

@@ -15,7 +15,7 @@ import psutil
 
 from PyQt6.QtCore import (
     QEasingCurve, QMimeData, QObject, QPointF, QRectF, QSize, Qt,
-    QTimer, QUrl, pyqtSignal,
+    QTimer, QUrl, pyqtSignal, QPoint
 )
 from PyQt6.QtGui import (
     QBrush, QColor, QDragEnterEvent, QDropEvent, QFont, QFontDatabase,
@@ -736,6 +736,65 @@ class HudCanvas(QOpenGLWidget):
                 hgt = int(3 + 2 * math.sin(self._tick * 0.09 + i * 0.6))
                 cl  = qcol(C.BORDER_B)
             p.fillRect(QRectF(wx0 + i * bw, wy + 20 - hgt, bw - 1, hgt), cl)
+
+class FullscreenHUD(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint | 
+            Qt.WindowType.WindowStaysOnTopHint | 
+            Qt.WindowType.Tool |
+            Qt.WindowType.WindowTransparentForInput
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setStyleSheet("background: transparent; border: none;")
+        
+        screen = QApplication.primaryScreen().geometry()
+        self.screen_w, self.screen_h = screen.width(), screen.height()
+        self.setGeometry(0, 0, self.screen_w, self.screen_h)
+        
+        self.gaze_pos = QPoint(-100, -100)
+        self.hand_pos = QPoint(-100, -100)
+        self.is_tracking = False
+        self.pulse = 0.0
+        self.rotation = 0.0
+        self.emotion_text = "NEUTRAL"
+        self.status_text = "SYSTEM ONLINE"
+        self.timer = QTimer(self); self.timer.timeout.connect(self._animate); self.timer.start(33)
+
+    def _animate(self):
+        self.pulse = (math.sin(time.time() * 2) + 1) / 2
+        self.rotation = (self.rotation + 1) % 360
+        self.update()
+
+    def set_tracking_data(self, gaze_x, gaze_y, hand_x, hand_y):
+        # Smoothing gaze data a bit
+        self.gaze_pos = QPoint(int(gaze_x), int(gaze_y))
+        self.hand_pos = QPoint(int(hand_x), int(hand_y))
+        self.is_tracking = (gaze_x > 0 or hand_x > 0)
+
+    def paintEvent(self, _):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Ensure the background is fully transparent
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        
+        if self.is_tracking:
+            gx, gy = self.gaze_pos.x(), self.gaze_pos.y()
+            painter.setPen(QPen(QColor(0, 212, 255, 150), 2))
+            painter.drawEllipse(QRectF(gx - 15, gy - 15, 30, 30))
+            painter.drawLine(gx - 20, gy, gx - 5, gy)
+            painter.drawLine(gx + 20, gy, gx + 5, gy)
+            painter.drawLine(gx, gy - 20, gx, gy - 5)
+            painter.drawLine(gx, gy + 20, gx, gy + 5)
+            hx, hy = self.hand_pos.x(), self.hand_pos.y()
+            painter.setBrush(QBrush(QColor(0, 212, 255, 100)))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(hx - 5, hy - 5, 10, 10)
 
 class MetricBar(QWidget):
 
@@ -1781,6 +1840,8 @@ class JarvisUI:
         self._app.setStyle("Fusion")
         self._win = MainWindow(face_path)
         self._win.show()
+        self.fullscreen_hud = FullscreenHUD()
+        self.fullscreen_hud.show()
         self.root = _RootShim(self._app)
 
     @property
@@ -1820,6 +1881,11 @@ class JarvisUI:
 
     def write_log(self, text: str):
         self._win._log_sig.emit(text)
+
+    def set_tracking(self, gaze_x, gaze_y, hand_x, hand_y):
+        """Update gaze/hand tracking on the fullscreen HUD"""
+        if hasattr(self, 'fullscreen_hud'):
+            self.fullscreen_hud.set_tracking_data(gaze_x, gaze_y, hand_x, hand_y)
 
     def wait_for_api_key(self):
         while not self._win._ready:
