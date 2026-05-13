@@ -587,6 +587,13 @@ class JarvisLive:
                     # Alternative: set the tracking callback
                     controller.set_hud(self.ui)
                 
+                # Push frame to Fullscreen HUD (Corner)
+                self.ui.set_camera_frame(processed_frame)
+                
+                # Push frame to Central HUD (Circle)
+                if hasattr(self.ui, 'hud'):
+                    self.ui.hud.set_frame(processed_frame)
+                
                 # Execute commands
                 for cmd in commands:
                     if cmd == "move_object":
@@ -596,7 +603,7 @@ class JarvisLive:
                         # Scrolling already handled
                         pass
                 
-                # Show camera feed with overlay
+                # Show camera feed with overlay in a separate window
                 cv2.imshow("JARVIS Gesture Control", processed_frame)
                 
                 # Press 'q' to quit

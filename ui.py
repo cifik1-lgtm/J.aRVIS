@@ -445,6 +445,21 @@ class HudCanvas(QOpenGLWidget):
                 break
         print("[HUD] Camera worker thread exiting.")
 
+    def set_frame(self, frame):
+        """External method to set the frame displayed in the central circle."""
+        from PyQt6.QtGui import QImage
+        import cv2
+        try:
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb.shape
+            bytes_per_line = ch * w
+            img_bytes = bytes(rgb.tobytes())
+            qimg = QImage(img_bytes, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            self._face_px = QPixmap.fromImage(qimg)
+            self.update()
+        except Exception as e:
+            print(f"[HUD] Frame set failed: {e}")
+
     def _update_hud_frame(self):
         """Picks up the latest frame processed by the background thread."""
         if not self.camera_running:
@@ -761,6 +776,11 @@ class FullscreenHUD(QWidget):
         self.rotation = 0.0
         self.emotion_text = "NEUTRAL"
         self.status_text = "SYSTEM ONLINE"
+        
+        # Camera Feed State
+        self.camera_frame = None
+        self.show_camera = False
+        
         self.timer = QTimer(self); self.timer.timeout.connect(self._animate); self.timer.start(33)
 
     def _animate(self):
@@ -773,6 +793,27 @@ class FullscreenHUD(QWidget):
         self.gaze_pos = QPoint(int(gaze_x), int(gaze_y))
         self.hand_pos = QPoint(int(hand_x), int(hand_y))
         self.is_tracking = (gaze_x > 0 or hand_x > 0)
+
+    def set_camera_frame(self, cv_frame):
+        """Update the camera frame for the HUD"""
+        import cv2
+        import numpy as np
+        from PyQt6.QtGui import QImage, QPixmap
+        
+        try:
+            # Convert BGR to RGB
+            rgb_image = cv2.cvtColor(cv_frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            
+            # Convert to QImage
+            qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            self.camera_frame = QPixmap.fromImage(qt_image)
+            self.show_camera = True
+            self.update()
+        except Exception as e:
+            # Silently fail if frame conversion errors
+            pass
 
     def paintEvent(self, _):
         painter = QPainter(self)
@@ -795,6 +836,26 @@ class FullscreenHUD(QWidget):
             painter.setBrush(QBrush(QColor(0, 212, 255, 100)))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawEllipse(hx - 5, hy - 5, 10, 10)
+
+        # --- CAMERA FEED (BOTTOM RIGHT) ---
+        if self.show_camera and self.camera_frame:
+            cam_w, cam_h = 240, 180
+            cam_x = self.screen_w - cam_w - 40
+            cam_y = self.screen_h - cam_h - 40
+            
+            # Glow/Border
+            painter.setPen(QPen(QColor(0, 212, 255, 100), 2))
+            painter.drawRect(cam_x - 2, cam_y - 2, cam_w + 4, cam_h + 4)
+            
+            # Draw Frame
+            painter.setOpacity(0.7) # Holographic transparency
+            painter.drawPixmap(cam_x, cam_y, cam_w, cam_h, self.camera_frame)
+            painter.setOpacity(1.0)
+            
+            # HUD Label
+            painter.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+            painter.setPen(QColor(0, 212, 255, 180))
+            painter.drawText(cam_x, cam_y - 10, "EXTERNAL VISUAL FEED // 720P")
 
 class MetricBar(QWidget):
 
@@ -1886,6 +1947,11 @@ class JarvisUI:
         """Update gaze/hand tracking on the fullscreen HUD"""
         if hasattr(self, 'fullscreen_hud'):
             self.fullscreen_hud.set_tracking_data(gaze_x, gaze_y, hand_x, hand_y)
+
+    def set_camera_frame(self, frame):
+        """Push a camera frame to the holographic HUD overlay"""
+        if hasattr(self, 'fullscreen_hud'):
+            self.fullscreen_hud.set_camera_frame(frame)
 
     def wait_for_api_key(self):
         while not self._win._ready:

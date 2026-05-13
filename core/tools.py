@@ -381,15 +381,25 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "camera_feed",
-        "description": "Control built-in camera feed.",
+        "description": "Control built-in camera feed on the main HUD.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "state": {"type": "BOOLEAN"},
-                "camera_index": {"type": "INTEGER"},
-                "list_cameras": {"type": "BOOLEAN"}
+                "camera_index": {"type": "INTEGER"}
             },
             "required": ["state"]
+        }
+    },
+    {
+        "name": "camera_viewer",
+        "description": "Open a dedicated, standalone window for a camera feed.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "camera_index": {"type": "INTEGER"}
+            },
+            "required": []
         }
     },
     {
@@ -980,15 +990,30 @@ class ToolDispatcher:
                     return f"Memory cleanup complete. {count} old or irrelevant memories purged."
 
                 elif name == "camera_feed":
+                    state = args.get("state", True)
                     camera_index = args.get("camera_index", None)
+                    
                     if camera_index is not None:
                         self.ui.camera = camera_index
-                        return f"Switched to camera {camera_index}, sir."
-                    else:
-                        state = args.get("state", True)
-                        if hasattr(self.ui, 'hud') and hasattr(self.ui.hud, 'toggle_camera'):
-                            self.ui.hud.toggle_camera(bool(state))
-                            return f"Camera feed {'activated' if state else 'deactivated'}, sir."
+                    
+                    if hasattr(self.ui, 'hud') and hasattr(self.ui.hud, 'toggle_camera'):
+                        self.ui.hud.toggle_camera(bool(state))
+                        msg = f"Camera feed {'activated' if state else 'deactivated'}"
+                        if camera_index is not None:
+                            msg += f" (Index {camera_index})"
+                        return f"{msg} in the HUD, sir."
+                    return "HUD not available."
+
+                elif name == "camera_viewer":
+                    from actions.camera_viewer import camera_viewer
+                    index = args.get("camera_index", 0)
+                    return camera_viewer(self.orch, index)["message"]
+
+                elif name == "vision_inspector":
+                    from actions.screen_processor import vision_inspector
+                    source = args.get("source", "webcam")
+                    focus = args.get("focus", "text")
+                    return vision_inspector(self.orch, source, focus)
 
                 elif name == "face_manager":
                     from actions.face_memory import get_face_memory

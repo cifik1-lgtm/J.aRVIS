@@ -5,7 +5,7 @@ import time
 import threading
 import psutil
 from PyQt6.QtCore import Qt, QTimer, QPoint, QRectF, pyqtSignal, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QFont, QRadialGradient, QPainterPath
+from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QFont, QRadialGradient, QPainterPath, QImage, QPixmap
 from PyQt6.QtWidgets import QWidget, QApplication, QMainWindow
 
 class HUDOverlay(QWidget):
@@ -40,6 +40,10 @@ class HUDOverlay(QWidget):
         self.hand_pos = QPoint(-100, -100)
         self.is_tracking = False
         
+        # Camera Feed State
+        self.camera_frame = None
+        self.show_camera = False
+        
         # Animation timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_animation)
@@ -57,6 +61,25 @@ class HUDOverlay(QWidget):
         self.gaze_pos = QPoint(int(gaze_x), int(gaze_y))
         self.hand_pos = QPoint(int(hand_x), int(hand_y))
         self.is_tracking = True
+
+    def set_camera_frame(self, cv_frame):
+        """Update the camera frame for the HUD"""
+        import cv2
+        import numpy as np
+        
+        try:
+            # Convert BGR to RGB
+            rgb_image = cv2.cvtColor(cv_frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            
+            # Convert to QImage
+            qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            self.camera_frame = QPixmap.fromImage(qt_image)
+            self.show_camera = True
+            self.update()
+        except Exception as e:
+            print(f"[HUD] Camera frame update failed: {e}")
 
     def update_animation(self):
         self.pulse = (math.sin(time.time() * 2) + 1) / 2 # 0 to 1
@@ -136,6 +159,26 @@ class HUDOverlay(QWidget):
             hx, hy = self.hand_pos.x(), self.hand_pos.y()
             painter.setBrush(QBrush(QColor(0, 212, 255, 100)))
             painter.drawEllipse(hx - 5, hy - 5, 10, 10)
+
+        # --- CAMERA FEED (BOTTOM RIGHT) ---
+        if self.show_camera and self.camera_frame:
+            cam_w, cam_h = 240, 180
+            cam_x = self.screen_w - cam_w - 40
+            cam_y = self.screen_h - cam_h - 40
+            
+            # Glow/Border
+            painter.setPen(QPen(QColor(0, 212, 255, 100), 2))
+            painter.drawRect(cam_x - 2, cam_y - 2, cam_w + 4, cam_h + 4)
+            
+            # Draw Frame
+            painter.setOpacity(0.8) # Holographic transparency
+            painter.drawPixmap(cam_x, cam_y, cam_w, cam_h, self.camera_frame)
+            painter.setOpacity(1.0)
+            
+            # HUD Label
+            painter.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+            painter.setPen(QColor(0, 212, 255, 180))
+            painter.drawText(cam_x, cam_y - 10, "EXTERNAL VISUAL FEED // 720P")
 
         # Corner Brackets (Screen Corners)
         p = QPainterPath()
