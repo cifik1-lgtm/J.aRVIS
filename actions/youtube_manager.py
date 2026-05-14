@@ -60,22 +60,36 @@ class YouTubeManager:
         if not query:
             return None
 
-        # 1) Best effort: yt-dlp (most resilient to YouTube markup changes)
+        # 1) Best effort: yt-dlp library with Brave cookies
         try:
-            import subprocess
-            import sys
+            import yt_dlp
+            import browser_cookie3
+            
+            self.ui.write_log(f"[YouTube] 🔍 Searching via yt-dlp: {query}")
+            
+            # Load cookies from Brave to avoid 429/Bot detection
+            try:
+                cj = browser_cookie3.brave(domain_name='.youtube.com')
+            except Exception as e:
+                self.ui.write_log(f"[YouTube] ⚠️ Could not load Brave cookies: {e}")
+                cj = None
 
-            result = subprocess.run(
-                [sys.executable, "-m", "yt_dlp", "--print", "webpage_url", f"ytsearch1:{query}"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            if result.returncode == 0:
-                url = (result.stdout or "").strip()
-                if url.startswith("http"):
-                    self.ui.write_log(f"[YouTube] ✅ yt-dlp resolved: {url}")
-                    return url
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'noplaylist': True,
+                'quiet': True,
+                'no_warnings': True,
+                'cookiejar': cj,
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(f"ytsearch1:{query}", download=False)
+                if info and 'entries' in info and len(info['entries']) > 0:
+                    video = info['entries'][0]
+                    url = video.get('webpage_url')
+                    if url:
+                        self.ui.write_log(f"[YouTube] ✅ yt-dlp resolved: {url}")
+                        return url
         except Exception as e:
             self.ui.write_log(f"[YouTube] ⚠️ yt-dlp resolver failed: {e}")
 

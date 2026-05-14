@@ -164,23 +164,31 @@ class YouTubePlayer:
             import subprocess
             import sys
             import os
+            import yt_dlp
+            import browser_cookie3
             
-            # 1. Get the best audio URL using yt-dlp
-            self.ui.write_log("[YouTubePlayer] 🔍 Extracting audio stream URL...")
-            cmd_dlp = [
-                sys.executable, "-m", "yt_dlp",
-                "-f", "bestaudio",
-                "--get-url",
-                video_url
-            ]
-            result = subprocess.run(cmd_dlp, capture_output=True, text=True, timeout=15)
+            # 1. Get the best audio URL using yt_dlp library with cookies
+            self.ui.write_log("[YouTubePlayer] 🔍 Extracting audio stream URL (Authenticated)...")
             
-            if result.returncode != 0:
-                self.ui.write_log(f"[YouTubePlayer] ❌ yt-dlp extraction failed: {result.stderr}")
-                return False
+            try:
+                cj = browser_cookie3.brave(domain_name='.youtube.com')
+            except Exception as e:
+                self.ui.write_log(f"[YouTubePlayer] ⚠️ Could not load Brave cookies: {e}")
+                cj = None
+
+            ydl_opts = {
+                'format': 'bestaudio',
+                'quiet': True,
+                'no_warnings': True,
+                'cookiejar': cj,
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=False)
+                audio_url = info.get('url')
                 
-            audio_url = result.stdout.strip()
             if not audio_url:
+                self.ui.write_log("[YouTubePlayer] ❌ Could not extract audio URL")
                 return False
 
             # 2. Launch VLC in background (no interface, no video)
