@@ -223,6 +223,7 @@ class YouTubePlayer:
                 'format': 'bestaudio',
                 'quiet': True,
                 'no_warnings': True,
+                'ignoreerrors': True,
                 'cookiejar': cj,
             }
             

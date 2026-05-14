@@ -79,6 +79,7 @@ class YouTubeManager:
                 'noplaylist': True,
                 'quiet': True,
                 'no_warnings': True,
+                'ignoreerrors': True,
                 'cookiejar': cj,
             }
             
