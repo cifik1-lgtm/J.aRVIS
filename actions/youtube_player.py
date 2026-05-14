@@ -135,8 +135,10 @@ class YouTubePlayer:
             return True
 
     def open_brave_app(self, url: str) -> bool:
-        """Open URL in Brave 'App Mode' (PWA style, no address bar/tabs)"""
+        """Open URL in Brave 'App Mode' (PWA style), reusing existing window if possible."""
         from pathlib import Path
+        import subprocess
+        import time
         
         # Find Brave executable
         brave_paths = [
@@ -150,17 +152,41 @@ class YouTubePlayer:
                 break
 
         if not brave_exe:
-            return self.open_brave_tab(url) # Fallback
+            return self.open_brave_tab(url)
 
         try:
-            # --app flag makes it look like a standalone application
-            subprocess.Popen([brave_exe, f"--app={url}"])
-            self.ui.write_log(f"[YouTubePlayer] 🖥️ Launched YouTube PWA: {url[:40]}...")
+            import pygetwindow as gw
+            import pyautogui
             
-            # Ensure focus
+            # Search for existing YouTube PWA window
+            youtube_window = None
+            for window in gw.getAllWindows():
+                # Filter for YouTube windows that are NOT the main browser (Brave)
+                if window.title and 'YouTube' in window.title and 'Brave' not in window.title:
+                    youtube_window = window
+                    break
+            
+            if youtube_window:
+                self.ui.write_log(f"[YouTubePlayer] ♻️ Reusing existing YouTube window: {youtube_window.title}")
+                youtube_window.activate()
+                if youtube_window.isMinimized: youtube_window.restore()
+                time.sleep(0.5)
+                
+                # Navigate via keyboard shortcuts
+                pyautogui.hotkey('ctrl', 'l') # Focus address bar
+                time.sleep(0.2)
+                pyautogui.write(url) # Type new URL
+                time.sleep(0.2)
+                pyautogui.press('enter')
+                return True
+            
+            # No window exists - create new one
+            subprocess.Popen([brave_exe, f"--app={url}"])
+            self.ui.write_log(f"[YouTubePlayer] 🖥️ Launched new YouTube PWA: {url[:40]}...")
+            
+            # Ensure focus after launch
             time.sleep(2.0)
             try:
-                import pygetwindow as gw
                 wins = [w for w in gw.getWindowsWithTitle('YouTube') if w.visible]
                 if wins:
                     win = wins[0]
@@ -170,7 +196,7 @@ class YouTubePlayer:
             
             return True
         except Exception as e:
-            self.ui.write_log(f"[YouTubePlayer] ❌ PWA Launch failed: {e}")
+            self.ui.write_log(f"[YouTubePlayer] ❌ PWA Smart Reuse failed: {e}")
             return self.open_brave_tab(url)
 
     def stop_playback(self) -> str:
