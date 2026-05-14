@@ -235,20 +235,16 @@ class YouTubeManager:
                     if success:
                         return f"Playing {query} in the background, sir."
                 
-                # Foreground Video Mode (Default)
+                # Foreground Video Mode (Default) - Using PWA App Mode
                 direct_url = self._with_autoplay(direct_url)
-                self.ui.write_log(f"[YouTube] 📺 Opening foreground video: {direct_url}")
-                success = self.player.open_brave_tab(direct_url)
-                if success:
-                    self.ensure_browser_focused("Brave")
+                self.ui.write_log(f"[YouTube] 📺 Opening foreground PWA: {direct_url}")
+                success = self.player.open_brave_app(direct_url)
                 return f"Playing {query} on YouTube, sir." if success else f"Failed to open Brave for {query}, sir."
 
             # Fallback to search results if direct URL resolution fails
             search_url = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
-            self.ui.write_log("[YouTube] ⚠️ Could not resolve direct video URL; opening search page")
-            success = self.player.open_brave_tab(search_url)
-            if success:
-                self.ensure_browser_focused("Brave")
+            self.ui.write_log("[YouTube] ⚠️ Could not resolve direct video URL; opening search page in App mode")
+            success = self.player.open_brave_app(search_url)
             return (
                 f"Opening YouTube search for {query}, sir. Please click the first video to play."
                 if success

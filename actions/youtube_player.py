@@ -134,6 +134,45 @@ class YouTubePlayer:
             webbrowser.open(url)
             return True
 
+    def open_brave_app(self, url: str) -> bool:
+        """Open URL in Brave 'App Mode' (PWA style, no address bar/tabs)"""
+        from pathlib import Path
+        
+        # Find Brave executable
+        brave_paths = [
+            r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+            r"C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe",
+        ]
+        brave_exe = None
+        for p in brave_paths:
+            if Path(p).exists():
+                brave_exe = p
+                break
+
+        if not brave_exe:
+            return self.open_brave_tab(url) # Fallback
+
+        try:
+            # --app flag makes it look like a standalone application
+            subprocess.Popen([brave_exe, f"--app={url}"])
+            self.ui.write_log(f"[YouTubePlayer] 🖥️ Launched YouTube PWA: {url[:40]}...")
+            
+            # Ensure focus
+            time.sleep(2.0)
+            try:
+                import pygetwindow as gw
+                wins = [w for w in gw.getWindowsWithTitle('YouTube') if w.visible]
+                if wins:
+                    win = wins[0]
+                    if win.isMinimized: win.restore()
+                    win.activate()
+            except: pass
+            
+            return True
+        except Exception as e:
+            self.ui.write_log(f"[YouTubePlayer] ❌ PWA Launch failed: {e}")
+            return self.open_brave_tab(url)
+
     def stop_playback(self) -> str:
         """Stop any active playback (Direct mode or Browser mode)"""
         stopped = False
