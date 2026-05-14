@@ -72,9 +72,18 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                 api_key = config.get("openrouter_api_key", "")
                 if not api_key: continue
                 
-                or_model = config.get("openrouter_model", "deepseek/deepseek-chat")
-                # Use passed model if it looks like a full provider/name, else config
-                actual_model = model if "/" in model else or_model
+                or_model = "google/gemma-4-26b-a4b-it:free"
+                # If a specific OpenRouter model is passed (contains slash), use it.
+                # Otherwise, intelligently select the best model based on the prompt.
+                if model and "/" in model:
+                    actual_model = model
+                else:
+                    try:
+                        from core.brain_router import BrainRouter
+                        br = BrainRouter(API_CONFIG_PATH)
+                        actual_model = br.get_optimal_openrouter_model(prompt)
+                    except Exception:
+                        actual_model = or_model
                 
                 resp = requests.post(
                     url="https://openrouter.ai/api/v1/chat/completions",

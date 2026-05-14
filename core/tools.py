@@ -906,8 +906,10 @@ class ToolDispatcher:
                         return f"Autonomous mode {'enabled' if auto else 'disabled'}, sir."
                     elif action == "switch_brain":
                         brain = args.get("brain", "gemini")
-                        self.orch._update_config_brain(brain)
-                        self.orch._restart_connection()
+                        if brain.lower() in ["hive", "gemini", "auto"]:
+                            self.orch.brain_router.clear_forced_brain()
+                        else:
+                            self.orch.brain_router.set_forced_brain(brain)
                         return f"Switched to {brain} brain, sir."
                     elif action == "system_diagnostic":
                         self.orch._detect_engines() # Trigger a fresh scan

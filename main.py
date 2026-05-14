@@ -433,6 +433,10 @@ class JarvisLive:
         self._turn_done_event = None
         self._last_user_text = ""
         
+        # NEW: Separate voice from reasoning
+        self.voice_brain = "gemini"      # Always Gemini for voice
+        self.reasoning_brain = "openrouter"    # Can be openrouter, local, etc.
+        
         # Rate limiting for saves
         self._last_save_time = datetime.now() - timedelta(seconds=10)
         self._warmed_up = False
@@ -521,7 +525,7 @@ class JarvisLive:
         self.youtube = get_youtube_player(ui)
 
         # Multi-Brain Router (Hive Mind Engine)
-        self.brain_router = BrainRouter(API_CONFIG_PATH, self.ui)
+        self.brain_router = BrainRouter(API_CONFIG_PATH, self.ui, orch=self)
         self._detect_engines()
 
         # Initialize Monitor Manager (Real-time Display Detection)
@@ -946,24 +950,37 @@ class JarvisLive:
         
         # Brain switching
         if "switch to local" in cmd or "force local" in cmd:
-            self.force_local = True
-            self.force_openrouter = False
-            self._update_config_brain("local")
-            self.ui.write_log("SYS: 🧠 Forced LOCAL mode")
-            self._restart_connection()
+            self.brain_router.set_forced_brain("local")
+            self.ui.write_log("SYS: 🧠 Forced LOCAL mode (Voice session preserved)")
+            self.speak("Switching to Local mode for future tasks, sir. I will continue listening.")
             return
         elif "switch to openrouter" in cmd or "force openrouter" in cmd:
-            self.force_local = True 
+            # Change ONLY the reasoning brain, leave voice on Gemini
+            self.reasoning_brain = "openrouter"
+            self.force_local = True
             self.force_openrouter = True
-            self._update_config_brain("openrouter")
-            self.ui.write_log("SYS: 🧠 Forced OPENROUTER mode")
-            self._restart_connection()
+            
+            # Do NOT restart connection - keep Gemini voice alive
+            self.ui.write_log("SYS: 🧠 Reasoning switched to OpenRouter (Voice stays on Gemini)")
+            self.speak("Switching to OpenRouter for complex tasks, sir. I will continue listening.")
             return
         elif "switch to online" in cmd or "force online" in cmd or "switch to gemini" in cmd:
             self.force_local = False
             self.force_openrouter = False
             self._update_config_brain("gemini")
-            self.ui.write_log("SYS: 🧠 Reverted to ONLINE mode")
+            self.brain_router.clear_forced_brain()
+            
+            # ===== CRITICAL: Reset voice state =====
+            self.voice_enabled = True      # Enable speech output
+            self.silent_mode = False       # Exit silent mode
+            self.ui.muted = False          # Unmute microphone
+            self.set_speaking(False)       # Ensure speaking state is reset
+            
+            # Force a small audio test to verify
+            self.ui.write_log("SYS: 🧠 Reverted to ONLINE mode (Voice session preserved)")
+            self.speak("Voice system reactivated, sir. I am fully online.")
+            
+            # Restart connection to ensure Gemini Live audio context is fresh
             self._restart_connection()
             return
 

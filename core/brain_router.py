@@ -5,11 +5,13 @@ from typing import Dict, List, Any, Tuple
 from core.intent_classifier import IntentClassifier
 
 class BrainRouter:
-    def __init__(self, config_path: Path, ui=None):
+    def __init__(self, config_path: Path, ui=None, orch=None):
         self.config_path = config_path
         self.ui = ui
+        self.orch = orch
         self.classifier = IntentClassifier()
         self.preferred_brain = None
+        self._forced_brain = None
         
         # Load config
         config = self._load_config()
@@ -61,8 +63,23 @@ class BrainRouter:
         
         return self.engines
 
+    def set_forced_brain(self, brain_name: str):
+        """Sets a forced brain for all future routing decisions."""
+        self._forced_brain = brain_name
+        print(f"[Router] Brain forced to: {brain_name}")
+
+    def clear_forced_brain(self):
+        """Clears the forced brain setting, returning to automatic routing."""
+        self._forced_brain = None
+        print("[Router] Forced brain cleared, returning to auto-routing.")
+
     def get_active_brain(self) -> str:
         """Returns the currently active brain based on config or availability."""
+        # 1. Check for user-forced brain from voice command
+        if self._forced_brain:
+            print(f"[Router] 🔒 Using forced brain: {self._forced_brain}")
+            return self._forced_brain
+
         if self.preferred_brain and self.engines.get(self.preferred_brain):
             return self.preferred_brain
             
@@ -73,51 +90,79 @@ class BrainRouter:
             return forced
         
         # Fallback sequence
-        for engine in ['gemini', 'groq', 'openrouter', 'hermes', 'mistral']:
+        for engine in ['openrouter', 'gemini', 'groq', 'hermes', 'mistral']:
             if self.engines.get(engine):
                 return engine
         return 'offline'
 
+    def _is_complex_reasoning(self, text: str) -> bool:
+        """Determine if task needs advanced reasoning"""
+        complex_keywords = [
+            "architectural differences", "gemma 4", "26b", "31b",
+            "parameter count", "moe", "transformer layers",
+            "attention heads", "scaling laws", "model architecture",
+            "compare", "contrast", "analyze", "explain in detail",
+            "explain", "why", "how", "calculate", "math", "solve"
+        ]
+        text_lower = text.lower()
+        if any(kw in text_lower for kw in complex_keywords):
+            return True
+        if len(text) > 150:
+            return True
+        return False
+
     def route_task(self, user_input: str, context: str = "") -> Tuple[str, Dict]:
         """Route to best brain based on task type and availability"""
-        config = self._load_config()
-        forced = config.get("force_brain", "auto").lower()
-        
-        # If forced to a specific brain, try that first
-        if forced != "auto":
-            if self.engines.get(forced):
-                return self._call_agent(forced, user_input, context)
+        # ===== STEP 0: Check for user-forced brain from voice command =====
+        if self._forced_brain:
+            print(f"[Router] 🔒 Using forced brain: {self._forced_brain}")
+            return self._call_agent(self._forced_brain, user_input, context)
+            
+        # ===== STEP 1: Check for forced reasoning brain =====
+        if self.orch and hasattr(self.orch, 'reasoning_brain') and self.orch.reasoning_brain != "auto":
+            if self._is_complex_reasoning(user_input):
+                target_brain = self.orch.reasoning_brain
+                print(f"[Router] 🧠 Using forced reasoning brain: {target_brain}")
+                if target_brain == "openrouter":
+                    return self._route_to_openrouter(user_input, context)
+                elif target_brain == "gemini":
+                    return self._route_to_gemini(user_input, context)
+                else:
+                    return self._call_agent(target_brain, user_input, context)
 
+        # ===== STEP 2: Auto-detect complex tasks =====
+        if self._is_complex_reasoning(user_input):
+            if self.engines.get('openrouter'):
+                print("[Router] 🧠 Complex reasoning detected → OpenRouter")
+                return self._route_to_openrouter(user_input, context)
+            elif self.engines.get('mistral'):
+                print("[Router] 🧠 Complex reasoning detected → Mistral")
+                return self._route_to_mistral(user_input, context)
+        
         goal_lower = user_input.lower()
 
-        # 1. SPECIALIZED CODE ROUTING
+        # ===== STEP 3: Code tasks → Qwen =====
         code_keywords = ["python", "code", "script", "function", "class", "html", "css", "javascript", "website", "automate", "debug"]
         if any(kw in goal_lower for kw in code_keywords):
             if self.engines.get('qwen_coder'):
+                print("[Router] 💻 Code task → Qwen Coder")
                 return self._call_agent("qwen_coder", user_input, context)
 
-        # 2. PERSONALITY / AGENT ROUTING
+        # ===== STEP 4: Personality / Agent Tasks =====
         hermes_keywords = ["act as", "pretend", "roleplay", "character", "be more", "persona", "british", "butler"]
         if any(kw in goal_lower for kw in hermes_keywords):
             if self.engines.get('hermes'):
                 return self._call_agent("hermes", user_input, context)
 
-        # 3. REASONING / MATH ROUTING
-        reasoning_keywords = ["explain", "analyze", "why", "how", "calculate", "math", "solve", "compare"]
-        if any(kw in goal_lower for kw in reasoning_keywords):
-            if self.engines.get('mistral'):
-                return self._call_agent("mistral", user_input, context)
-
-        # 4. DEFAULT INTENT CLASSIFICATION
+        # ===== STEP 5: Default Intent Classification =====
         decision = self.classifier.classify(user_input)
         agent = decision.agent
-        
-        # If classifier picked a local brain we have, use it
         if agent in self.engines and self.engines[agent]:
             return self._call_agent(agent, user_input, context)
 
-        # 5. FINAL FALLBACKS
-        for fallback in [decision.agent] + decision.fallback_agents + ['gemini', 'groq', 'hermes']:
+        # ===== STEP 6: Simple Q&A → OpenRouter/Gemini (Fallback) =====
+        print("[Router] 💬 Simple query → OpenRouter/Gemini")
+        for fallback in [decision.agent] + decision.fallback_agents + ['openrouter', 'gemini', 'groq', 'hermes']:
             if self.engines.get(fallback):
                 return self._call_agent(fallback, user_input, context)
 
@@ -172,10 +217,43 @@ class BrainRouter:
         resp = call_llm(prompt, model="llama-3.3-70b-versatile")
         return ("groq", {"response": resp})
 
+    def get_optimal_openrouter_model(self, user_input: str) -> str:
+        """Intelligently select the best model for the task"""
+        goal_lower = user_input.lower()
+        config = self._load_config()
+        models = config.get("openrouter_models", {})
+        
+        # 1. Agentic/Multi-Step Tasks -> Nemotron (1M context, best for automation)
+        agentic_keywords = ["automate", "organize", "schedule", "monitor", "multi-step", "workflow"]
+        if any(kw in goal_lower for kw in agentic_keywords) or len(user_input) > 10000:
+            print("[Router] 🤖 Agentic task \u2192 Nemotron 3 Super")
+            return models.get("agentic", "nvidia/nemotron-3-super-120b-a12b:free")
+        
+        # 2. Multimodal/Image Tasks -> Llama 4 Maverick
+        multimodal_keywords = ["image", "picture", "screenshot", "see", "visual", "screen", "photo", "camera"]
+        if any(kw in goal_lower for kw in multimodal_keywords):
+            print("[Router] \ud83d\uddbc\ufe0f Multimodal task \u2192 Llama 4 Maverick")
+            return models.get("multimodal", "meta-llama/llama-4-maverick:free")
+        
+        # 3. Deep Reasoning -> Hy3 Preview (best benchmarks)
+        reasoning_keywords = ["explain", "why", "philosophical", "analyze", "compare", "contrast", "evaluate"]
+        if any(kw in goal_lower for kw in reasoning_keywords) and len(user_input) > 200:
+            print("[Router] 🧠 Deep reasoning \u2192 Hy3 Preview")
+            return models.get("reasoning", "tencent/hy3-preview:free")
+        
+        # 4. Code Generation -> GPT-OSS 120B
+        code_keywords = ["code", "python", "script", "function", "class", "write", "program", "develop"]
+        if any(kw in goal_lower for kw in code_keywords):
+            print("[Router] 💻 Code task \u2192 GPT-OSS 120B")
+            return models.get("coding", "openai/gpt-oss-120b:free")
+        
+        # 5. Default/Fallback -> Gemma 4 26B (fast & efficient)
+        print("[Router] ⚡ Fast task \u2192 Gemma 4 26B")
+        return models.get("fallback", "google/gemma-4-26b-a4b-it:free")
+
     def _route_to_openrouter(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.llm_provider import call_llm
-        cfg = self._load_config()
-        model = cfg.get("openrouter_model", "deepseek/deepseek-chat")
+        model = self.get_optimal_openrouter_model(prompt)
         resp = call_llm(prompt, model=model)
         return ("openrouter", {"response": resp})
 

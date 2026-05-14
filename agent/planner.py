@@ -552,6 +552,7 @@ def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = N
 def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
     """Uses OpenRouter as a high-performance fallback for planning."""
     import requests
+    from core.brain_router import BrainRouter
     api_key = _get_api_key("openrouter")
     if not api_key: return None
 
@@ -559,9 +560,14 @@ def create_plan_openrouter(goal: str, context: str = "") -> dict | None:
     if context: user_input += f"\n\nContext: {context}"
 
     try:
-        # Load model from config
-        with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
-            model_name = json.load(f).get("openrouter_model", "deepseek/deepseek-chat")
+        # Get optimal model
+        try:
+            br = BrainRouter(API_CONFIG_PATH)
+            model_name = br.get_optimal_openrouter_model(goal)
+        except Exception:
+            model_name = "google/gemma-4-26b-a4b-it:free"
+
+        print(f"[OpenRouter] 🧠 Using: {model_name.split('/')[-1]}")
 
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
