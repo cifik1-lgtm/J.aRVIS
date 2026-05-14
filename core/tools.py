@@ -303,7 +303,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "computer_control",
-        "description": "Direct mouse/keyboard control and OS tasks.",
+        "description": "Direct mouse/keyboard control and OS tasks. Actions: type, click, scroll, move, drag, hotkey, screenshot, list_processes, get_active_window, focus_window, open_folder.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -311,6 +311,7 @@ TOOL_DECLARATIONS = [
                 "text": {"type": "STRING"},
                 "keys": {"type": "STRING"},
                 "x": {"type": "NUMBER"}, "y": {"type": "NUMBER"},
+                "amount": {"type": "INTEGER", "description": "Scroll amount"},
                 "auto": {"type": "BOOLEAN"}
             },
             "required": ["action"]

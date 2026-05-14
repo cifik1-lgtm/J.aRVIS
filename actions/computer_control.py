@@ -69,6 +69,8 @@ Desktop automation via PyAutoGUI. Always set `action` to one of the names below.
 | random_data | type e.g. name, email, phone, password |
 | user_data | field — value from long_term memory identity |
 | mouse_position, get_position, cursor_position | — returns current x,y |
+| list_processes | — returns top 10 processes by RAM usage |
+| get_active_window | — returns title of currently focused window |
 | run | only if description/path implies opening a folder; else returns guidance |
 
 Do not invent other action names. For OS shortcuts (volume, brightness, Control Panel) use computer_settings.
@@ -602,6 +604,8 @@ _VALID_CONTROL_ACTIONS = frozenset(
         "mouse_position",
         "get_position",
         "cursor_position",
+        "list_processes",
+        "get_active_window",
     }
 )
 
@@ -972,6 +976,30 @@ def computer_control(
             _require_pyautogui()
             pos = pyautogui.position()
             return f"Mouse position: x={int(pos.x)}, y={int(pos.y)}"
+
+        if action == "list_processes":
+            try:
+                import psutil
+                rows = []
+                for p in psutil.process_iter(["name", "memory_info"]):
+                    try:
+                        mi = p.info.get("memory_info")
+                        rss = mi.rss if mi else 0
+                        if rss:
+                            rows.append((rss, p.info.get("name") or "?"))
+                    except: continue
+                rows.sort(key=lambda x: x[0], reverse=True)
+                top = [f"{n} ({r // (1024*1024)} MiB)" for r, n in rows[:10]]
+                return "Top processes: " + ", ".join(top)
+            except Exception as e:
+                return f"Process list failed: {e}"
+
+        if action == "get_active_window":
+            if not _PYGETWINDOW: return "pygetwindow not installed."
+            win = pygetwindow.getActiveWindow()
+            if win:
+                return f"Active window: '{win.title}' (Box: {win.left},{win.top},{win.width},{win.height})"
+            return "Could not identify active window."
 
         if action not in _VALID_CONTROL_ACTIONS:
             if not params.get("_cc_infer"):
