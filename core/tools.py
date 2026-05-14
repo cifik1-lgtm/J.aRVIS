@@ -437,7 +437,8 @@ TOOL_DECLARATIONS = [
             "properties": {
                 "action": {
                     "type": "STRING",
-                    "description": "play_song | play | pause | resume | next | previous | fullscreen | mute | volume_up | volume_down | like | theater | set_volume | volume_up_system | volume_down_system | create_playlist | next_song | previous_song | search | summarize | get_info | trending | open_tab | close_tab | switch_tab"
+                    "enum": ["play_song", "play_song_background", "play_song_foreground", "stop", "pause", "resume", "next", "previous", "fullscreen", "mute", "volume_up", "volume_down", "like", "theater", "set_volume", "volume_up_system", "volume_down_system", "create_playlist", "next_song", "previous_song", "search", "summarize", "get_info", "trending", "open_tab", "close_tab", "switch_tab"],
+                    "description": "Action to perform. Use play_song for default (video), play_song_background for audio-only, or play_song_foreground for immersive PWA video."
                 },
                 "query": {"type": "STRING", "description": "Song, artist, or search query"},
                 "url": {"type": "STRING", "description": "YouTube video URL for summarize/get_info"},
