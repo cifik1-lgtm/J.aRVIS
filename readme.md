@@ -1,67 +1,82 @@
 # JARVIS: Cifik Intelegents
-**The Ultimate Autonomous AI Orchestrator**
+**The Ultimate Autonomous AI Orchestrator & Holographic HUD**
 
-JARVIS Cifik Intelegents is a high-performance, multi-brain agentic system designed for seamless automation, software development, and real-time interaction. Powered by the latest Gemini 2.0 Multimodal Live technology and a resilient Triple-Brain architecture.
-
----
-
-## 🧠 The Triple-Brain Architecture
-JARVIS operates using three specialized "brains" to maximize efficiency, speed, and intelligence:
-
-1.  **Brain 1: Gemini Live (Voice Front-End)**
-    *   **Role**: Handles natural conversation, voice personality (Charon), and real-time vision.
-    *   **Function**: Light conversation, memory retrieval, and task delegation.
-2.  **Brain 2: OpenRouter (The Expert Strategist)**
-    *   **Role**: Specialized in web research, complex reasoning, and browser automation.
-    *   **Function**: High-token reasoning tasks that require internet access or advanced problem solving.
-3.  **Brain 3: Local Ollama (The Private Architect)**
-    *   **Role**: Handles code generation, file system operations, and privacy-sensitive data.
-    *   *Function**: Operates 100% locally on your GPU for maximum speed and security.
+JARVIS Cifik Intelegents is a state-of-the-art, multi-brain autonomous system designed for professional software development, real-time computer control, and advanced environmental awareness. It features a revolutionary **Triple-Brain Architecture** and a **Procedural Holographic HUD**.
 
 ---
 
-## 🛠️ Core Capabilities
+## 🧠 The Triple-Brain Local Architecture
+JARVIS is the first system to intelligently route tasks between high-performance local GPUs and ultra-fast cloud models.
 
-### 1. Autonomous Software Factory
-*   **Dev Agent**: Autonomous coding, debugging, and file management.
-*   **EXE Compiler**: Can convert Python projects into standalone Windows executables automatically.
-*   **Dependency Management**: Real-time checking and installation of required libraries.
+### 1. **Mistral 7B (The Logic Core)**
+*   **Role**: Reasoning, complex explanations, and mathematical analysis.
+*   **Efficiency**: Runs 100% locally on your GPU via Ollama for zero-cost, private reasoning.
 
-### 2. Multi-Engine Browser Automation
-*   **Live Web Access**: Real-time searching and data extraction.
-*   **Media Control**: Direct control over YouTube, Netflix, and other web platforms.
-*   **Web Scraping**: Advanced data harvesting and analysis from any website.
+### 2. **Qwen 2.5 Coder (The Software Architect)**
+*   **Role**: Expert-level programming, script automation, and file system refactoring.
+*   **Power**: Specialized in Python, JavaScript, and systems architecture.
 
-### 3. Visual & Multimodal Intelligence
-*   **Neural Inspector**: Real-time object detection and screen analysis using TensorFlow.
-*   **Vision Analysis**: Can "see" through your webcam or analyze your screen in real-time to assist with UI tasks.
+### 3. **Hermes 3 8B (The Agentic Soul)**
+*   **Role**: Personality, agentic coordination, and multi-step task execution.
+*   **Persona**: Poised, witty, and deeply integrated with the Stark-style "British Butler" identity.
 
-### 4. Persistent Memory & Identity
-*   **Personal Memory**: Remembers your preferences, relationships, and previous conversations.
-*   **Identity Tracking**: Tracks the identity and relationships of people seen via face recognition.
-*   **Proactive Reminders**: Intelligently reminds you of tasks based on context and time.
+### ☁️ Cloud Hive Mind (Gemini 2.0 & Groq)
+*   **Gemini 2.0 Live**: Powers the real-time voice and multimodal vision stream.
+*   **Groq LPU**: Provides ultra-fast planning and intent classification fallbacks.
 
-### 5. OS & System Control
-*   **System Mastery**: Control volume, display, power states, and application launching.
-*   **Silent Observer Mode**: Mutes audio output but continues to listen and record memories in the background.
+---
 
-### 6. The Ghost Relay (Network)
-*   **Cross-Device Orchestration**: Syncs commands and state across the Jarvis Network (EVA/CIFIK) using a decentralized cloud relay.
+## 🖥️ Procedural Holographic HUD
+JARVIS features a dynamic, glassmorphism-inspired HUD (Heads-Up Display) that integrates directly with your desktop.
+
+*   **Central Eye**: A procedural holographic orb that reacts to speech and thought.
+*   **Integrated Vision**: Live camera feeds and screen analysis are rendered directly inside the HUD.
+*   **Gesture Control**: Control your entire workspace using hand gestures (fist to mute, pointing to click) powered by MediaPipe.
+
+---
+
+## 🛠️ Specialized Tool Arsenal (48+ Actions)
+JARVIS is equipped with an extensive suite of tools for total system control.
+
+### 1. Computer & Workspace Control
+*   **Precision Input**: Mouse movement, keyboard hotkeys, and smart typing.
+*   **Window Management**: "Workspace Architect" protocol snaps windows into optimized layouts (Coding, Social, Cinema).
+*   **System Monitor**: Real-time process listing (`list_processes`) and active window tracking (`get_active_window`).
+
+### 2. Autonomous Development Agent
+*   **Code Helper**: Writes, runs, and explains complex codebases.
+*   **Dev Agent**: An autonomous agent that can build entire features from a single prompt.
+*   **Self-Healing**: Automatically detects and repairs bugs in its own modules.
+
+### 3. Vision & Neural Intelligence
+*   **Neural Inspector**: Deep-learning object detection via TensorFlow.
+*   **Vision Inspector**: High-speed screen/webcam analysis for UI automation.
+*   **Face Memory**: Remembers your identity and relationships via persistent biometric tracking.
+
+### 4. Media & Unified YouTube
+*   **YouTube Manager**: Unified control over playback, system volume, playlists, and summaries.
+*   **Image Generation**: Creates professional-grade assets using nano-banana-2 models via Poe.
+
+### 5. Memory & RAG
+*   **Semantic Search**: Recalls facts from 100+ previous conversations using vector databases (ChromaDB).
+*   **Ghost Relay**: Syncs commands across the Cifik Network (EVA/CIFIK) via cloud relay.
 
 ---
 
 ## 🚀 Installation & Setup
-1. **Requirements**: Windows 10/11, Python 3.12+, and a GPU (NVIDIA/AMD).
-2. **Install Dependencies**:
+1. **Requirements**: Windows 10/11, Python 3.12+, and an RX/RTX GPU.
+2. **Setup**:
    ```bash
    pip install -r requirements.txt
    playwright install
+   ollama pull qwen2.5-coder:7b
+   ollama pull mistral:7b
+   ollama pull hermes3:8b
    ```
-3. **Configure API Keys**: Add your Gemini, OpenRouter, and Telegram keys to `config/api_keys.json`.
-4. **Run JARVIS**:
+3. **Launch**:
    ```bash
    python main.py
    ```
 
 ---
-*Built for the hive-mind by cifikAI.*
+*Built for the hive-mind by cifikAI. Version: CIFIK Power Mark-XXXIX.*
