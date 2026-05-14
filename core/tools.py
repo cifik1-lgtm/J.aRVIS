@@ -451,6 +451,29 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "sms_tool",
+        "description": "Send and receive SMS messages via a connected phone using smsmobileapi. Action 'send' requires 'to' (phone number) and 'message'. Action 'receive' retrieves recent messages.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "enum": ["send", "receive"],
+                    "description": "Whether to send a message or check for received ones."
+                },
+                "to": {
+                    "type": "STRING",
+                    "description": "Recipient phone number (e.g. 15551234567)"
+                },
+                "message": {
+                    "type": "STRING",
+                    "description": "The text message content to send."
+                }
+            },
+            "required": ["action"]
+        }
+    },
+    {
         "name": "generate_image",
         "description": "Generate an image via Poe (e.g. nano-banana-2) and save it locally.",
         "parameters": {
@@ -744,7 +767,7 @@ class ToolDispatcher:
         # Classify tool risk level
         self._Tiers = {
             "harmless": ["web_search", "weather_report", "ip_checker", "save_memory", "vision_inspector", "preference_manager", "monitor_detection"],
-            "state_changing": ["file_controller", "open_app", "browser_control", "browser_navigate", "face_manager", "desktop_control", "youtube_control"],
+            "state_changing": ["file_controller", "open_app", "browser_control", "browser_navigate", "face_manager", "desktop_control", "youtube_control", "sms_tool"],
             "privileged": ["admin_controller", "reboot_jarvis", "shutdown_jarvis", "python_sandbox", "relay_command"]
         }
 
