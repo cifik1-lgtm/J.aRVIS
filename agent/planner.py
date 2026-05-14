@@ -363,9 +363,39 @@ def _poe_should_use(goal: str) -> bool:
 
 
 def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = None) -> dict:
-    """Create a plan using available brains - Qwen priority for maximum reliability."""
+    """Create a plan using available brains - Local brains have highest priority."""
+    goal_lower = goal.lower()
     
-    # 1. Check for manual brain override in config (Force Brain)
+    # ===== PRIORITY 1: LOCAL QWEN (Code tasks) =====
+    if any(word in goal_lower for word in ["python", "code", "script", "function", "javascript", "html", "css", "c#", "java"]):
+        from core.local_llm import call_ollama, is_ollama_online
+        if is_ollama_online():
+            print("[Planner] 🐍 PRIORITY 1: Qwen Coder (local)")
+            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="qwen2.5-coder:7b")
+            if response:
+                plan = _parse_and_validate_plan(response)
+                if plan: return plan
+    
+    # ===== PRIORITY 2: LOCAL MISTRAL (Reasoning) =====
+    if any(word in goal_lower for word in ["explain", "why", "how", "calculate", "analyze", "reason"]):
+        from core.local_llm import call_ollama, is_ollama_online
+        if is_ollama_online():
+            print("[Planner] 🧠 PRIORITY 2: Mistral 7B (local)")
+            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="mistral:7b")
+            if response:
+                plan = _parse_and_validate_plan(response)
+                if plan: return plan
+    
+    # ===== PRIORITY 3: LOCAL HERMES (General Agentic) =====
+    from core.local_llm import call_ollama, is_ollama_online
+    if is_ollama_online():
+        print("[Planner] 🎭 PRIORITY 3: Hermes 3 (local)")
+        response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="hermes3:8b")
+        if response:
+            plan = _parse_and_validate_plan(response)
+            if plan: return plan
+            
+    # 4. Check for manual brain override in config (Force Brain)
     try:
         with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
             forced = json.load(f).get("force_brain", "hive")
@@ -637,6 +667,27 @@ def _parse_and_validate_plan(text: str) -> dict:
 
     print(f"[Planner] ✅ Plan: {len(plan['steps'])} steps")
     return plan
+
+
+def _create_simple_plan(goal: str, response: str) -> dict:
+    """Helper to convert a raw LLM response into a JARVIS plan structure if needed."""
+    try:
+        # If response is already JSON
+        return _parse_and_validate_plan(response)
+    except:
+        # Fallback to a single-step chat plan
+        return {
+            "goal": goal,
+            "steps": [
+                {
+                    "step": 1,
+                    "tool": "talk",
+                    "description": "Respond to user",
+                    "parameters": {"text": response},
+                    "critical": True
+                }
+            ]
+        }
 
 
 def _fallback_plan(goal: str) -> dict:

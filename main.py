@@ -435,6 +435,7 @@ class JarvisLive:
         
         # Rate limiting for saves
         self._last_save_time = datetime.now() - timedelta(seconds=10)
+        self._warmed_up = False
         
         # Autonomous mode settings
         self.autonomous_enabled = True
@@ -538,8 +539,10 @@ class JarvisLive:
 
         # Warm up all local brains for faster first response
         try:
-            from core.local_llm import warm_up_all_local_brains
-            warm_up_all_local_brains()
+            if not self._warmed_up:
+                self._warmed_up = True
+                from core.local_llm import warm_up_all_local_brains
+                warm_up_all_local_brains()
         except: pass
 
     def _detect_engines(self):
@@ -1619,8 +1622,10 @@ class JarvisLive:
                         
                         # Warm up local brains
                         try:
-                            from core.local_llm import warm_up_all_local_brains
-                            warm_up_all_local_brains()
+                            if not self._warmed_up:
+                                self._warmed_up = True
+                                from core.local_llm import warm_up_all_local_brains
+                                warm_up_all_local_brains()
                         except Exception as e:
                             print(f"SYS: ⚠️ Local brain warm-up skipped: {e}")
                             
