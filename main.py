@@ -1225,6 +1225,7 @@ class JarvisLive:
             "web_search",       # Quick text search
             "weather_report",   # Get weather
             "ip_checker",       # Get IP info
+            "sms_tool",         # Send/receive SMS messages
         ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
