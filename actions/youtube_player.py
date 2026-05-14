@@ -17,6 +17,12 @@ class YouTubePlayer:
         self.playlist_index = 0
         self.volume_level = 50  # Default 50%
         self.brave_path = "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe"
+        self.vlc_path = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
+        
+        # State Management
+        self.playback_proc = None
+        self.current_song = None
+        self.is_direct_mode = True  # Default to direct audio playback
         
     def ensure_single_brave(self) -> bool:
         """Make sure only one Brave instance runs"""
@@ -76,48 +82,132 @@ class YouTubePlayer:
 
         # Check if Brave is already running
         brave_running = False
+        brave_pids = []
         for proc in psutil.process_iter(['name', 'pid']):
             try:
                 if proc.info['name'] and 'brave' in proc.info['name'].lower():
                     brave_running = True
-                    self.ui.write_log(f"[YouTubePlayer] ✅ Brave already running (pid={proc.info['pid']})")
-                    print(f"[YouTubePlayer] ✅ Brave running pid={proc.info['pid']}")
-                    break
+                    brave_pids.append(proc.info['pid'])
             except Exception:
                 pass
 
+        if brave_running:
+            self.ui.write_log(f"[YouTubePlayer] 🔄 Brave is running, opening new tab...")
+            try:
+                # Direct Popen with list is more robust than shell 'start'
+                subprocess.Popen([brave_exe, "--new-tab", url])
+                
+                # Still ensure the window is focused after the new tab opens
+                time.sleep(1.5)
+                import pygetwindow as gw
+                wins = [w for w in gw.getWindowsWithTitle('Brave') if w.visible]
+                if wins:
+                    win = wins[0]
+                    if win.isMinimized: win.restore()
+                    win.activate()
+                    self.ui.write_log("[YouTubePlayer] ✨ Focused existing Brave instance")
+                return True
+            except Exception as e:
+                self.ui.write_log(f"[YouTubePlayer] ⚠️ Failed to open tab in running Brave: {e}")
+
+        # Default / Fallback: Launch browser
         try:
-            import os
-            # Build the command using 'start' which is very robust on Windows
-            # Format: start "Title" "PathToExe" "URL"
-            if brave_running:
-                cmd = f'start "JARVIS_BRAVE" "{brave_exe}" --new-tab "{url}"'
-            else:
-                cmd = f'start "JARVIS_BRAVE" "{brave_exe}" "{url}"'
+            # Direct Popen with list
+            subprocess.Popen([brave_exe, url])
+            self.ui.write_log(f"[YouTubePlayer] 🚀 Launched Brave with URL: {url[:40]}...")
             
-            subprocess.Popen(cmd, shell=True)
-            self.ui.write_log(f"[YouTubePlayer] 🚀 Dispatched Brave command: {url[:40]}...")
-            
-            # Attempt to bring to front using pygetwindow
+            # Ensure focus after launch
+            time.sleep(2.5)
             try:
                 import pygetwindow as gw
-                time.sleep(2.0) # More time for Brave to open the tab
-                # Search for any window that contains 'Brave' or is the active one we just started
-                brave_windows = [w for w in gw.getAllWindows() if 'Brave' in w.title and w.visible]
-                if brave_windows:
-                    # Sort by title length or just pick the first visible
-                    brave_windows[0].activate()
-                    brave_windows[0].restore() # Ensure it's not minimized
-                    self.ui.write_log("[YouTubePlayer] ✨ Focused Brave window")
-            except:
-                pass
-                
+                wins = [w for w in gw.getWindowsWithTitle('Brave') if w.visible]
+                if wins:
+                    win = wins[0]
+                    if win.isMinimized: win.restore()
+                    win.activate()
+            except: pass
+            
             return True
         except Exception as e:
             self.ui.write_log(f"[YouTubePlayer] ❌ Command failed: {e}")
             import webbrowser
             webbrowser.open(url)
             return True
+
+    def stop_playback(self) -> str:
+        """Stop any active playback (Direct mode or Browser mode)"""
+        stopped = False
+        
+        # 1. Kill direct VLC process
+        if self.playback_proc:
+            try:
+                self.playback_proc.terminate()
+                self.playback_proc = None
+                self.ui.write_log("[YouTubePlayer] ⏹️ Stopped direct audio playback")
+                stopped = True
+            except:
+                pass
+        
+        # 2. Cleanup current state
+        self.current_song = None
+        
+        if stopped:
+            return "Stopped playback, sir."
+        return "Nothing is currently playing in direct mode, sir."
+
+    def play_audio_direct(self, video_url: str, title: str = "Unknown Track") -> bool:
+        """Play YouTube audio directly via yt-dlp and VLC (No browser needed)"""
+        self.stop_playback()
+        self.ui.write_log(f"[YouTubePlayer] 🎧 Preparing direct audio: {title}")
+        
+        try:
+            import subprocess
+            import sys
+            import os
+            
+            # 1. Get the best audio URL using yt-dlp
+            self.ui.write_log("[YouTubePlayer] 🔍 Extracting audio stream URL...")
+            cmd_dlp = [
+                sys.executable, "-m", "yt_dlp",
+                "-f", "bestaudio",
+                "--get-url",
+                video_url
+            ]
+            result = subprocess.run(cmd_dlp, capture_output=True, text=True, timeout=15)
+            
+            if result.returncode != 0:
+                self.ui.write_log(f"[YouTubePlayer] ❌ yt-dlp extraction failed: {result.stderr}")
+                return False
+                
+            audio_url = result.stdout.strip()
+            if not audio_url:
+                return False
+
+            # 2. Launch VLC in background (no interface, no video)
+            self.ui.write_log(f"[YouTubePlayer] 🚀 Launching VLC for {title}")
+            vlc_cmd = [
+                self.vlc_path,
+                "--intf", "dummy",
+                "--no-video",
+                "--play-and-exit",
+                audio_url
+            ]
+            
+            # Start VLC in its own process group
+            self.playback_proc = subprocess.Popen(
+                vlc_cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+            )
+            
+            self.current_song = title
+            self.ui.write_log(f"[YouTubePlayer] ✅ Direct playback started: {title}")
+            return True
+            
+        except Exception as e:
+            self.ui.write_log(f"[YouTubePlayer] ❌ Direct playback failed: {e}")
+            return False
 
     
     def play_song(self, query: str) -> str:

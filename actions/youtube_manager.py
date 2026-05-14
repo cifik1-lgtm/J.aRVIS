@@ -21,6 +21,24 @@ class YouTubeManager:
         self.ui = ui
         self.player = get_youtube_player(ui)
 
+    def ensure_browser_focused(self, browser_name="Brave"):
+        """Ensure browser window is visible and focused"""
+        try:
+            import pygetwindow as gw
+            windows = gw.getWindowsWithTitle(browser_name)
+            if windows:
+                win = windows[0]
+                if win.isMinimized:
+                    win.restore()
+                win.activate()
+                self.ui.write_log(f"[YouTubeManager] ✨ Verified focus for {browser_name}")
+                return True
+        except:
+            # Fallback: try Alt+Tab to Brave
+            import pyautogui
+            pyautogui.hotkey('alt', 'tab')
+        return False
+
     def _with_autoplay(self, url: str) -> str:
         """Add autoplay=1 without clobbering existing query params."""
         try:
@@ -132,10 +150,14 @@ class YouTubeManager:
                       "like", "theater"):
             return youtube_control({"action": action}, self.ui)
 
+        if action == "stop":
+            return self.player.stop_playback()
+
         # ── BROWSER / TAB MANAGEMENT (youtube_player) ────────────────────────
         if action == "open_tab":
             url = parameters.get("url", "https://www.youtube.com")
             self.player.open_brave_tab(url)
+            self.ensure_browser_focused("Brave")
             return f"Opened new tab: {url}, sir."
 
         if action == "close_tab":
@@ -185,14 +207,25 @@ class YouTubeManager:
                 return "What would you like me to play, sir?"
             direct_url = self._resolve_direct_video_url(query)
             if direct_url:
+                # Try direct audio mode first if enabled
+                if getattr(self.player, "is_direct_mode", False):
+                    success = self.player.play_audio_direct(direct_url, title=query)
+                    if success:
+                        return f"Playing {query} in the background, sir."
+                
+                # Fallback to browser mode
                 direct_url = self._with_autoplay(direct_url)
-                self.ui.write_log(f"[YouTube] 🎵 Playing directly: {direct_url}")
+                self.ui.write_log(f"[YouTube] 🎵 Falling back to browser for: {direct_url}")
                 success = self.player.open_brave_tab(direct_url)
+                if success:
+                    self.ensure_browser_focused("Brave")
                 return f"Playing {query} on YouTube, sir." if success else f"Failed to open Brave for {query}, sir."
 
             search_url = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
             self.ui.write_log("[YouTube] ⚠️ Could not resolve direct video URL; opening search page")
             success = self.player.open_brave_tab(search_url)
+            if success:
+                self.ensure_browser_focused("Brave")
             return (
                 f"Opening YouTube search for {query}, sir. Please click the first video to play."
                 if success
