@@ -749,6 +749,44 @@ TOOL_DECLARATIONS = [
             },
             "required": ["query"]
         }
+    },
+    {
+        "name": "telegram_manager",
+        "description": "Send or broadcast Telegram messages via the telegram bot.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "send"},
+                "text": {"type": "STRING"}
+            },
+            "required": ["action", "text"]
+        }
+    },
+    {
+        "name": "routine_manager",
+        "description": "Manage scheduled background routines.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "add | list | clear"},
+                "time": {"type": "STRING", "description": "Time in HH:MM format (24h) for 'add' action"},
+                "task": {"type": "STRING", "description": "Task description for 'add' action"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "name": "memory_manager",
+        "description": "Manage simple key-value facts in basic long term memory facts.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "save | retrieve | delete"},
+                "key": {"type": "STRING"},
+                "value": {"type": "STRING"}
+            },
+            "required": ["action"]
+        }
     }
 ]
 
@@ -1350,6 +1388,18 @@ class ToolDispatcher:
                     if target and cmd:
                         success = publish_command(target, cmd)
                         return f"Command sent to {target}." if success else f"Failed to send command to {target}."
+
+                elif name == "telegram_manager":
+                    from actions.telegram_bot import telegram_manager
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: telegram_manager(parameters=args, player=self.ui)) or "Done."
+
+                elif name == "routine_manager":
+                    from actions.routines import routine_manager
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: routine_manager(parameters=args, player=self.ui)) or "Done."
+
+                elif name == "memory_manager":
+                    from actions.memory_manager import memory_manager
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: memory_manager(parameters=args, player=self.ui)) or "Done."
 
                 else:
                     # Dynamic Fallback
