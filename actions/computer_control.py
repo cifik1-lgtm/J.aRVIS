@@ -61,6 +61,7 @@ Desktop automation via PyAutoGUI. Always set `action` to one of the names below.
 | screen_find | description — returns x,y or NOT_FOUND (vision) |
 | screen_click | description — find element and left-click |
 | screen_double_click | description — find element and double-click |
+| smart_close | target e.g. brave, chrome, firefox |
 | wait | seconds (max 30) |
 | clear_field | — ctrl+a delete on focused field |
 | focus_window | title — substring of window title |
@@ -73,7 +74,7 @@ Desktop automation via PyAutoGUI. Always set `action` to one of the names below.
 | get_active_window | — returns title of currently focused window |
 | run | only if description/path implies opening a folder; else returns guidance |
 
-Do not invent other action names. For OS shortcuts (volume, brightness, Control Panel) use computer_settings.
+Do not invent other action names. Use `smart_close` for closing browsers or apps instead of Alt+F4. For OS shortcuts (volume, brightness, Control Panel) use computer_settings.
 """.strip()
 
 
@@ -606,6 +607,7 @@ _VALID_CONTROL_ACTIONS = frozenset(
         "cursor_position",
         "list_processes",
         "get_active_window",
+        "smart_close",
     }
 )
 
@@ -662,6 +664,47 @@ def _diagnose_system() -> str:
     return "\n".join(lines)
 
 
+def _smart_close(target: str) -> str:
+    """Close an application by process name (safely)."""
+    target = (target or "").lower().strip()
+    if not target:
+        return "smart_close needs a 'target' (e.g. 'brave', 'chrome', 'firefox')."
+
+    known_apps = {
+        "brave": "brave.exe",
+        "chrome": "chrome.exe",
+        "firefox": "firefox.exe",
+        "edge": "msedge.exe",
+        "opera": "opera.exe"
+    }
+
+    exe = known_apps.get(target) or target
+    if not exe.endswith(".exe") and _SYSTEM == "Windows":
+        exe += ".exe"
+
+    try:
+        import psutil
+        import subprocess
+
+        # Check if running
+        running = any(p.info['name'].lower() == exe.lower() for p in psutil.process_iter(['name']))
+
+        if running:
+            if _SYSTEM == "Windows":
+                # Using taskkill /f for browsers as they often have many processes
+                subprocess.run(f"taskkill /im {exe} /f", shell=True, capture_output=True, creationflags=_CREATE_NO_WINDOW)
+                return f"Closed {target} ({exe})."
+            else:
+                for proc in psutil.process_iter(['name']):
+                    if proc.info['name'].lower() == exe.lower():
+                        proc.terminate()
+                return f"Terminated {exe} processes."
+        else:
+            return f"'{target}' (process '{exe}') was not running."
+    except Exception as e:
+        return f"smart_close failed: {e}"
+
+
 def _infer_computer_control_action(goal: str) -> dict:
     """Map a bogus or vague action string to a valid computer_control action (one retry)."""
     goal = (goal or "").strip()
@@ -715,6 +758,7 @@ Heuristics (do NOT guess clear_field unless the user clearly wants to clear the 
 - delay, wait, pause -> wait (needs "seconds" number)
 - bring window to front -> focus_window (needs "title")
 - move window to other monitor, move app, reposition window -> move_window (needs "title" or uses active, "target" can be "other_monitor")
+- close app, exit program, kill browser, shut down brave/chrome -> smart_close (needs "target")
 
 Return ONLY minified JSON. Required: "action". Optional: text, description, keys, key, title, seconds, folder, x, y, x1, y1, x2, y2, dx, dy, duration, amount, direction, path, type, field, clear_first. Use null for unused fields.
 Example: {{"action":"diagnose_system"}}"""
@@ -971,6 +1015,9 @@ def computer_control(
 
         if action == "diagnose_system":
             return _diagnose_system()
+
+        if action == "smart_close":
+            return _smart_close(params.get("target") or params.get("title") or params.get("text", ""))
 
         if action in ("mouse_position", "get_position", "cursor_position"):
             _require_pyautogui()

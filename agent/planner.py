@@ -44,6 +44,10 @@ game_updater
   app_id: string (optional)
   shutdown_when_done: boolean (optional)
 
+browser_navigate
+  url: string (required) — e.g. google.com
+  browser: string (optional, default: brave)
+
 browser_control
   action: "go_to" | "search" | "click" | "type" | "scroll" | "get_text" | "press" | "close" (required)
   url: string (for go_to)
@@ -182,9 +186,15 @@ Convert the user's request into a JSON plan using ONLY these tools:
 1. computer_settings: { "action": "string", "description": "natural language" }
 2. file_controller: { "action": "write|create_file|read|list|delete|move|copy|change_directory|cd", "path": "desktop|documents|D:\\\\|cwd", "name": "string", "content": "string" }
 3. computer_control: { "action": "type|click|hotkey|screenshot", "text": "str", "keys": "str" }
-4. open_app: { "app_name": "string" }
-5. system_control: { "action": "switch_brain", "brain": "gemini|local|openrouter" }
-6. talk: { "text": "your response to the user" }
+4. open_app: { "app_name": "string" } -- ALWAYS include 'app_name' (e.g., 'chrome', 'notepad', 'discord').
+5. browser_navigate: { "url": "string", "browser": "string" } -- ALWAYS use this for navigating to websites.
+6. system_control: { "action": "switch_brain", "brain": "gemini|local|openrouter" }
+7. talk: { "text": "your response to the user" }
+
+When navigating to a URL in a browser manually via computer_control:
+1. Type the URL using computer_control(action='type', text='url')
+2. ALWAYS press Enter using computer_control(action='press', key='enter')
+Never skip the Enter key press - it's required for navigation. Prefer 'browser_navigate' for this.
 
 OUTPUT ONLY VALID JSON:
 {

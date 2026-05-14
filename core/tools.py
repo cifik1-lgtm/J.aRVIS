@@ -268,6 +268,18 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "browser_navigate",
+        "description": "Composite tool to open a browser and navigate to a URL. Use this for all simple 'open website' or 'go to url' tasks.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "url": {"type": "STRING", "description": "The URL to navigate to (e.g. google.com, facebook.com)"},
+                "browser": {"type": "STRING", "description": "Optional: brave | chrome | edge | firefox (default: brave)"}
+            },
+            "required": ["url"]
+        }
+    },
+    {
         "name": "browser_control",
         "description": "Opens a BROWSER WINDOW and navigates to a URL.",
         "parameters": {
@@ -303,12 +315,13 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "computer_control",
-        "description": "Direct mouse/keyboard control and OS tasks. Actions: type, click, scroll, move, drag, hotkey, screenshot, list_processes, get_active_window, focus_window, open_folder.",
+        "description": "Direct mouse/keyboard control and OS tasks. Actions: type, click, scroll, move, drag, hotkey, screenshot, smart_close, list_processes, get_active_window, focus_window, open_folder. Use smart_close for apps/browsers.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "action": {"type": "STRING"},
                 "text": {"type": "STRING"},
+                "target": {"type": "STRING", "description": "App name for smart_close (e.g. brave, chrome)"},
                 "keys": {"type": "STRING"},
                 "x": {"type": "NUMBER"}, "y": {"type": "NUMBER"},
                 "amount": {"type": "INTEGER", "description": "Scroll amount"},
@@ -730,7 +743,7 @@ class ToolDispatcher:
         # Classify tool risk level
         self._Tiers = {
             "harmless": ["web_search", "weather_report", "ip_checker", "save_memory", "vision_inspector", "preference_manager", "monitor_detection"],
-            "state_changing": ["file_controller", "open_app", "browser_control", "face_manager", "desktop_control", "youtube_control"],
+            "state_changing": ["file_controller", "open_app", "browser_control", "browser_navigate", "face_manager", "desktop_control", "youtube_control"],
             "privileged": ["admin_controller", "reboot_jarvis", "shutdown_jarvis", "python_sandbox", "relay_command"]
         }
 
