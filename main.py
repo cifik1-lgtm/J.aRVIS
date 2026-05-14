@@ -536,10 +536,10 @@ class JarvisLive:
         self.gesture_manager = None
         self.gesture_enabled = False
 
-        # Warm up local brain for faster first response
+        # Warm up all local brains for faster first response
         try:
-            from core.local_llm import warm_up_local_brain
-            threading.Thread(target=warm_up_local_brain, daemon=True).start()
+            from core.local_llm import warm_up_all_local_brains
+            warm_up_all_local_brains()
         except: pass
 
     def _detect_engines(self):
@@ -698,10 +698,45 @@ class JarvisLive:
                     self.auto_confirm_destructive = auto_confirm
         except: pass
 
+    def _handle_voice_commands(self, text: str) -> bool:
+        """Handle specific voice-triggered commands locally"""
+        cmd = text.lower()
+        
+        # Brain switching commands
+        if "use qwen" in cmd or "switch to coder" in cmd or "switch to code brain" in cmd:
+            self.brain_router.preferred_brain = "qwen_coder"
+            self.speak("Switching to Qwen Coder for code tasks, sir.")
+            return True
+
+        if "use mistral" in cmd or "switch to reasoning" in cmd:
+            self.brain_router.preferred_brain = "mistral"
+            self.speak("Switching to Mistral for reasoning tasks, sir.")
+            return True
+
+        if "use hermes" in cmd or "switch to agent" in cmd or "switch to butler" in cmd:
+            self.brain_router.preferred_brain = "hermes"
+            self.speak("Switching to Hermes 3 for agentic tasks, sir.")
+            return True
+            
+        if "automatic brain" in cmd or "reset brain" in cmd:
+            self.brain_router.preferred_brain = None
+            self.speak("Resetting brain router to autonomous mode, sir.")
+            return True
+
+        if "brain status" in cmd or "system status" in cmd:
+            status = self.brain_router.get_status_report()
+            self.ui.write_log(f"🧠 STATUS: {status}")
+            self.speak(f"Systems are operational. Local status: {status}")
+            return True
+        return False
+
     def _on_text_command(self, text: str):
         self._last_user_text = text
         cmd = text.lower().strip()
         
+        if self._handle_voice_commands(cmd):
+            return
+
         # ===== YOUTUBE COMMANDS - HIGHEST PRIORITY =====
         
         # Volume control
@@ -1581,6 +1616,17 @@ class JarvisLive:
                         print("[JARVIS] ✅ Connected.")
                         self.ui.set_state("LISTENING")
                         if self.hud_overlay: self.hud_overlay.set_status("LISTENING")
+                        
+                        # Register tools for Gemini Live
+                        self._register_live_tools()
+                        
+                        # Warm up local brains
+                        try:
+                            from core.local_llm import warm_up_all_local_brains
+                            warm_up_all_local_brains()
+                        except Exception as e:
+                            print(f"SYS: ⚠️ Local brain warm-up skipped: {e}")
+                            
                         self.ui.write_log("SYS: Cloud connection established.")
                         
                         reconnect_delay = 1
