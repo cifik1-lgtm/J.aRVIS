@@ -215,26 +215,35 @@ class YouTubeManager:
             return self.player.play_previous_in_playlist()
 
         # ── PLAY BY QUERY — open YouTube search directly in Brave ────────────
-        if action in ("play_song", "play"):
+        if action in ("play_song", "play", "play_song_background", "play_song_foreground"):
             query = parameters.get("query", "").strip()
             if not query:
                 return "What would you like me to play, sir?"
+                
+            # Default to foreground if no specific mode is requested
+            mode = "foreground"
+            if action == "play_song_background":
+                mode = "background"
+            elif action == "play_song_foreground":
+                mode = "foreground"
+            
             direct_url = self._resolve_direct_video_url(query)
             if direct_url:
-                # Try direct audio mode first if enabled
-                if getattr(self.player, "is_direct_mode", False):
+                # Background Audio Mode
+                if mode == "background":
                     success = self.player.play_audio_direct(direct_url, title=query)
                     if success:
                         return f"Playing {query} in the background, sir."
                 
-                # Fallback to browser mode
+                # Foreground Video Mode (Default)
                 direct_url = self._with_autoplay(direct_url)
-                self.ui.write_log(f"[YouTube] 🎵 Falling back to browser for: {direct_url}")
+                self.ui.write_log(f"[YouTube] 📺 Opening foreground video: {direct_url}")
                 success = self.player.open_brave_tab(direct_url)
                 if success:
                     self.ensure_browser_focused("Brave")
                 return f"Playing {query} on YouTube, sir." if success else f"Failed to open Brave for {query}, sir."
 
+            # Fallback to search results if direct URL resolution fails
             search_url = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
             self.ui.write_log("[YouTube] ⚠️ Could not resolve direct video URL; opening search page")
             success = self.player.open_brave_tab(search_url)
