@@ -1,9 +1,8 @@
 import os
 import json
 from pathlib import Path
-from smsmobileapi import SMSSender
+import requests
 
-# Configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
 API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
 
@@ -13,21 +12,21 @@ class SMSManager:
         self.api_key = self._load_api_key()
         
         if not self.api_key:
-            error_msg = "SMSMOBILEAPI_KEY not found in environment or config/api_keys.json."
+            error_msg = "SMSMOBILEAPI_KEY not found"
             if self.ui:
                 self.ui.write_log(f"[SMSManager] ❌ {error_msg}")
             raise ValueError(error_msg)
         
-        # Initialize the SMS sender
-        self.sms = SMSSender(api_key=self.api_key)
+        if self.ui:
+            self.ui.write_log(f"[SMSManager] ✅ Initialized")
 
     def _load_api_key(self):
-        # 1. Check environment variable
+        # Check environment variable
         key = os.getenv('SMSMOBILEAPI_KEY')
         if key:
             return key
             
-        # 2. Check api_keys.json
+        # Check api_keys.json
         if API_CONFIG_PATH.exists():
             try:
                 with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -38,48 +37,48 @@ class SMSManager:
         return None
 
     def send_sms(self, to_number: str, message_body: str) -> dict:
-        """
-        Send an SMS message using your connected phone.
-        """
+        """Send SMS - uses port=0 for immediate sending"""
+        
+        # Clean number: remove '+', spaces, dashes
+        clean_number = "".join(filter(str.isdigit, to_number))
+        
+        base_url = "https://api.smsmobileapi.com/sendsms/"
+        
+        params = {
+            'apikey': self.api_key,
+            'recipients': clean_number,
+            'message': message_body,
+            'port': '0'  # Key fix - matches working curl
+        }
+        
         if self.ui:
-            self.ui.write_log(f"[SMSManager] 📤 Sending SMS to {to_number}...")
-            
+            self.ui.write_log(f"[SMSManager] 📤 Sending to {clean_number}")
+        
         try:
-            response = self.sms.send_message(to=to_number, message=message_body)
+            response = requests.get(base_url, params=params, timeout=30)
+            result = response.json()
+            
             if self.ui:
-                self.ui.write_log(f"[SMSManager] ✅ SMS sent successfully.")
-            return {"status": "success", "response": response}
+                self.ui.write_log(f"[SMSManager] 📥 Response: {result}")
+            
+            if result.get('result', {}).get('error') == 0:
+                if self.ui:
+                    self.ui.write_log(f"[SMSManager] ✅ Sent!")
+                return {"status": "success", "response": result}
+            else:
+                error_code = result.get('result', {}).get('error')
+                return {"status": "error", "message": f"API error {error_code}"}
+                
         except Exception as e:
             if self.ui:
-                self.ui.write_log(f"[SMSManager] ❌ Error sending SMS: {e}")
-            return {"status": "error", "message": str(e)}
-
-    def check_received_messages(self) -> dict:
-        """
-        Retrieve received SMS messages from your connected phone.
-        """
-        if self.ui:
-            self.ui.write_log("[SMSManager] 📥 Checking for received messages...")
-            
-        try:
-            messages = self.sms.get_received_messages()
-            if self.ui:
-                self.ui.write_log(f"[SMSManager] ✅ Retrieved {len(messages) if messages else 0} messages.")
-            return {"status": "success", "messages": messages}
-        except Exception as e:
-            if self.ui:
-                self.ui.write_log(f"[SMSManager] ❌ Error retrieving messages: {e}")
+                self.ui.write_log(f"[SMSManager] ❌ Error: {e}")
             return {"status": "error", "message": str(e)}
 
 def sms_tool(parameters: dict, player=None, **kwargs) -> str:
-    """
-    JARVIS tool entry point for SMS operations.
-    Actions: 'send', 'receive'
-    """
+    """JARVIS tool entry point for SMS operations"""
     action = parameters.get("action", "send")
     
     try:
-        # Use player as UI if available
         mgr = SMSManager(ui=player)
         
         if action == "send":
@@ -87,37 +86,16 @@ def sms_tool(parameters: dict, player=None, **kwargs) -> str:
             msg = parameters.get("message", "").strip()
             
             if not to or not msg:
-                return "Error: Both 'to' (number) and 'message' are required for sending SMS."
+                return "Error: Both 'to' and 'message' are required."
             
-            # Clean number: remove '+', '00', spaces, dashes
-            clean_to = "".join(filter(str.isdigit, to))
-            
-            result = mgr.send_sms(clean_to, msg)
+            result = mgr.send_sms(to, msg)
             if result["status"] == "success":
-                return f"Successfully sent SMS to {to}: '{msg}'"
+                return f"✅ SMS sent successfully to {to}"
             else:
-                return f"Failed to send SMS: {result['message']}"
-                
-        elif action == "receive":
-            result = mgr.check_received_messages()
-            if result["status"] == "success":
-                msgs = result.get("messages", [])
-                if not msgs:
-                    return "No new messages received, sir."
-                
-                formatted_msgs = []
-                for m in msgs:
-                    sender = m.get('from', 'Unknown')
-                    text = m.get('message', '')
-                    time = m.get('received_at', 'Unknown time')
-                    formatted_msgs.append(f"From {sender} at {time}: {text}")
-                
-                return "Received messages:\n" + "\n".join(formatted_msgs)
-            else:
-                return f"Failed to retrieve messages: {result['message']}"
+                return f"❌ Failed: {result['message']}"
         
         else:
-            return f"Unknown SMS action: {action}. Use 'send' or 'receive'."
+            return f"Unknown action: {action}. Use 'send'."
             
     except Exception as e:
         return f"SMS tool error: {e}"
