@@ -165,6 +165,7 @@ class YouTubeManager:
             return youtube_control({"action": action}, self.ui)
 
         if action == "stop":
+            # Aggressively stop all YouTube playback (VLC and Browser)
             return self.player.stop_playback()
 
         # ── BROWSER / TAB MANAGEMENT (youtube_player) ────────────────────────

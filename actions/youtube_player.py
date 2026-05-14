@@ -175,24 +175,28 @@ class YouTubePlayer:
 
     def stop_playback(self) -> str:
         """Stop any active playback (Direct mode or Browser mode)"""
-        stopped = False
+        import subprocess
         
-        # 1. Kill direct VLC process
+        # 1. Kill direct VLC process aggressively
         if self.playback_proc:
             try:
                 self.playback_proc.terminate()
-                self.playback_proc = None
-                self.ui.write_log("[YouTubePlayer] ⏹️ Stopped direct audio playback")
-                stopped = True
             except:
                 pass
+            self.playback_proc = None
+
+        # Robust cleanup using taskkill
+        try:
+            subprocess.run(['taskkill', '/f', '/im', 'vlc.exe'], capture_output=True)
+            # Try to kill Brave windows with YouTube in title (careful not to kill all of Brave)
+            subprocess.run(['taskkill', '/f', '/im', 'brave.exe', '/fi', 'WINDOWTITLE eq *YouTube*'], capture_output=True)
+            self.ui.write_log("[YouTubePlayer] ⏹️ Performed aggressive playback cleanup")
+        except:
+            pass
         
         # 2. Cleanup current state
         self.current_song = None
-        
-        if stopped:
-            return "Stopped playback, sir."
-        return "Nothing is currently playing in direct mode, sir."
+        return "Stopped all YouTube playback, sir."
 
     def play_audio_direct(self, video_url: str, title: str = "Unknown Track") -> bool:
         """Play YouTube audio directly via yt-dlp and VLC (No browser needed)"""
@@ -230,8 +234,8 @@ class YouTubePlayer:
                 self.ui.write_log("[YouTubePlayer] ❌ Could not extract audio URL")
                 return False
 
-            # 2. Launch VLC in background (no interface, no video)
-            self.ui.write_log(f"[YouTubePlayer] 🚀 Launching VLC for {title}")
+            # 2. Launch VLC in background (Truly invisible)
+            self.ui.write_log(f"[YouTubePlayer] 🚀 Launching background audio: {title}")
             vlc_cmd = [
                 self.vlc_path,
                 "--intf", "dummy",
@@ -240,12 +244,12 @@ class YouTubePlayer:
                 audio_url
             ]
             
-            # Start VLC in its own process group
+            # Use CREATE_NO_WINDOW for total invisibility on Windows
             self.playback_proc = subprocess.Popen(
                 vlc_cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+                creationflags=subprocess.CREATE_NO_WINDOW | (subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0)
             )
             
             self.current_song = title
