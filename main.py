@@ -1617,9 +1617,6 @@ class JarvisLive:
                         self.ui.set_state("LISTENING")
                         if self.hud_overlay: self.hud_overlay.set_status("LISTENING")
                         
-                        # Register tools for Gemini Live
-                        self._register_live_tools()
-                        
                         # Warm up local brains
                         try:
                             from core.local_llm import warm_up_all_local_brains
