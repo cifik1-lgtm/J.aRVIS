@@ -79,4 +79,4 @@ JARVIS is equipped with an extensive suite of tools for total system control.
    ```
 
 ---
-*Built for the hive-mind by cifikAI. Version: CIFIK Power Mark-XXXIX.*
+*Built for the hive-mind by cifikAI. Version: CIFIK Power
