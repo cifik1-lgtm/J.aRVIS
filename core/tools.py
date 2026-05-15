@@ -61,8 +61,17 @@ TOOL_DECLARATIONS = [
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "index": {"type": "INTEGER", "description": "Camera index (default 0)"}
+                "camera_index": {"type": "INTEGER", "description": "Camera index (default 0)"}
             }
+        }
+    },
+    {
+        "name": "detect_cameras",
+        "description": "Physically scan the system for connected cameras and return their indices. Use this for accurate hardware diagnostics.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {},
+            "required": []
         }
     },
     {
@@ -1066,9 +1075,14 @@ class ToolDispatcher:
                         return f"Monitor detection failed: {e}, sir."
 
                 if name == "camera_viewer":
-                    idx = args.get("index", 0)
+                    idx = args.get("camera_index", args.get("index", 0))
                     from actions.camera_viewer import camera_viewer
                     return camera_viewer(self.orch, idx)
+
+                if name == "detect_cameras":
+                    from actions.camera_scanner import detect_cameras
+                    res = detect_cameras()
+                    return res["message"]
 
                 if name == "workspace_architect":
                     from actions.workspace_architect import workspace_architect

@@ -35,11 +35,27 @@ class SelfHealingProtocol:
         except:
             return None
 
-    def attempt_repair(self, file_path: Path, error_msg: str):
-        """Use AI to repair the file"""
+    def _find_file(self, filename: str) -> Path:
+        """Search the entire workspace for a filename if the path is unknown"""
+        filename = filename.replace("\\", "/").split("/")[-1] # Extract just the name
+        for root, dirs, files in os.walk(self.base_dir):
+            if filename in files:
+                return Path(root) / filename
+        return None
+
+    def attempt_repair(self, file_path_str: str, error_msg: str):
+        """Use AI to repair the file (with smart path finding)"""
         try:
-            if not file_path.exists():
-                return False, "File does not exist."
+            file_path = Path(file_path_str)
+            if not file_path.exists() or not file_path.is_file():
+                # Try to find it in the workspace
+                self.log(f"Path '{file_path_str}' not found. Searching workspace for '{file_path_str}'...")
+                found_path = self._find_file(file_path_str)
+                if found_path:
+                    file_path = found_path
+                    self.log(f"Located file at: {file_path}")
+                else:
+                    return False, f"File '{file_path_str}' could not be located anywhere in the workspace."
 
             code = file_path.read_text(encoding="utf-8")
             
