@@ -819,6 +819,7 @@ TOOL_DECLARATIONS = [
             },
             "required": ["skill_name", "objective"]
         }
+    },
     {
         "name": "self_fix",
         "description": "Uses AI to diagnose and repair a specific file in the JARVIS system if an error occurs.",
@@ -840,6 +841,7 @@ TOOL_DECLARATIONS = [
         "name": "system_shutdown",
         "description": "Shuts down the computer immediately. Use with caution.",
         "parameters": {"type": "OBJECT", "properties": {}}
+    },
     {
         "name": "ghost_browser",
         "description": "Autonomous Web Agent: Navigate, search, and extract content from websites in a dedicated background browser. Actions: 'navigate', 'search', 'capture'.",
@@ -852,7 +854,7 @@ TOOL_DECLARATIONS = [
             },
             "required": ["action"]
         }
-    },
+    }
 ]
 
 # ============================================================================
