@@ -12,6 +12,11 @@ import time
 from pathlib import Path
 
 import psutil
+try:
+    import wmi
+    _WMI = wmi.WMI()
+except Exception:
+    _WMI = None
 
 from PyQt6.QtCore import (
     QEasingCurve, QMimeData, QObject, QPointF, QRectF, QSize, Qt,
@@ -193,6 +198,20 @@ class _SysMetrics:
             except Exception:
                 pass
 
+        # AMD / General Windows (via WMI/PerfCounter)
+        if _OS == "Windows":
+            try:
+                # This is a bit heavy, so we only run it if NVIDIA fails
+                r = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", "Get-Counter '\\GPU Engine(*)\\Utilization Percentage' | Select-Object -ExpandProperty CounterSamples | Select-Object -ExpandProperty CookedValue | Measure-Object -Average | Select-Object -ExpandProperty Average"],
+                    capture_output=True, text=True, timeout=2,
+                    creationflags=_CREATE_NO_WINDOW
+                )
+                if r.returncode == 0 and r.stdout.strip():
+                    return float(r.stdout.strip())
+            except Exception:
+                pass
+
         return -1.0
 
     def _get_temp(self) -> float:
@@ -224,8 +243,25 @@ class _SysMetrics:
             except Exception:
                 pass
 
-        # Skipping PowerShell temperature check on Windows to save CPU. 
-        # Launching a shell process every few seconds is very expensive.
+        # Windows WMI Temperature Check
+        if _OS == "Windows" and _WMI:
+            try:
+                # Try MSAcpi_ThermalZoneTemperature (Motherboard sensors)
+                # Note: This is in Kelvin * 10
+                res = _WMI.MSAcpi_ThermalZoneTemperature()
+                if res:
+                    return (res[0].CurrentTemperature / 10.0) - 273.15
+            except Exception:
+                pass
+            
+            try:
+                # Fallback to Win32_TemperatureProbe
+                res = _WMI.Win32_TemperatureProbe()
+                if res:
+                    return res[0].CurrentReading
+            except Exception:
+                pass
+
         return -1.0
 
     def snapshot(self) -> dict:

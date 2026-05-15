@@ -1,6 +1,6 @@
 {
   "config_hash": "a0aa5b36e6870c56f6e92ca3afc5f8bc44b8a0baffe7786875f0c7236de5cf9d",
-  "tools_hash": "7c881e05fdeb1c51f17df0dc6ba60108692edbe7f37d25051a5c5bf8ef480b6a",
+  "tools_hash": "07b9b186de9699eccf801d8849c4b32f33c4b5451d9ea77846867e15e48b864e",
   "brains_hash": "",
   "source_hashes": {
     "actions/__init__.py": "fd4fe17573217a74a07143e29a2dd8fecc5c30c5ee75365e5c78d305d43393ab",
@@ -24,6 +24,7 @@
     "actions/game_updater.py": "edcf1d6b20ced4a61355a664456ff0fdae390ed94760babd834ebb3687a08dd1",
     "actions/gesture_control.py": "36d5d6fd5dfad15ba88bfc75bea1f02d0a9a14c7c244ffc50dec72d2972f9342",
     "actions/gesture_controller.py": "64b75ba1d1cd96e58d98f095b26e4e3d4916fdd371767c848222c2710aba576e",
+    "actions/ghost_browser.py": "0920b1f4ed44f75e485ff3c346e9636bc36e2c6d27dc92f3f95b7698fabf9b02",
     "actions/ghost_relay.py": "36edc25193f7b50abfee6f718b89e0ec012a41095bb532d900c531f4dbd50d41",
     "actions/git_manager.py": "939d00b85d2e329cb81f232cb6d3f2dde9b6d90f48e4c14486d65b4debfb6db0",
     "actions/ip_checker.py": "97bcd9ffec5728924ad9225374d5bf342db446f838fcca2451edc448e3c537bf",
@@ -40,6 +41,7 @@
     "actions/self_healing.py": "cc2258dfc801cfc02e0830dfccb54dc1dff85ef0c132dc3062a7ec8c11241af6",
     "actions/semantic_search.py": "b1b053f3b310a64b9c97c56d64e3edfdf0851854e014c9388fb145ebefad4b52",
     "actions/send_message.py": "4755869861096b123190c82261b66b1751f799c3451ef9487305f5f8b528d8a8",
+    "actions/skill_engine.py": "1cfd3be5fc24f966a9fe782d5f712da8eb1dc2d23d0ca662c63780c7a230bc67",
     "actions/sms_tool.py": "4977d8d72f2356090735ea0b8ce9cab0fb2650e1c5a9320410dd54fc8dfcc664",
     "actions/sql_interactor.py": "d7c1d8ca8e1a38d90c9f0b7aca351601666f4a1708e38b7aef8a4cf10bf1a454",
     "actions/telegram_bot.py": "911d85bdbf9e7d407fc0991652e686d21f71d36a6110bde9268fcd2e5c2c2482",
@@ -47,7 +49,7 @@
     "actions/web_automation.py": "8c701dd1716c460f3b69245a8df484025f71125c820fda1fbfd3f75100fa9114",
     "actions/web_search.py": "ec7c5ea2d96c17eec234693a84fbbefc6fd8be36aed04f2615add24bdcc09b30",
     "actions/webcam_vision.py": "695d2f9035db2c6904c2d5bef2d164327e4d0d9e608e599a8f910acb05fe7a9e",
-    "actions/workspace_architect.py": "920afde52797a1b128bebd9755c0262dd9e7186b71b220628d138d94d15f74c4",
+    "actions/workspace_architect.py": "7c5c5ca3d1f8d7b3c8f76fd0dbdf192d52e595e66d4921df4a8173cd2034ff5d",
     "actions/youtube_controller.py": "05efb9d81d4c8a16ba94c3590c88738a29d9ccf65e9abc7c8d6f5e59ee530c93",
     "actions/youtube_manager.py": "627e420d9deaf6125cab6a047cac579b7c4cb23de8b655e83b6290fb865ab9dd",
     "actions/youtube_player.py": "9fa23bafdcf93e2c4736ac7d5c5ebaceab0573a645e9a4e3a980333460161555",
@@ -69,10 +71,10 @@
     "core/local_llm.py": "6b61047505c5a00010c02c53b1a8d07afa0be5085e2987d61ef83833b8a245a7",
     "core/self_audit.py": "e182162d320fe0369c615c9fe3b5aa8cf1b788ee7db0d95114819dc5af2f5d19",
     "core/self_healing.py": "e19c22b812176571847ac2950d6f15e6a6740d3e2a11f9e428c771d7eb5fe58b",
-    "core/tools.py": "605dcd7ce4ebe97ea8d2fc870ee8f3683f0e7cb41c4b6b31bdc01bc2e6aec314",
+    "core/tools.py": "2a8d432525bd95d7207ef4d8f710a0a8e0ed6f1e83562079b8df6a180be0077e",
     "documents/vision_inspector_source.py": "aa23799c8acefb563405f91851e7b6f24089655172efc952234ba1e233eb5a65",
     "installer_stub.py": "ee0f9d49aac7d66a8fc03ebfde43c2e6f59e728973eed3b0b5e78387bb0cf84a",
-    "main.py": "4fbc58ea7928f9988d687d2de3f9c4f90eaddd7df607f82e913ffa30880591dc",
+    "main.py": "cfe282478b8a5fa7a2b133b55bdcf4b690558ac5a160b8a0b9ace437ead85c93",
     "memory/__init__.py": "bbcccc1fd12222d026ae988c0bd66740b6ad31691b842ec046c813c12b58c54b",
     "memory/config_manager.py": "3336b41edf4de5b43278732f87e77c8cda6240690d588618716b9dc8de66650b",
     "memory/memory_manager.py": "337d28db65da9c87075af664ae3c81c54492036464ece6058b72706be8715769",
@@ -84,5 +86,5 @@
     "ui.py": "f7ca0ea3124e3ac2a7cd912cd283abfa0d0c4a16c6f0a4f4392384160bc85e7c",
     "ui_overlay.py": "b62b8473a2d02a8c0ca8683938b35c749c15cefac468d90a32d7334701cebe72"
   },
-  "last_audit": "2026-05-15T22:42:58.795827"
+  "last_audit": "2026-05-15T23:06:04.662310"
 }
