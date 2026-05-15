@@ -20,7 +20,8 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"]               = "2"
 os.environ["TOKENIZERS_PARALLELISM"]             = "false"
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"]    = "1"
 os.environ["PYTHONIOENCODING"]                   = "utf-8"
-
+os.environ["USE_TF"]                             = "0"
+os.environ["USE_TORCH"]                          = "1"
 import warnings
 import logging
 
@@ -541,6 +542,32 @@ class JarvisLive:
         self.gesture_manager = None
         self.gesture_enabled = False
 
+        # Self-Audit System
+        try:
+            from core.self_audit import SelfAudit
+            from core.tools import TOOL_DECLARATIONS
+            self.self_audit = SelfAudit(API_CONFIG_PATH, TOOL_DECLARATIONS)
+            self._audit_changes = self.self_audit.detect_changes()
+            
+            # Self-Healing Protocol
+            from core.self_healing import SelfHealingProtocol
+            self.healer = SelfHealingProtocol(ui=self.ui, self_audit=self.self_audit)
+
+            if self._audit_changes["first_run"]:
+                print("[SelfAudit] First run - establishing baseline")
+                self.ui.write_log("SYS: 🛡️ Self-Audit baseline established.")
+            elif any([self._audit_changes.get("config_changed"), self._audit_changes.get("tools_changed"), self._audit_changes.get("brains_changed"), self._audit_changes.get("source_changed")]):
+                print("[SelfAudit] ⚠️ CHANGES DETECTED:")
+                self.ui.write_log("SYS: ⚠️ SELF-AUDIT DETECTED CHANGES")
+                for detail in self._audit_changes["details"]:
+                    print(f"   {detail}")
+                    self.ui.write_log(f"   - {detail}")
+        except Exception as e:
+            print(f"[SelfAudit] ⚠️ Failed to initialize: {e}")
+            self.self_audit = None
+            self._audit_changes = {}
+            self.healer = None
+
         # Warm up all local brains for faster first response
         try:
             if not self._warmed_up:
@@ -831,6 +858,24 @@ class JarvisLive:
                 self.voice_enabled = True
                 self.speak("Voice enabled, sir.")
             return
+
+        # Bug Hunter Command
+        if "hunt bounties" in cmd or "scan for bugs" in cmd:
+            repo = cmd.replace("hunt bounties", "").replace("scan for bugs", "").strip()
+            if repo:
+                self.ui.write_log(f"🦾 Starting autonomous bug hunt on: {repo}")
+                if self.session and self._loop:
+                    asyncio.run_coroutine_threadsafe(
+                        self.session.send_client_content(
+                            turns={"parts": [{"text": f"hunt_bugs repo_url={repo} action=full_audit"}]},
+                            turn_complete=True
+                        ),
+                        self._loop
+                    )
+                self.speak(f"Starting autonomous security audit on {repo}, sir.")
+            else:
+                self.speak("Which repository should I scan for bounties, sir?")
+            return
         
         # Stop recording
         if any(word in cmd for word in ["stop recording", "end recording", "finish recording", "save recording"]):
@@ -891,6 +936,14 @@ class JarvisLive:
             return
 
         # ===== DIRECT COMMANDS - BYPASS AI =====
+        if "shutdown jarvis" in cmd or cmd == "shutdown":
+            self._execute_shutdown()
+            return
+            
+        if "reboot jarvis" in cmd or "restart jarvis" in cmd or cmd == "reboot":
+            self._execute_reboot()
+            return
+
         if "move brave" in cmd:
             target = "other_monitor" if any(x in cmd for x in ["other monitor", "secondary monitor", "monitor 2", "next screen"]) else None
             try:
@@ -1243,15 +1296,23 @@ class JarvisLive:
             "weather_report",   # Get weather
             "ip_checker",       # Get IP info
             "sms_tool",         # Send/receive SMS messages
+            "self_fix",         # AI Self-Repair tool
         ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
+
+        # Inject Workspace Context
+        sys_instr = f"Your Workspace Root: {EXT_DIR}\n"
+        sys_instr += "A system manual is available at DOCS.md for self-reflection.\n"
+        if os.environ.get("EVA_CONTEXT"):
+            sys_instr += f"Cloud Identity: {os.environ.get('EVA_CONTEXT')}\n"
+        sys_instr += "\n".join(parts)
 
         return types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             output_audio_transcription={},
             input_audio_transcription={},
-            system_instruction="\n".join(parts),
+            system_instruction=sys_instr,
             tools=[types.Tool(function_declarations=filtered_decls)],
             session_resumption=types.SessionResumptionConfig(),
             generation_config=types.GenerationConfig(
@@ -1412,7 +1473,13 @@ class JarvisLive:
                         self.set_speaking(True)
                         self._last_speech_time = datetime.now()
                         if not self.silent_mode:
-                            await self.audio_in_queue.put(response.data)
+                            audio_bytes = response.data
+                            try:
+                                import base64
+                                audio_bytes = base64.b64decode(audio_bytes)
+                            except Exception:
+                                pass
+                            await self.audio_in_queue.put(audio_bytes)
 
                     if response.server_content:
                         sc = response.server_content
@@ -1649,6 +1716,30 @@ class JarvisLive:
                             
                         self.ui.write_log("SYS: Cloud connection established.")
                         
+                        # Self-Audit Reporting
+                        if hasattr(self, "self_audit") and self.self_audit:
+                            if not self._audit_changes.get("first_run") and any([self._audit_changes.get("config_changed"), self._audit_changes.get("tools_changed"), self._audit_changes.get("brains_changed"), self._audit_changes.get("source_changed")]):
+                                change_text = "I detect system changes, sir. "
+                                if self._audit_changes.get("config_changed"):
+                                    change_text += "Your API settings have been updated. "
+                                if self._audit_changes.get("tools_changed"):
+                                    change_text += "New tools have been added. "
+                                if self._audit_changes.get("brains_changed"):
+                                    change_text += "Available AI brains have changed. "
+                                if self._audit_changes.get("source_changed"):
+                                    files = self._audit_changes.get("changed_files_list", [])
+                                    if files:
+                                        change_text += f"My core Python source code has been updated, specifically the files: {', '.join(files)}. "
+                                    else:
+                                        change_text += "My core Python source code has been updated. "
+                                
+                                await session.send_client_content(
+                                    turns={"parts": [{"text": change_text}]},
+                                    turn_complete=True
+                                )
+                                # Clear them so it doesn't repeat on reconnection
+                                self._audit_changes = {"first_run": True}
+
                         reconnect_delay = 1
                         
                         tg.create_task(self._send_realtime())
@@ -1740,4 +1831,23 @@ def main():
 
 if __name__ == "__main__":
     disable_quick_edit()
-    main()
+    try:
+        main()
+    except Exception:
+        error_trace = traceback.format_exc()
+        print(f"\n[CRITICAL FAILURE] System crashed during startup:\n{error_trace}")
+        
+        # Emergency Self-Healing Attempt
+        try:
+            from core.self_healing import SelfHealingProtocol
+            healer = SelfHealingProtocol()
+            print("[SelfHealing] 🛠️ Attempting emergency repair...")
+            if healer.handle_startup_failure(error_trace):
+                print("[SelfHealing] ✅ Repair successful. Please restart JARVIS.")
+                # Optional: trigger auto-restart here
+            else:
+                print("[SelfHealing] ❌ Repair failed. Manual intervention required.")
+        except Exception as e:
+            print(f"[SelfHealing] ❌ Self-healing system also failed: {e}")
+        
+        input("Press Enter to exit...")

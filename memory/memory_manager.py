@@ -9,6 +9,10 @@ from threading import Lock
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import sys
+import os
+
+os.environ["TORCH_USE_CUDA_DSA"] = "0"  # Disable CUDA DSA to avoid conflicts
+os.environ["TRANSFORMERS_OFFLINE"] = "0"
 
 # Try to import optional dependencies
 try:

@@ -3,7 +3,7 @@ import importlib
 import traceback
 import threading
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from google.genai import types
 from pathlib import Path
 
@@ -430,6 +430,18 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "self_fix",
+        "description": "Uses AI to diagnose and repair a specific file in the JARVIS system if an error occurs.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "file_name": {"type": "STRING", "description": "The name of the file to fix (e.g. 'ui.py' or 'tools.py')."},
+                "error_message": {"type": "STRING", "description": "The specific error message or traceback observed."}
+            },
+            "required": ["file_name"]
+        }
+    },
+    {
         "name": "youtube_manager",
         "description": "UNIFIED YouTube control: playback (pause/next/mute), system volume, playlists, open/close tabs, video search, transcript summaries, and trending videos.",
         "parameters": {
@@ -475,16 +487,11 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "generate_image",
-        "description": "Generate an image via Poe (e.g. nano-banana-2) and save it locally.",
+        "description": "CRITICAL: You HAVE the ability to generate images! Use this tool to generate an image locally via GPU whenever the user asks for a picture or image. Do NOT say you cannot generate images.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "prompt": {"type": "STRING", "description": "Image prompt"},
-                "model": {"type": "STRING", "description": "Poe image bot name (default: nano-banana-2)"},
-                "aspect_ratio": {"type": "STRING", "description": "Aspect ratio like 16:9, 1:1, 4:3 (optional)"},
-                "path": {"type": "STRING", "description": "Save directory: desktop | documents | absolute path (optional)"},
-                "filename": {"type": "STRING", "description": "Optional filename (e.g. my_image.png)"},
-                "size": {"type": "STRING", "description": "Optional size hint if supported by model (e.g. 1024x1024)"}
+                "prompt": {"type": "STRING", "description": "Highly detailed image prompt"}
             },
             "required": ["prompt"]
         }
@@ -787,6 +794,18 @@ TOOL_DECLARATIONS = [
             },
             "required": ["action"]
         }
+    },
+    {
+        "name": "hunt_bugs",
+        "description": "Autonomously scan GitHub repos for security vulnerabilities and claim bug bounties",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "repo_url": {"type": "STRING", "description": "GitHub repository URL to scan"},
+                "action": {"type": "STRING", "enum": ["scan", "verify", "patch", "full_audit"]}
+            },
+            "required": ["repo_url", "action"]
+        }
     }
 ]
 
@@ -915,6 +934,44 @@ class ToolDispatcher:
                         self.orch._detect_engines() # Trigger a fresh scan
                         status = self.orch.brain_router.get_status_report()
                         return f"System Diagnostic: {status}"
+                    elif action in ["restart", "reboot"]:
+                        confirmed = str(args.get("confirmed", "false")).lower() == "true" or args.get("auto", False)
+                        if confirmed:
+                            self.orch._execute_reboot(confirmed=True)
+                            return "Rebooting system now, sir."
+                        else:
+                            self.orch._pending_action = "reboot"
+                            self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
+                            return "Awaiting confirmation to reboot."
+                    elif action == "shutdown":
+                        confirmed = str(args.get("confirmed", "false")).lower() == "true" or args.get("auto", False)
+                        if confirmed:
+                            self.orch._execute_shutdown(confirmed=True)
+                            return "Shutting down system now, sir."
+                        else:
+                            self.orch._pending_action = "shutdown"
+                            self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
+                            return "Awaiting confirmation to shutdown."
+
+                elif name == "reboot_jarvis":
+                    confirmed = str(args.get("confirmed", "false")).lower() == "true" or args.get("auto", False)
+                    if confirmed:
+                        self.orch._execute_reboot(confirmed=True)
+                        return "Rebooting system now, sir."
+                    else:
+                        self.orch._pending_action = "reboot"
+                        self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
+                        return "Awaiting confirmation to reboot."
+
+                elif name == "shutdown_jarvis":
+                    confirmed = str(args.get("confirmed", "false")).lower() == "true" or args.get("auto", False)
+                    if confirmed:
+                        self.orch._execute_shutdown(confirmed=True)
+                        return "Shutting down system now, sir."
+                    else:
+                        self.orch._pending_action = "shutdown"
+                        self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
+                        return "Awaiting confirmation to shutdown."
 
                 # 1.5 DISPLAY TOOLS
                 if name == "detect_monitors":
@@ -1067,6 +1124,38 @@ class ToolDispatcher:
                     count = forget_weak_memories(threshold)
                     return f"Memory cleanup complete. {count} old or irrelevant memories purged."
 
+                elif name == "hunt_bugs":
+                    repo_url = args.get("repo_url")
+                    action = args.get("action", "full_audit")
+                    
+                    from actions.bug_hunter import get_bug_hunter
+                    hunter = get_bug_hunter(self.ui)
+                    
+                    # Clone repo
+                    repo_name = repo_url.split("/")[-1].replace(".git", "")
+                    clone_path = Path.home() / "Desktop" / "bug_bounties" / repo_name
+                    clone_path.mkdir(parents=True, exist_ok=True)
+                    
+                    import subprocess
+                    if not (clone_path / ".git").exists():
+                        subprocess.run(["git", "clone", repo_url, str(clone_path)], capture_output=True)
+                    
+                    if action == "scan":
+                        findings = hunter.scan_repository(str(clone_path))
+                        return f"Found {len(findings)} potential vulnerabilities, sir."
+                    
+                    elif action == "full_audit":
+                        findings = hunter.scan_repository(str(clone_path))
+                        real_findings = []
+                        
+                        for f in findings:
+                            if hunter.verify_vulnerability(f):
+                                real_findings.append(f)
+                                patch = hunter.generate_patch(f)
+                                hunter.create_pull_request(str(clone_path), patch, f)
+                        
+                        return f"Found {len(real_findings)} verified vulnerabilities. PRs created for each, sir."
+
                 elif name == "camera_feed":
                     state = args.get("state", True)
                     camera_index = args.get("camera_index", None)
@@ -1088,10 +1177,14 @@ class ToolDispatcher:
                     return camera_viewer(self.orch, index)["message"]
 
                 elif name == "vision_inspector":
-                    from actions.screen_processor import vision_inspector
+                    from actions.screen_processor import screen_process
                     source = args.get("source", "webcam")
                     focus = args.get("focus", "text")
-                    return vision_inspector(self.orch, source, focus)
+                    # Map 'webcam' to 'camera' for screen_processor compatibility
+                    angle = "camera" if source == "webcam" else "screen"
+                    params = {"angle": angle, "text": f"Focusing on {focus}. What do you see?"}
+                    success = screen_process(params, player=self.ui)
+                    return "Vision module activated and analyzing feed, sir." if success else "Failed to start vision session."
 
                 elif name == "face_manager":
                     from actions.face_memory import get_face_memory
@@ -1179,120 +1272,53 @@ class ToolDispatcher:
                     ) or "Done."
 
                 elif name == "generate_image":
-                    import base64
-                    import os
-                    import requests
-                    from datetime import datetime
-                    from pathlib import Path
-
-                    api_key = os.environ.get("POE_API_KEY")
-                    if not api_key and API_CONFIG_PATH.exists():
-                        try:
-                            cfg = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
-                            api_key = cfg.get("poe_api_key", "")
-                        except Exception:
-                            api_key = ""
-
-                    if not api_key:
-                        return "Poe API key missing. Set POE_API_KEY env var or add poe_api_key to config/api_keys.json, sir."
-
-                    prompt = (args.get("prompt") or "").strip()
-                    if not prompt:
-                        return "Please provide an image prompt, sir."
-
-                    model = (args.get("model") or "").strip()
-                    if not model and API_CONFIG_PATH.exists():
-                        try:
-                            cfg = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
-                            model = ((cfg.get("poe_models") or {}).get("image_gen") or "").strip()
-                        except Exception:
-                            model = ""
-                    if not model:
-                        model = "nano-banana-2"
-                    aspect_ratio = (args.get("aspect_ratio") or "").strip()
-                    size = (args.get("size") or "").strip()
-
-                    payload = {"model": model, "prompt": prompt}
-                    # Optional parameters (only included if provided; models may ignore)
-                    params = {}
-                    if aspect_ratio:
-                        params["aspect_ratio"] = aspect_ratio
-                    if size:
-                        params["size"] = size
-                    if params:
-                        payload["parameters"] = params
-
-                    resp = requests.post(
-                        "https://api.poe.com/v1/images",
-                        headers={
-                            "Authorization": f"Bearer {api_key}",
-                            "Content-Type": "application/json",
-                        },
-                        json=payload,
-                        timeout=60,
-                    )
-
-                    if resp.status_code != 200:
-                        return f"Image generation failed: {resp.status_code} — {resp.text[:200]}"
-
-                    data = resp.json()
-
-                    # Determine save directory
-                    save_dir = (args.get("path") or "desktop").strip().lower()
-                    if save_dir == "desktop":
-                        out_dir = Path.home() / "Desktop"
-                    elif save_dir == "documents":
-                        out_dir = Path.home() / "Documents"
-                    else:
-                        out_dir = Path(args.get("path")) if args.get("path") else (Path.home() / "Desktop")
-
-                    out_dir.mkdir(parents=True, exist_ok=True)
-
-                    # Determine filename
-                    filename = (args.get("filename") or "").strip()
-                    if not filename:
-                        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        safe_model = "".join(c for c in model if c.isalnum() or c in ("-", "_"))[:40]
-                        filename = f"poe_{safe_model}_{ts}.png"
-                    if not filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-                        filename += ".png"
-                    out_path = out_dir / filename
-
-                    # Handle common response shapes:
-                    # - OpenAI-style: {"data":[{"url":...}]} or {"data":[{"b64_json":...}]}
-                    # - Some bots: {"url":...} / {"image_url":...}
-                    image_url = None
-                    b64 = None
-
-                    if isinstance(data, dict):
-                        if isinstance(data.get("data"), list) and data["data"]:
-                            item = data["data"][0] if isinstance(data["data"][0], dict) else {}
-                            image_url = item.get("url") or item.get("image_url")
-                            b64 = item.get("b64_json") or item.get("b64")
-                        image_url = image_url or data.get("url") or data.get("image_url")
-                        b64 = b64 or data.get("b64_json") or data.get("b64")
-
-                    if image_url:
-                        img_resp = requests.get(image_url, timeout=60)
-                        if img_resp.status_code != 200:
-                            return f"Image URL download failed: {img_resp.status_code}"
-                        out_path.write_bytes(img_resp.content)
-                        return f"Image generated and saved to {out_path}, sir."
-
-                    if b64:
-                        try:
-                            raw = base64.b64decode(b64)
-                            out_path.write_bytes(raw)
-                            return f"Image generated and saved to {out_path}, sir."
-                        except Exception as e:
-                            return f"Image generated but could not decode/save it: {e}"
-
-                    # As a last resort, try if API returned raw bytes (unlikely)
+                    prompt = args.get("prompt", "")
+                    
                     try:
-                        out_path.write_bytes(resp.content)
-                        return f"Image generated and saved to {out_path}, sir."
-                    except Exception:
-                        return "Image generated, but the response format was not recognized, sir."
+                        import torch
+                        import torch_directml
+                        from diffusers import StableDiffusionPipeline
+                        from datetime import datetime
+                        from pathlib import Path
+                        
+                        device = torch_directml.device()
+                        print(f"[ImageGen] Using AMD GPU via DirectML: {device}")
+                        self.ui.write_log("SYS: Loading local diffusion model onto DirectML...")
+                        
+                        def _generate_sync():
+                            if not hasattr(self.orch, "diffusers_pipe"):
+                                # Use smaller SD 1.5 model (2GB total, not 9GB)
+                                pipe = StableDiffusionPipeline.from_pretrained(
+                                    "runwayml/stable-diffusion-v1-5",
+                                    torch_dtype=torch.float16,
+                                    variant="fp16"
+                                )
+                                pipe = pipe.to(device)
+                                pipe.enable_attention_slicing()
+                                self.orch.diffusers_pipe = pipe
+                            else:
+                                pipe = self.orch.diffusers_pipe
+
+                            print(f"[JARVIS] Generating local image for prompt: {prompt}")
+                            return pipe(
+                                prompt=prompt,
+                                num_inference_steps=20
+                            ).images[0]
+                            
+                        image = await asyncio.get_event_loop().run_in_executor(None, _generate_sync)
+                        
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        filename = f"generated_{timestamp}.png"
+                        filepath = Path.home() / "Desktop" / filename
+                        
+                        image.save(filepath)
+                        return f"Image generated and saved to Desktop as {filename}, sir."
+                        
+                    except Exception as e:
+                        import traceback
+                        error_msg = traceback.format_exc()
+                        print(f"[ImageGen] Error: {error_msg}")
+                        return f"Image generation failed: {str(e)[:200]}"
 
                 elif name == "codewords_agent":
                     import requests
@@ -1399,6 +1425,26 @@ class ToolDispatcher:
                     from actions.routines import routine_manager
                     return await asyncio.get_event_loop().run_in_executor(None, lambda: routine_manager(parameters=args, player=self.ui)) or "Done."
 
+                elif name == "self_fix":
+                    target = args.get("file_name", "")
+                    error = args.get("error_message", "Unknown error")
+                    if not target: return "Please specify which file to fix, sir."
+                    
+                    if hasattr(self.orch, "healer") and self.orch.healer:
+                        self.ui.write_log(f"🛠️ Manual Self-Fix triggered for {target}...")
+                        full_path = self.orch.healer.base_dir / target
+                        if not full_path.exists():
+                            # Try common locations
+                            for folder in ["core", "actions", "memory"]:
+                                p = self.orch.healer.base_dir / folder / target
+                                if p.exists():
+                                    full_path = p
+                                    break
+                        
+                        success, msg = self.orch.healer.attempt_repair(full_path, error)
+                        return f"Self-fix result for {target}: {msg}"
+                    return "Self-healing system not initialized."
+
                 elif name == "memory_manager":
                     from actions.memory_manager import memory_manager
                     return await asyncio.get_event_loop().run_in_executor(None, lambda: memory_manager(parameters=args, player=self.ui)) or "Done."
@@ -1417,7 +1463,34 @@ class ToolDispatcher:
             print(f"[JARVIS] ⚠️ {result}")
         except Exception as e:
             result = f"Tool '{name}' failed: {e}"
+            error_trace = traceback.format_exc()
             traceback.print_exc()
+            
+            # RUNTIME SELF-HEALING
+            if hasattr(self.orch, "healer") and self.orch.healer:
+                # Attempt to identify the culprit file (usually actions/name.py)
+                tool_file_name = f"{name}.py"
+                
+                # SPECIAL MAPPINGS: When tool name doesn't match filename
+                mappings = {
+                    "vision_inspector": "screen_processor.py",
+                    "rag_search": "../memory/rag_engine.py",
+                    "save_memory": "../memory/memory_manager.py",
+                    "retrieve_memory": "../memory/memory_manager.py"
+                }
+                if name in mappings:
+                    tool_file_name = mappings[name]
+                
+                tool_path = Path("actions") / tool_file_name
+                full_path = self.orch.healer.base_dir / tool_path
+                
+                if full_path.exists():
+                    self.ui.write_log(f"⚠️ {name} crashed. Triggering Self-Healing...")
+                    healed, msg = self.orch.healer.attempt_repair(full_path, error_trace)
+                    if healed:
+                        result += " | 🛠️ Self-healing patch applied. Please try the command again."
+                    else:
+                        result += f" | ❌ Self-healing could not resolve: {msg}"
 
         if not self.ui.muted and not self.orch.silent_mode:
             self.ui.set_state("LISTENING")

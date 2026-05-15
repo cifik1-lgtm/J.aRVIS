@@ -50,15 +50,15 @@ class BrainRouter:
                 
                 if any("mistral" in m.lower() for m in model_list):
                     self.engines['mistral'] = True
-                    print("[BrainRouter] ✅ Mistral 7B detected")
+                    print("[BrainRouter] [OK] Mistral 7B detected")
                 if any("qwen" in m.lower() and "coder" in m.lower() for m in model_list):
                     self.engines['qwen_coder'] = True
-                    print("[BrainRouter] ✅ Qwen Coder detected")
+                    print("[BrainRouter] [OK] Qwen Coder detected")
                 if any("hermes" in m.lower() for m in model_list):
                     self.engines['hermes'] = True
-                    print("[BrainRouter] ✅ Hermes 3 8B detected")
+                    print("[BrainRouter] [OK] Hermes 3 8B detected")
         except Exception as e:
-            print(f"[BrainRouter] ⚠️ Ollama detection failed: {e}")
+            print(f"[BrainRouter] [WARN] Ollama detection failed: {e}")
             self.engines['ollama'] = False
         
         return self.engines
@@ -77,7 +77,7 @@ class BrainRouter:
         """Returns the currently active brain based on config or availability."""
         # 1. Check for user-forced brain from voice command
         if self._forced_brain:
-            print(f"[Router] 🔒 Using forced brain: {self._forced_brain}")
+            print(f"[Router] [LOCK] Using forced brain: {self._forced_brain}")
             return self._forced_brain
 
         if self.preferred_brain and self.engines.get(self.preferred_brain):
@@ -113,16 +113,23 @@ class BrainRouter:
 
     def route_task(self, user_input: str, context: str = "") -> Tuple[str, Dict]:
         """Route to best brain based on task type and availability"""
+        goal_lower = user_input.lower()
+        
+        # ===== BUG HUNTER OVERRIDE =====
+        if "security scan" in goal_lower or "bug audit" in goal_lower or "hunt bounties" in goal_lower:
+            print("[Router] 🦾 Security audit → Bug Hunter tool")
+            return self._route_to_bug_hunter(user_input, context)
+
         # ===== STEP 0: Check for user-forced brain from voice command =====
         if self._forced_brain:
-            print(f"[Router] 🔒 Using forced brain: {self._forced_brain}")
+            print(f"[Router] [LOCK] Using forced brain: {self._forced_brain}")
             return self._call_agent(self._forced_brain, user_input, context)
             
         # ===== STEP 1: Check for forced reasoning brain =====
         if self.orch and hasattr(self.orch, 'reasoning_brain') and self.orch.reasoning_brain != "auto":
             if self._is_complex_reasoning(user_input):
                 target_brain = self.orch.reasoning_brain
-                print(f"[Router] 🧠 Using forced reasoning brain: {target_brain}")
+                print(f"[Router] [BRAIN] Using forced reasoning brain: {target_brain}")
                 if target_brain == "openrouter":
                     return self._route_to_openrouter(user_input, context)
                 elif target_brain == "gemini":
@@ -133,19 +140,36 @@ class BrainRouter:
         # ===== STEP 2: Auto-detect complex tasks =====
         if self._is_complex_reasoning(user_input):
             if self.engines.get('openrouter'):
-                print("[Router] 🧠 Complex reasoning detected → OpenRouter")
+                print("[Router] [BRAIN] Complex reasoning detected -> OpenRouter")
                 return self._route_to_openrouter(user_input, context)
             elif self.engines.get('mistral'):
-                print("[Router] 🧠 Complex reasoning detected → Mistral")
+                print("[Router] [BRAIN] Complex reasoning detected -> Mistral")
                 return self._route_to_mistral(user_input, context)
         
         goal_lower = user_input.lower()
+
+        # ===== PHILOSOPHICAL / ETHICAL QUESTIONS → Direct to Gemma 4 =====
+        reasoning_keywords = [
+            "ethical implications", "utilitarian", "deontological",
+            "philosophical", "analyse", "analyze", "compare frameworks",
+            "moral", "ethics", "should ai", "what is the right"
+        ]
+        
+        if any(kw in goal_lower for kw in reasoning_keywords):
+            print("[Router] [BRAIN] Philosophical/ethical question -> Direct to Gemma 4")
+            return self._route_to_gemma4_direct(user_input, context)
+        
+        # ===== SEARCH-SPECIFIC TASKS → web_search =====
+        search_keywords = ["weather", "news", "stock price", "current", "latest"]
+        if any(kw in goal_lower for kw in search_keywords):
+            print("[Router] [WEB] Real-time data -> web_search")
+            return self._route_to_web_search(user_input, context)
 
         # ===== STEP 3: Code tasks → Qwen =====
         code_keywords = ["python", "code", "script", "function", "class", "html", "css", "javascript", "website", "automate", "debug"]
         if any(kw in goal_lower for kw in code_keywords):
             if self.engines.get('qwen_coder'):
-                print("[Router] 💻 Code task → Qwen Coder")
+                print("[Router] [CODE] Code task -> Qwen Coder")
                 return self._call_agent("qwen_coder", user_input, context)
 
         # ===== STEP 4: Personality / Agent Tasks =====
@@ -161,7 +185,7 @@ class BrainRouter:
             return self._call_agent(agent, user_input, context)
 
         # ===== STEP 6: Simple Q&A → OpenRouter/Gemini (Fallback) =====
-        print("[Router] 💬 Simple query → OpenRouter/Gemini")
+        print("[Router] [CHAT] Simple query -> OpenRouter/Gemini")
         for fallback in [decision.agent] + decision.fallback_agents + ['openrouter', 'gemini', 'groq', 'hermes']:
             if self.engines.get(fallback):
                 return self._call_agent(fallback, user_input, context)
@@ -170,7 +194,7 @@ class BrainRouter:
 
     def _call_agent(self, agent_name: str, prompt: str, context: str) -> Tuple[str, Dict]:
         if self.ui:
-            self.ui.write_log(f"🧠 Router \u2192 Using {agent_name.upper()}")
+            self.ui.write_log(f"[BRAIN] Router -> Using {agent_name.upper()}")
             
         if agent_name == "qwen_coder":
             return self._route_to_qwen(prompt, context)
@@ -226,29 +250,29 @@ class BrainRouter:
         # 1. Agentic/Multi-Step Tasks -> Nemotron (1M context, best for automation)
         agentic_keywords = ["automate", "organize", "schedule", "monitor", "multi-step", "workflow"]
         if any(kw in goal_lower for kw in agentic_keywords) or len(user_input) > 10000:
-            print("[Router] 🤖 Agentic task \u2192 Nemotron 3 Super")
+            print("[Router] [AGENT] Agentic task -> Nemotron 3 Super")
             return models.get("agentic", "nvidia/nemotron-3-super-120b-a12b:free")
         
         # 2. Multimodal/Image Tasks -> Llama 4 Maverick
         multimodal_keywords = ["image", "picture", "screenshot", "see", "visual", "screen", "photo", "camera"]
         if any(kw in goal_lower for kw in multimodal_keywords):
-            print("[Router] \ud83d\uddbc\ufe0f Multimodal task \u2192 Llama 4 Maverick")
+            print("[Router] [IMAGE] Multimodal task -> Llama 4 Maverick")
             return models.get("multimodal", "meta-llama/llama-4-maverick:free")
         
         # 3. Deep Reasoning -> Hy3 Preview (best benchmarks)
         reasoning_keywords = ["explain", "why", "philosophical", "analyze", "compare", "contrast", "evaluate"]
         if any(kw in goal_lower for kw in reasoning_keywords) and len(user_input) > 200:
-            print("[Router] 🧠 Deep reasoning \u2192 Hy3 Preview")
+            print("[Router] [BRAIN] Deep reasoning -> Hy3 Preview")
             return models.get("reasoning", "tencent/hy3-preview:free")
         
         # 4. Code Generation -> GPT-OSS 120B
         code_keywords = ["code", "python", "script", "function", "class", "write", "program", "develop"]
         if any(kw in goal_lower for kw in code_keywords):
-            print("[Router] 💻 Code task \u2192 GPT-OSS 120B")
+            print("[Router] [CODE] Code task -> GPT-OSS 120B")
             return models.get("coding", "openai/gpt-oss-120b:free")
         
         # 5. Default/Fallback -> Gemma 4 26B (fast & efficient)
-        print("[Router] ⚡ Fast task \u2192 Gemma 4 26B")
+        print("[Router] [FAST] Fast task -> Gemma 4 26B")
         return models.get("fallback", "google/gemma-4-26b-a4b-it:free")
 
     def _route_to_openrouter(self, prompt: str, context: str) -> Tuple[str, Dict]:
@@ -256,6 +280,60 @@ class BrainRouter:
         model = self.get_optimal_openrouter_model(prompt)
         resp = call_llm(prompt, model=model)
         return ("openrouter", {"response": resp})
+
+    def _route_to_gemma4_direct(self, prompt: str, context: str) -> Tuple[str, Dict]:
+        from core.llm_provider import call_llm
+        resp = call_llm(prompt, model="google/gemma-4-26b-a4b-it:free")
+        return ("openrouter", {"response": resp})
+
+    def _route_to_web_search(self, prompt: str, context: str) -> Tuple[str, Dict]:
+        from actions.web_search import web_search
+        try:
+            result = web_search({"query": prompt})
+        except Exception as e:
+            result = f"Search failed: {e}"
+        return ("web_search", {"response": result})
+
+    def _route_to_bug_hunter(self, goal: str, context: str = "") -> Tuple[str, Dict]:
+        """Route security audits directly to Bug Hunter tool"""
+        import re
+        import asyncio
+        from google.genai import types
+        
+        # Extract repo URL from goal or context
+        repo_match = re.search(r'https?://github\.com/[^\s]+', goal + " " + context)
+        if not repo_match:
+            repo_match = re.search(r'([a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+)', goal + " " + context)
+            if not repo_match:
+                return ("bug_hunter", {"response": "Please provide a GitHub repository URL, sir."})
+            repo_url = f"https://github.com/{repo_match.group(0)}"
+        else:
+            repo_url = repo_match.group(0)
+            
+        print(f"[Router] Hunting bugs on: {repo_url}")
+        
+        fc = types.FunctionCall(
+            name="hunt_bugs",
+            args={"repo_url": repo_url, "action": "full_audit"},
+            id="bug_hunt_" + str(hash(repo_url))
+        )
+        
+        try:
+            if self.orch and hasattr(self.orch, "tools"):
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    future = asyncio.run_coroutine_threadsafe(self.orch.tools.dispatch(fc), loop)
+                    res = future.result() 
+                else:
+                    res = loop.run_until_complete(self.orch.tools.dispatch(fc))
+                
+                result_text = res.response.get("result", "Audit completed.") if hasattr(res, 'response') else str(res)
+            else:
+                result_text = "Tools dispatcher not available."
+        except Exception as e:
+            result_text = f"Audit failed: {e}"
+
+        return ("bug_hunter", {"response": result_text})
 
     def _load_config(self) -> Dict[str, Any]:
         try:
@@ -269,6 +347,6 @@ class BrainRouter:
         report = []
         for name, active in self.engines.items():
             if name == 'ollama': continue
-            status = "✅" if active else "❌"
+            status = "[OK]" if active else "[FAIL]"
             report.append(f"{name.title()}: {status}")
         return " | ".join(report)

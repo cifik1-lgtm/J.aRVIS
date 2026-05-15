@@ -782,6 +782,9 @@ def computer_settings(
         except Exception as e:
             return f"Reload failed: {e}"
 
+    if "share" in action or "sharing" in action:
+        return "I cannot configure network sharing via this simple settings tool. Please use the 'admin_controller' or 'file_controller' for advanced permissions, sir."
+
     if action == "scroll_up":
         scroll_up(int(value or 500))
         return "Scrolled up."

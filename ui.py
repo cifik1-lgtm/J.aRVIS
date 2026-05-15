@@ -1721,6 +1721,43 @@ class MainWindow(QMainWindow):
         fs_btn.clicked.connect(self._toggle_fullscreen)
         lay.addWidget(fs_btn)
 
+        sys_row = QHBoxLayout()
+        sys_row.setSpacing(6)
+        
+        reboot_btn = QPushButton("🔄  REBOOT")
+        reboot_btn.setFixedHeight(26)
+        reboot_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        reboot_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        reboot_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {C.ACC2};
+                border: 1px solid {C.BORDER}; border-radius: 3px;
+            }}
+            QPushButton:hover {{
+                color: {C.BG}; background: {C.ACC2};
+            }}
+        """)
+        reboot_btn.clicked.connect(lambda: self.on_text_command("reboot jarvis") if self.on_text_command else None)
+        sys_row.addWidget(reboot_btn)
+        
+        shutdown_btn = QPushButton("🔴  SHUTDOWN")
+        shutdown_btn.setFixedHeight(26)
+        shutdown_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        shutdown_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        shutdown_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {C.RED};
+                border: 1px solid {C.BORDER}; border-radius: 3px;
+            }}
+            QPushButton:hover {{
+                color: {C.BG}; background: {C.RED};
+            }}
+        """)
+        shutdown_btn.clicked.connect(lambda: self.on_text_command("shutdown jarvis") if self.on_text_command else None)
+        sys_row.addWidget(shutdown_btn)
+        
+        lay.addLayout(sys_row)
+
         return w
 
     def _build_input_row(self) -> QHBoxLayout:
