@@ -24,7 +24,7 @@
     "actions/game_updater.py": "edcf1d6b20ced4a61355a664456ff0fdae390ed94760babd834ebb3687a08dd1",
     "actions/gesture_control.py": "36d5d6fd5dfad15ba88bfc75bea1f02d0a9a14c7c244ffc50dec72d2972f9342",
     "actions/gesture_controller.py": "64b75ba1d1cd96e58d98f095b26e4e3d4916fdd371767c848222c2710aba576e",
-    "actions/ghost_browser.py": "0920b1f4ed44f75e485ff3c346e9636bc36e2c6d27dc92f3f95b7698fabf9b02",
+    "actions/ghost_browser.py": "49c8e0c02b06cec1150a7f3d0c84865c1c7eaab230ee2e77da863327a682bd06",
     "actions/ghost_relay.py": "36edc25193f7b50abfee6f718b89e0ec012a41095bb532d900c531f4dbd50d41",
     "actions/git_manager.py": "939d00b85d2e329cb81f232cb6d3f2dde9b6d90f48e4c14486d65b4debfb6db0",
     "actions/ip_checker.py": "97bcd9ffec5728924ad9225374d5bf342db446f838fcca2451edc448e3c537bf",
@@ -86,5 +86,5 @@
     "ui.py": "1ca6ae8ea4dc4fad82d9a7d1b493f40b5af9d136f79dac7283e0973409b470e5",
     "ui_overlay.py": "b62b8473a2d02a8c0ca8683938b35c749c15cefac468d90a32d7334701cebe72"
   },
-  "last_audit": "2026-05-15T23:12:19.613373"
+  "last_audit": "2026-05-15T23:16:22.930386"
 }

@@ -23,6 +23,7 @@ Your job: break any user goal into a sequence of steps using ONLY the tools list
 
 ABSOLUTE RULES:
 - NEVER use open_app to open a website or browser. ALWAYS use browser_control or youtube_video for web-related goals.
+- Use ghost_browser for ALL background research or data extraction tasks to avoid interrupting the user. Only use browser_navigate if the user explicitly wants to "open" a page to look at it themselves.
 - Use file_controller to save content to disk.
 - Max 5 steps. Use the minimum steps needed.
 
@@ -210,6 +211,7 @@ When navigating to a URL in a browser manually via computer_control:
 1. Type the URL using computer_control(action='type', text='url')
 2. ALWAYS press Enter using computer_control(action='press', key='enter')
 Never skip the Enter key press - it's required for navigation. Prefer 'browser_navigate' for this.
+However, ALWAYS use 'ghost_browser' for background research tasks unless the user explicitly wants to "open" the browser window on their screen.
 
 OUTPUT ONLY VALID JSON:
 {

@@ -44,30 +44,46 @@ class GhostBrowser:
     async def search_and_extract(self, query):
         """Perform a search and extract the main content."""
         if not self.page: await self.start()
-        search_url = f"https://www.google.com/search?q={query}"
-        await self.page.goto(search_url, wait_until="networkidle")
         
-        # Extract snippets using multiple possible selectors
-        content = await self.page.evaluate('''() => {
-            const results = [];
-            // Common selectors for Google search results
-            const elements = document.querySelectorAll('div.g, div.v7W49e > div, .tF2Cxc');
-            
-            elements.forEach(el => {
-                const titleEl = el.querySelector('h3');
-                const linkEl = el.querySelector('a');
-                const snippetEl = el.querySelector('.VwiC3b, .MU_pbb, .s3uMBd');
-                
-                if (titleEl && linkEl) {
-                    results.append({
-                        title: titleEl.innerText,
-                        link: linkEl.href,
-                        snippet: snippetEl ? snippetEl.innerText : ""
-                    });
-                }
-            });
-            return results;
-        }''')
+        current_url = self.page.url
+        if "google.com" in current_url:
+            # Extract snippets using Google selectors
+            content = await self.page.evaluate('''() => {
+                const results = [];
+                const elements = document.querySelectorAll('div.g, div.v7W49e > div, .tF2Cxc');
+                elements.forEach(el => {
+                    const titleEl = el.querySelector('h3');
+                    const linkEl = el.querySelector('a');
+                    const snippetEl = el.querySelector('.VwiC3b, .MU_pbb, .s3uMBd');
+                    if (titleEl && linkEl) {
+                        results.push({
+                            title: titleEl.innerText,
+                            link: linkEl.href,
+                            snippet: snippetEl ? snippetEl.innerText : ""
+                        });
+                    }
+                });
+                return results;
+            }''')
+        else:
+            # Generic Page Scan: Find all headlines and links
+            content = await self.page.evaluate('''() => {
+                const results = [];
+                // Look for common headline tags
+                const elements = document.querySelectorAll('h1, h2, h3, h4, .headline, .title');
+                elements.forEach(el => {
+                    const text = el.innerText.trim();
+                    const linkEl = el.querySelector('a') || el.closest('a');
+                    if (text && text.length > 10) {
+                        results.push({
+                            title: text,
+                            link: linkEl ? linkEl.href : window.location.href,
+                            snippet: ""
+                        });
+                    }
+                });
+                return results.slice(0, 15); // Limit to top 15 findings
+            }''')
         
         return content
 
