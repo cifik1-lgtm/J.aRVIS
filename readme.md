@@ -1,77 +1,77 @@
-# JARVIS: Cifik Intelegents
-**The Ultimate Autonomous AI Orchestrator & Holographic HUD**
+# JARVIS: Cifik Intelegents 🤖🦾
+**The World's First Self-Healing, Autonomous AI Orchestrator & Holographic HUD**
 
-JARVIS Cifik Intelegents is a state-of-the-art, multi-brain autonomous system designed for professional software development, real-time computer control, and advanced environmental awareness. It features a revolutionary **Triple-Brain Architecture** and a **Procedural Holographic HUD**.
-
----
-
-## 🧠 The Triple-Brain Local Architecture
-JARVIS is the first system to intelligently route tasks between high-performance local GPUs and ultra-fast cloud models.
-
-### 1. **Mistral 7B (The Logic Core)**
-*   **Role**: Reasoning, complex explanations, and mathematical analysis.
-*   **Efficiency**: Runs 100% locally on your GPU via Ollama for zero-cost, private reasoning.
-
-### 2. **Qwen 2.5 Coder (The Software Architect)**
-*   **Role**: Expert-level programming, script automation, and file system refactoring.
-*   **Power**: Specialized in Python, JavaScript, and systems architecture.
-
-### 3. **Hermes 3 8B (The Agentic Soul)**
-*   **Role**: Personality, agentic coordination, and multi-step task execution.
-*   **Persona**: Poised, witty, and deeply integrated with the Stark-style "British Butler" identity.
-
-### ☁️ Cloud Hive Mind (Gemini 2.0 & Groq)
-*   **Gemini 2.0 Live**: Powers the real-time voice and multimodal vision stream.
-*   **Groq LPU**: Provides ultra-fast planning and intent classification fallbacks.
+JARVIS (Just A Rather Very Intelligent System) is a state-of-the-art, **9-Brain Autonomous Hive Mind** designed for professional software development, real-time computer control, and recursive self-improvement. It features an industry-leading **Autonomous Immune System** capable of real-time self-repair.
 
 ---
 
-## 🖥️ Procedural Holographic HUD
-JARVIS features a dynamic, glassmorphism-inspired HUD (Heads-Up Display) that integrates directly with your desktop.
-
-*   **Central Eye**: A procedural holographic orb that reacts to speech and thought.
-*   **Integrated Vision**: Live camera feeds and screen analysis are rendered directly inside the HUD.
-*   **Gesture Control**: Control your entire workspace using hand gestures (fist to mute, pointing to click) powered by MediaPipe.
-
----
-
-## 🛠️ Specialized Tool Arsenal (48+ Actions)
-JARVIS is equipped with an extensive suite of tools for total system control.
-
-### 1. Computer & Workspace Control
-*   **Precision Input**: Mouse movement, keyboard hotkeys, and smart typing.
-*   **Window Management**: "Workspace Architect" protocol snaps windows into optimized layouts (Coding, Social, Cinema).
-*   **System Monitor**: Real-time process listing (`list_processes`) and active window tracking (`get_active_window`).
-
-### 2. Autonomous Development Agent
-*   **Code Helper**: Writes, runs, and explains complex codebases.
-*   **Dev Agent**: An autonomous agent that can build entire features from a single prompt.
-*   **Self-Healing**: Automatically detects and repairs bugs in its own modules.
-
-### 3. Vision & Neural Intelligence
-*   **Neural Inspector**: Deep-learning object detection via TensorFlow.
-*   **Vision Inspector**: High-speed screen/webcam analysis for UI automation.
-*   **Face Memory**: Remembers your identity and relationships via persistent biometric tracking.
-
-### 4. Media & Unified YouTube
-*   **YouTube Manager**: Unified control over playback, system volume, playlists, and summaries.
-*   **Image Generation**: Creates professional-grade assets using nano-banana-2 models via Poe.
-
-### 5. Memory & RAG
-*   **Semantic Search**: Recalls facts from 100+ previous conversations using vector databases (ChromaDB).
-*   **Ghost Relay**: Syncs commands across the Cifik Network (EVA/CIFIK) via cloud relay.
+## 🛡️ The Autonomous Immune System (New)
+JARVIS is now equipped with a proactive defense and repair architecture:
+- **Self-Audit Protocol**: Scans the entire codebase on startup. Detects unauthorized modifications or new features and reports them to the user via the UI and voice.
+- **Self-Healing Engine**: Intercepts runtime crashes and startup failures. It automatically parses tracebacks, isolates the "culprit" code, and uses a specialized coding LLM to **generate and apply a patch** in real-time.
+- **Manual Self-Fix**: A dedicated tool (`self_fix`) allows JARVIS to perform surgical code repairs on command if a tool becomes inconsistent.
 
 ---
 
-## 🚀 Installation & Setup
-1. **Requirements**: Windows 10/11, Python 3.12+, and an RX/RTX GPU.
+## 🧠 9-Brain Autonomous Hive Mind
+JARVIS intelligently routes tasks across a distributed network of local and cloud models:
+1. **Gemini 2.0 Live**: Real-time multimodal vision and low-latency voice interaction.
+2. **OpenRouter (The Strategic Planner)**: Primary reasoning using Gemma 4, Llama 4, and Nemotron.
+3. **Groq LPU**: Ultra-fast intent classification and lightning-speed fallbacks.
+4. **Qwen 2.5 Coder (Local)**: The resident Software Architect for complex Python/JS automation.
+5. **Mistral 7B (Local)**: Private, offline reasoning and mathematical analysis.
+6. **Hermes 3 8B (Local)**: The "Agentic Soul" — handles personality and tool coordination.
+7. **Poe (Claude/Banana)**: Specialized creative reasoning and asset generation.
+8. **Minimax**: High-capacity creative content fallback.
+9. **Codewords**: Specialized automation workflow execution.
+
+---
+
+## 🖥️ Procedural Holographic HUD & Interface
+- **Procedural HUD**: A glassmorphism-inspired interface with a reactive central "Eye" and real-time activity logs.
+- **Multimodal Vision**: High-speed screen and webcam analysis via the `vision_inspector` engine.
+- **Gesture Control**: Control your PC with hand gestures (Fist = Mute, Open Palm = Stop, Pointing = Click) powered by MediaPipe.
+
+---
+
+## 🛠️ Specialized Tool Arsenal (50+ Actions)
+### 1. **Autonomous Development**
+- **Bug Hunter**: Scans GitHub repositories for vulnerabilities, verifies them with AI, and creates PRs automatically.
+- **Code Helper**: Compiles Python scripts into standalone `.EXE` files.
+- **Self-Fix**: AI-driven diagnostic and repair of the JARVIS source code itself.
+
+### 2. **System & Workspace Control**
+- **Workspace Architect**: Auto-snaps windows into optimized layouts (Coding, Social, Cinema).
+- **Computer Settings**: Direct control over volume, brightness, dark mode, and network adapters.
+- **Task Manager**: Real-time process monitoring and performance optimization.
+
+### 3. **Communication & Media**
+- **SMS Tool**: Send and receive text messages via voice command through connected hardware.
+- **Unified YouTube**: Advanced control over playback, playlists, and AI-powered video summaries.
+- **Stable Diffusion (Local)**: Generate professional-grade images locally on your GPU (AMD RX 580) via DirectML.
+
+### 4. **Memory & RAG**
+- **Semantic Memory**: Recalls facts from 500+ previous conversations using ChromaDB vector storage.
+- **Relationship Tracking**: Persistent memory of Sir Peter's identity, preferences, and social relationships.
+
+---
+
+## 📂 System Architecture
+- `main.py`: The central orchestrator and voice/vision entry point.
+- `core/`: System logic, self-audit, self-healing, and tool dispatchers.
+- `actions/`: Individual tool implementations (48+ Python scripts).
+- `memory/`: Vector databases and JSON stores for long-term state.
+- `DOCS.md`: Internal system manual for AI self-reflection.
+
+---
+
+## 🚀 Getting Started
+1. **Requirements**: Windows 10/11, Python 3.12+, RX 580 or RTX GPU.
 2. **Setup**:
    ```bash
    pip install -r requirements.txt
    playwright install
-   ollama pull qwen2.5-coder:7b
-   ollama pull mistral:7b
-   ollama pull hermes3:8b
+   ollama pull qwen2.5-coder:7b && ollama pull mistral:7b && ollama pull hermes3:8b
    ```
 3. **Launch**:
    ```bash
@@ -79,4 +79,4 @@ JARVIS is equipped with an extensive suite of tools for total system control.
    ```
 
 ---
-*Built for the hive-mind by cifikAI. Version: CIFIK Power
+*Built for the hive-mind by cifikAI. Version: **CIFIK ELITE (Self-Healing Edition)*** 🦾
