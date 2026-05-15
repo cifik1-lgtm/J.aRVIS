@@ -34,7 +34,7 @@ TOOL ROUTING (Updated):
 - youtube_manager: Unified YouTube control (playback, volume, playlists, search).
 - gesture_control: Hand gesture control via webcam (fist=mute, open_palm=stop, pointing=click).
 - detect_monitors: Get connected monitor count and specifications.
-- workspace_architect: Auto-snap windows into layouts (coding, social, cinema).
+- workspace_architect: The 'Architect Protocol 2.0'. Automatically launches, snaps, and resizes windows into optimized layouts (coding, social, cinema, gaming). Can start missing apps automatically.
 - camera_viewer: Open dedicated camera feed window.
 - rag_search: Search long-term vector memory for past conversations.
 - system_control: Switch brains or toggle settings (ONLY for gemini/hive/local).

@@ -67,11 +67,12 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "workspace_architect",
-        "description": "Architect Protocol: Automatically snaps and resizes windows into optimized layouts. Layouts: 'coding' (VS Code + Browser + Terminal), 'social' (Telegram + Browser), 'cinema' (VLC/Full Screen).",
+        "description": "The Architect Protocol 2.0: Snaps/resizes windows and LAUNCHES missing apps. Layouts: 'coding' (VS Code, Browser, Terminal), 'social' (Telegram, Browser), 'cinema' (VLC), 'gaming' (Steam, Discord).",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "layout": {"type": "STRING", "description": "coding | social | cinema"}
+                "layout": {"type": "STRING", "description": "coding | social | cinema | gaming"},
+                "launch_missing": {"type": "BOOLEAN", "description": "If true, automatically starts required apps if they aren't running."}
             },
             "required": ["layout"]
         }
@@ -1023,9 +1024,8 @@ class ToolDispatcher:
                     return camera_viewer(self.orch, idx)
 
                 if name == "workspace_architect":
-                    layout = args.get("layout", "coding").lower()
                     from actions.workspace_architect import workspace_architect
-                    return workspace_architect(self.orch, layout)
+                    return workspace_architect(parameters=args, player=self.ui)
 
                 if name == "gesture_control":
                     action = args.get("action", "toggle").lower()

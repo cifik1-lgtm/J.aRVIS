@@ -3,6 +3,7 @@
 ## 🧠 Core Systems
 - **main.py**: The central nervous system. Handles voice (Gemini Live), vision, and the main event loop.
 - **core/tools.py**: The tool dispatcher. Connects AI goals to Python functions.
+- **workspace_architect**: The 'Architect Protocol 2.0'. Automatically launches, snaps, and resizes windows into optimized layouts (coding, social, cinema, gaming). Use this for one-click workspace setup.
 - **core/self_audit.py**: The security monitor. Detects code changes on boot.
 - **core/self_healing.py**: The immune system. Repairs broken code automatically.
 - **memory/memory_manager.py**: Long-term semantic memory (memories, relationships, identity).
