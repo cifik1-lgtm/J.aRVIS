@@ -1305,6 +1305,7 @@ class JarvisLive:
             "remote_command",   # Send command to other PC
             "hive_sync",        # Teleport file to other PC
             "hive_status",      # Get status of other PC
+            "project_architect", # Scaffold new projects
         ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")

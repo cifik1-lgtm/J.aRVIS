@@ -889,6 +889,19 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "project_architect",
+        "description": "Scaffold a complete new project autonomously with folders, files, and Git initialization.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "name": {"type": "STRING", "description": "The name of the new project folder"},
+                "description": {"type": "STRING", "description": "What the project is about"},
+                "tech_stack": {"type": "STRING", "description": "python | web | node"}
+            },
+            "required": ["name", "description"]
+        }
+    },
+    {
         "name": "hive_status",
         "description": "Get the hardware status (CPU, GPU, Temp) and activity of your OTHER PC.",
         "parameters": {
@@ -1339,6 +1352,10 @@ class ToolDispatcher:
                         success, msg = self.orch.healer.attempt_repair(target, error)
                         return f"Self-fix result for {target}: {msg}"
                     return "Self-healing system not initialized."
+
+                elif name == "project_architect":
+                    from actions.project_architect import project_architect
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: project_architect(args, player=self.ui)) or "Project scaffolded, sir."
 
                 elif name == "learn_skill":
                     from actions.skill_engine import skill_engine
