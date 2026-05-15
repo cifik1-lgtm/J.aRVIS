@@ -124,6 +124,19 @@ detect_monitors
 
 gesture_control
   action: "start" | "stop" | "toggle" (required) — enable/disable hand tracking
+
+ghost_browser
+  action: "navigate" | "search" | "capture" (required)
+  url: string (for navigate)
+  query: string (for search)
+
+learn_skill
+  skill_name: string (required)
+  objective: string (required)
+
+self_fix
+  file_name: string (required)
+  error_message: string (required)
 EXAMPLES:
 
 Goal: "research mechanical engineering and save it to a notepad file"
@@ -189,7 +202,9 @@ Convert the user's request into a JSON plan using ONLY these tools:
 4. open_app: { "app_name": "string" } -- ALWAYS include 'app_name' (e.g., 'chrome', 'notepad', 'discord').
 5. browser_navigate: { "url": "string", "browser": "string" } -- ALWAYS use this for navigating to websites.
 6. system_control: { "action": "switch_brain", "brain": "gemini|local|openrouter" }
-7. talk: { "text": "your response to the user" }
+7. ghost_browser: { "action": "navigate|search|capture", "url": "string", "query": "string" }
+8. self_fix: { "file_name": "string", "error_message": "string" }
+9. talk: { "text": "your response to the user" }
 
 When navigating to a URL in a browser manually via computer_control:
 1. Type the URL using computer_control(action='type', text='url')
