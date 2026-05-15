@@ -1,72 +1,55 @@
 # JARVIS: Cifik Intelegents 🤖🦾
-**The World's First Self-Healing, Autonomous AI Orchestrator & Holographic HUD**
+**The World's First Self-Evolving, Self-Healing Autonomous AI Orchestrator**
 
-JARVIS (Just A Rather Very Intelligent System) is a state-of-the-art, **9-Brain Autonomous Hive Mind** designed for professional software development, real-time computer control, and recursive self-improvement. It features an industry-leading **Autonomous Immune System** capable of real-time self-repair.
+JARVIS (Just A Rather Very Intelligent System) is an elite **9-Brain Autonomous Hive Mind** designed for professional software development, real-time computer control, and recursive self-evolution. It is the first system capable of independently learning new skills and repairing its own biological (source) code.
 
 ---
 
-## 🛡️ The Autonomous Immune System (New)
-JARVIS is now equipped with a proactive defense and repair architecture:
-- **Self-Audit Protocol**: Scans the entire codebase on startup. Detects unauthorized modifications or new features and reports them to the user via the UI and voice.
-- **Self-Healing Engine**: Intercepts runtime crashes and startup failures. It automatically parses tracebacks, isolates the "culprit" code, and uses a specialized coding LLM to **generate and apply a patch** in real-time.
-- **Manual Self-Fix**: A dedicated tool (`self_fix`) allows JARVIS to perform surgical code repairs on command if a tool becomes inconsistent.
+## 🛡️ The Autonomous Immune System
+JARVIS features a proactive defense and repair architecture:
+- **Self-Audit Protocol**: Scans the entire codebase on startup to detect unauthorized modifications or newly installed features.
+- **Self-Healing Engine**: Intercepts runtime crashes and startup failures. It automatically parses tracebacks and uses a specialized coding LLM to **generate and apply patches** in real-time.
+- **Manual Self-Fix**: A dedicated surgical tool (`self_fix`) allows JARVIS to repair his own files on command.
+
+---
+
+## 🎓 The Skill Engine (Autonomous Learning)
+JARVIS is no longer limited by his initial programming. He can now **expand his own capabilities**:
+- **Dynamic Tool Creation**: Tell JARVIS to learn a new skill (e.g., *"Learn how to track the price of Bitcoin"*), and he will independently write, test, and install the new Python tool in his `actions/` directory.
+- **Recursive Growth**: Each new skill is permanently registered and becomes a native part of his arsenal for future tasks.
+
+---
+
+## 🌐 The Ghost Browser (Autonomous Web Agent)
+Equipped with a dedicated, invisible web environment, JARVIS can explore the internet independently:
+- **Silent Research**: Performs deep-dives, documentation searches, and data gathering without interrupting your focus or using your browser.
+- **Visual Intelligence**: Captures and analyzes website UIs using his vision module to "see" and interact with web elements just like a human.
+- **Playwright Powered**: Capable of handling complex JavaScript, logins, and multi-step web flows.
+
+---
+
+## 🏗️ The Architect Protocol 2.0
+JARVIS is now a **System Commander** for your workspace:
+- **One-Click Environments**: Protocols like `coding`, `gaming`, `social`, and `cinema` automatically launch required apps and snap them into optimized grid layouts.
+- **Auto-Launch Intelligence**: If a required app isn't open, JARVIS will start it for you before arranging your workspace.
 
 ---
 
 ## 🧠 9-Brain Autonomous Hive Mind
-JARVIS intelligently routes tasks across a distributed network of local and cloud models:
-1. **Gemini 2.0 Live**: Real-time multimodal vision and low-latency voice interaction.
+JARVIS intelligently routes tasks across a distributed network:
+1. **Gemini 2.0 Live**: Real-time multimodal vision and low-latency voice.
 2. **OpenRouter (The Strategic Planner)**: Primary reasoning using Gemma 4, Llama 4, and Nemotron.
 3. **Groq LPU**: Ultra-fast intent classification and lightning-speed fallbacks.
-4. **Qwen 2.5 Coder (Local)**: The resident Software Architect for complex Python/JS automation.
-5. **Mistral 7B (Local)**: Private, offline reasoning and mathematical analysis.
+4. **Qwen 2.5 Coder (Local)**: Resident Software Architect for complex Python/JS automation.
+5. **Mistral 7B (Local)**: Private reasoning and mathematical analysis.
 6. **Hermes 3 8B (Local)**: The "Agentic Soul" — handles personality and tool coordination.
 7. **Poe (Claude/Banana)**: Specialized creative reasoning and asset generation.
-8. **Minimax**: High-capacity creative content fallback.
-9. **Codewords**: Specialized automation workflow execution.
-
----
-
-## 🖥️ Procedural Holographic HUD & Interface
-- **Procedural HUD**: A glassmorphism-inspired interface with a reactive central "Eye" and real-time activity logs.
-- **Multimodal Vision**: High-speed screen and webcam analysis via the `vision_inspector` engine.
-- **Gesture Control**: Control your PC with hand gestures (Fist = Mute, Open Palm = Stop, Pointing = Click) powered by MediaPipe.
-
----
-
-## 🛠️ Specialized Tool Arsenal (50+ Actions)
-### 1. **Autonomous Development**
-- **Bug Hunter**: Scans GitHub repositories for vulnerabilities, verifies them with AI, and creates PRs automatically.
-- **Code Helper**: Compiles Python scripts into standalone `.EXE` files.
-- **Self-Fix**: AI-driven diagnostic and repair of the JARVIS source code itself.
-
-### 2. **System & Workspace Control**
-- **Workspace Architect**: Auto-snaps windows into optimized layouts (Coding, Social, Cinema).
-- **Computer Settings**: Direct control over volume, brightness, dark mode, and network adapters.
-- **Task Manager**: Real-time process monitoring and performance optimization.
-
-### 3. **Communication & Media**
-- **SMS Tool**: Send and receive text messages via voice command through connected hardware.
-- **Unified YouTube**: Advanced control over playback, playlists, and AI-powered video summaries.
-- **Stable Diffusion (Local)**: Generate professional-grade images locally on your GPU (AMD RX 580) via DirectML.
-
-### 4. **Memory & RAG**
-- **Semantic Memory**: Recalls facts from 500+ previous conversations using ChromaDB vector storage.
-- **Relationship Tracking**: Persistent memory of Sir Peter's identity, preferences, and social relationships.
-
----
-
-## 📂 System Architecture
-- `main.py`: The central orchestrator and voice/vision entry point.
-- `core/`: System logic, self-audit, self-healing, and tool dispatchers.
-- `actions/`: Individual tool implementations (48+ Python scripts).
-- `memory/`: Vector databases and JSON stores for long-term state.
-- `DOCS.md`: Internal system manual for AI self-reflection.
+8. **Minimax / Codewords**: High-capacity content fallback and workflow execution.
 
 ---
 
 ## 🚀 Getting Started
-1. **Requirements**: Windows 10/11, Python 3.12+, RX 580 or RTX GPU Newer better for Local LLMs.
+1. **Requirements**: Windows 10/11, Python 3.12+, RX 580 or RTX GPU.
 2. **Setup**:
    ```bash
    pip install -r requirements.txt
@@ -79,4 +62,4 @@ JARVIS intelligently routes tasks across a distributed network of local and clou
    ```
 
 ---
-*Built for the hive-mind by cifikAI. Version: **CIFIK ELITE (Self-Healing Edition)*** 🦾
+*Built for the hive-mind by cifikAI. Version: **CIFIK SUPREME (Self-Evolving Edition)*** 🦾
