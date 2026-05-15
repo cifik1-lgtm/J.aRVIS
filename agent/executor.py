@@ -326,6 +326,26 @@ class AgentExecutor:
                             if speak: speak(msg)
                             return msg
 
+                        elif decision == ErrorDecision.HEAL:
+                            if speak: speak("I've detected a bug in my own systems. Performing self-repair, sir.")
+                            # Attempt to find the file name from the error or tool
+                            file_to_fix = "tools.py" # Default
+                            if tool == "ghost_browser": file_to_fix = "actions/ghost_browser.py"
+                            elif tool == "workspace_architect": file_to_fix = "actions/workspace_architect.py"
+                            elif tool == "skill_engine": file_to_fix = "actions/skill_engine.py"
+                            
+                            repair_params = {
+                                "file_name": file_to_fix,
+                                "error_message": error_msg
+                            }
+                            repair_res = _call_tool("self_fix", repair_params, speak, dispatcher=dispatcher)
+                            print(f"[Executor] 🏥 Auto-Heal Result: {repair_res}")
+                            
+                            # After healing, we retry the same step
+                            attempt += 1
+                            import time; time.sleep(2)
+                            continue
+
                         else: 
                             fix_suggestion = recovery.get("fix_suggestion", "")
                             if fix_suggestion and tool != "generated_code":

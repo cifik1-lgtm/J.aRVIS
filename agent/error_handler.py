@@ -19,6 +19,7 @@ class ErrorDecision(Enum):
     RETRY       = "retry"      
     SKIP        = "skip"       
     REPLAN      = "replan"     
+    HEAL        = "heal"       
     ABORT       = "abort"    
 
 
@@ -31,6 +32,8 @@ DECISIONS:
              The same step can succeed if tried again.
 - skip    : This step is not critical and the task can succeed without it.
 - replan  : The approach was wrong. A different tool or method should be tried.
+- heal    : The TOOL ITSELF is broken (Python error, Traceback, AttributeError). 
+             JARVIS should fix his own code before retrying.
 - abort   : The task is fundamentally impossible or unsafe to continue.
 
 Also provide:
@@ -40,7 +43,7 @@ Also provide:
 
 Return ONLY valid JSON:
 {
-  "decision": "retry|skip|replan|abort",
+  "decision": "retry|skip|replan|heal|abort",
   "reason": "why it failed",
   "fix_suggestion": "what to try instead (for replan)",
   "max_retries": 1,
@@ -118,6 +121,7 @@ Attempt number: {attempt}"""
             "retry":  ErrorDecision.RETRY,
             "skip":   ErrorDecision.SKIP,
             "replan": ErrorDecision.REPLAN,
+            "heal":   ErrorDecision.HEAL,
             "abort":  ErrorDecision.ABORT,
         }
         result["decision"] = decision_map.get(decision_str, ErrorDecision.REPLAN)
