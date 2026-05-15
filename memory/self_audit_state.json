@@ -1,6 +1,6 @@
 {
   "config_hash": "a0aa5b36e6870c56f6e92ca3afc5f8bc44b8a0baffe7786875f0c7236de5cf9d",
-  "tools_hash": "07b9b186de9699eccf801d8849c4b32f33c4b5451d9ea77846867e15e48b864e",
+  "tools_hash": "e4dae6a548ee83f0dba7b8e07d2593820fe2068f7987c2096f9adf283f1fccbb",
   "brains_hash": "",
   "source_hashes": {
     "actions/__init__.py": "fd4fe17573217a74a07143e29a2dd8fecc5c30c5ee75365e5c78d305d43393ab",
@@ -8,6 +8,7 @@
     "actions/browser_control.py": "a2d54a0fc17e8d8d70749d2ebdf6e3e8c310ccfe4970e256fb53b3c030d5e338",
     "actions/browser_navigate.py": "35ef96de68bd1b0c24daecb5fe39c8d431d1c982066eeb8c3dcf409211f9b9a7",
     "actions/bug_hunter.py": "d1e041388700cd16ded829157170f896a7994a6d80885e3f9dccdc51bbd24923",
+    "actions/camera_scanner.py": "7f326ad2b54675c28e51ed15269487b317d9afbe50cdf97534baa6935f98338c",
     "actions/camera_viewer.py": "1bc23a7053f42f3fb9e23fbb502f314f024e67cfd8d4b3161480b0dca9b8b9f1",
     "actions/code_agent.py": "ac383bd224741ea1ff9b16e03706c45dcc26111576c7f16a848107a5ffd91d6d",
     "actions/code_helper.py": "34f3034b6588247b78ad5d1093884d131bef324c9e22f651e4ae93fb359d95d3",
@@ -57,7 +58,7 @@
     "agent/__init__.py": "1e1e59cc32d5231ac2af68285220bd040ed25ae4910992c01ad9f88759f5ad08",
     "agent/error_handler.py": "702b2d84dca74f82c520110f3943028624d4369162bae70c7b1678d8b471c0a8",
     "agent/executor.py": "3decbd5e938aff66ac56101ac8ec35d776d0a49b0fac8c1e0824a9f67bd31bed",
-    "agent/planner.py": "72ef1c0103b0ea1c787532c9bab0954c34f4b9ea4d63467775ed590f19ea7667",
+    "agent/planner.py": "56d8ffd800c4b1803bdaf4b4244c3513bce9dec93600d46f4e345bb69c58f0e8",
     "agent/task_queue.py": "6a0ea717a0350d54499d4306c1679d865753c3990e618d49ea9c85e13c80d492",
     "build_exe.py": "0dac7e5f31c2e3ab7c475a4694489558335bb7fc8f75ee277a90a8c02a1461cf",
     "build_installer.py": "609dad8d674f4fe6162ebec11916b38f4f1496bea5d5db40265990725605c98e",
@@ -70,8 +71,8 @@
     "core/llm_provider.py": "88f7db91293a4e44e8b6a85a7fbb0a9f9e56d8c8b111e6bf65e7f87503ae3a9e",
     "core/local_llm.py": "6b61047505c5a00010c02c53b1a8d07afa0be5085e2987d61ef83833b8a245a7",
     "core/self_audit.py": "e182162d320fe0369c615c9fe3b5aa8cf1b788ee7db0d95114819dc5af2f5d19",
-    "core/self_healing.py": "e19c22b812176571847ac2950d6f15e6a6740d3e2a11f9e428c771d7eb5fe58b",
-    "core/tools.py": "2a8d432525bd95d7207ef4d8f710a0a8e0ed6f1e83562079b8df6a180be0077e",
+    "core/self_healing.py": "0862b736a7fa510a5c29eace4fd85f0bf224a9f6c2e397a2df1fa16678855493",
+    "core/tools.py": "52e72c78c57048edd4cfff7500b6ff641a218f39d568dd55e7d1a9dba007271b",
     "documents/vision_inspector_source.py": "aa23799c8acefb563405f91851e7b6f24089655172efc952234ba1e233eb5a65",
     "installer_stub.py": "ee0f9d49aac7d66a8fc03ebfde43c2e6f59e728973eed3b0b5e78387bb0cf84a",
     "main.py": "cfe282478b8a5fa7a2b133b55bdcf4b690558ac5a160b8a0b9ace437ead85c93",
@@ -86,5 +87,5 @@
     "ui.py": "1ca6ae8ea4dc4fad82d9a7d1b493f40b5af9d136f79dac7283e0973409b470e5",
     "ui_overlay.py": "b62b8473a2d02a8c0ca8683938b35c749c15cefac468d90a32d7334701cebe72"
   },
-  "last_audit": "2026-05-15T23:25:11.877271"
+  "last_audit": "2026-05-15T23:34:55.397833"
 }

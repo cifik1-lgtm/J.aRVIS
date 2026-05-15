@@ -379,7 +379,7 @@ class AgentExecutor:
                     break
 
             if success:
-                return self._summarize(goal, completed_steps, speak)
+                return self._summarize(goal, completed_steps, step_results, speak)
 
             if replan_attempts >= self.MAX_REPLAN_ATTEMPTS:
                 msg = f"Task failed after {replan_attempts} replan attempts, sir."
@@ -391,13 +391,20 @@ class AgentExecutor:
             replan_attempts += 1
             plan = replan(goal, completed_steps, failed_step, failed_error)
 
-    def _summarize(self, goal: str, completed_steps: list, speak: Callable | None) -> str:
+    def _summarize(self, goal: str, completed_steps: list, step_results: dict, speak: Callable | None) -> str:
         fallback = f"All done, sir. Completed {len(completed_steps)} steps for: {goal[:60]}."
-        steps_str = "\n".join(f"- {s.get('description', '')}" for s in completed_steps)
+        
+        results_str = ""
+        for s in completed_steps:
+            s_num = s.get("step")
+            res = step_results.get(s_num, "No output.")
+            results_str += f"- Step {s_num} ({s.get('tool')}): {s.get('description')} -> Result: {res}\n"
+
         prompt    = (
             f'User goal: "{goal}"\n'
-            f"Completed steps:\n{steps_str}\n\n"
-            "Write a single natural sentence summarizing what was accomplished. "
+            f"Execution Results:\n{results_str}\n\n"
+            "Write a single natural sentence summarizing what was accomplished based on the EXACT results above. "
+            "If a count or value was found, include it. "
             "Address the user as 'sir'. Be direct and positive."
         )
 
