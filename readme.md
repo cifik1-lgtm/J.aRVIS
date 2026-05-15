@@ -5,6 +5,16 @@ JARVIS (Just A Rather Very Intelligent System) is an elite **9-Brain Autonomous 
 
 ---
 
+### 🦾 **Supreme "Elite" Features**
+- **🎛️ PC Overlord (Hive Sync):** Unified control across multiple machines (EVA & CIFIK). Teleport files and execute remote commands instantly.
+- **🩺 Autonomous Self-Healing:** Real-time error detection and AI-powered code repair. JARVIS fixes his own bugs before you even notice them.
+- **👻 Ghost Browser:** Invisible, background web research agent that scans the web without opening windows.
+- **🛠️ Skill Engine:** Autonomous tool creation. JARVIS can write and install his own new capabilities on the fly.
+- **📸 Physical Hardware Vision:** Direct OpenCV-based hardware scanning for cameras and monitors.
+- **🛡️ Bug Bounty Hunter:** Autonomous security auditing for GitHub repositories.
+
+---
+
 ## 🛡️ The Autonomous Immune System
 JARVIS features a proactive defense and repair architecture:
 - **Self-Audit Protocol**: Scans the entire codebase on startup to detect unauthorized modifications or newly installed features.
