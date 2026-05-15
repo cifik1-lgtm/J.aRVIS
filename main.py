@@ -1297,6 +1297,8 @@ class JarvisLive:
             "ip_checker",       # Get IP info
             "sms_tool",         # Send/receive SMS messages
             "self_fix",         # AI Self-Repair tool
+            "learn_skill",      # Autonomous Skill Learning
+            "hunt_bugs",        # Security Auditing
         ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")

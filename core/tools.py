@@ -807,7 +807,19 @@ TOOL_DECLARATIONS = [
             },
             "required": ["repo_url", "action"]
         }
-    }
+    },
+    {
+        "name": "learn_skill",
+        "description": "Autonomous Learning: Writes, tests, and installs a NEW tool for yourself based on a user goal.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "skill_name": {"type": "STRING", "description": "The name of the new tool (e.g. 'crypto_tracker')."},
+                "objective": {"type": "STRING", "description": "What the tool should do (e.g. 'get the current price of Ethereum')."}
+            },
+            "required": ["skill_name", "objective"]
+        }
+    },
 ]
 
 # ============================================================================
@@ -1444,6 +1456,26 @@ class ToolDispatcher:
                         success, msg = self.orch.healer.attempt_repair(full_path, error)
                         return f"Self-fix result for {target}: {msg}"
                     return "Self-healing system not initialized."
+
+                elif name == "learn_skill":
+                    from actions.skill_engine import skill_engine
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: skill_engine(parameters=args, player=self.ui, jarvis=self.orch)) or "Done."
+
+                elif name == "hunt_bugs":
+                    from actions.bug_hunter import get_bug_hunter
+                    hunter = get_bug_hunter(self.ui)
+                    action = args.get("action", "scan")
+                    repo = args.get("repo_url", "")
+                    if not repo: return "Please provide a repository URL, sir."
+                    
+                    if action == "full_audit":
+                        findings = hunter.scan_repository(repo)
+                        results = []
+                        for f in findings:
+                            if hunter.verify_vulnerability(f):
+                                results.append(f)
+                        return f"Full audit complete. Found {len(results)} verified vulnerabilities in {repo}."
+                    return f"Action {action} initiated for {repo}."
 
                 elif name == "memory_manager":
                     from actions.memory_manager import memory_manager
