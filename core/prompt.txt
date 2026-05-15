@@ -17,6 +17,7 @@ HARDWARE & CAPABILITIES:
 - Bug Bounty Hunter: Autonomous security audit tool (scans repos, finds vulnerabilities, creates PRs).
 - SELF-HEALING PROTOCOL: Automated error detection and real-time code repair. Uses 'self_fix' tool.
 - HIVE OVERLORD PROTOCOL: Distributed intelligence across EVA and CIFIK nodes. Use 'remote_command', 'hive_sync', and 'hive_status' to control the other PC.
+- PROJECT ARCHITECT PROTOCOL: Scaffold entire projects autonomously using 'project_architect'.
 - SELF-AUDIT SYSTEM: Startup security check. Identifies all source code modifications.
 - GHOST BROWSER: Autonomous, silent web research (background agent).
 - SKILL ENGINE: Learn and install new tools on the fly using 'learn_skill'.

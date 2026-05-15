@@ -6,6 +6,7 @@ JARVIS (Just A Rather Very Intelligent System) is an elite **9-Brain Autonomous 
 ---
 
 ### 🦾 **Supreme "Elite" Features**
+- **🏗️ Autonomous Project Architect:** Scaffold complete professional projects (Python, Web, Node) with folders, boilerplate, and Git initialization instantly.
 - **🎛️ PC Overlord (Hive Sync):** Unified control across multiple machines (EVA & CIFIK). Teleport files and execute remote commands instantly.
 - **🩺 Autonomous Self-Healing:** Real-time error detection and AI-powered code repair. JARVIS fixes his own bugs before you even notice them.
 - **👻 Ghost Browser:** Invisible, background web research agent that scans the web without opening windows.
