@@ -57,7 +57,7 @@
     "agent/__init__.py": "1e1e59cc32d5231ac2af68285220bd040ed25ae4910992c01ad9f88759f5ad08",
     "agent/error_handler.py": "ca414d4aafc9acc94b1cdd884acf9fb628dfb19484b2fb64cc74a1aa0953babc",
     "agent/executor.py": "ec49a457e36b5b29f84dcd151e3dd9bcd685fc5b97f4c9bc4bd783bb2bda28bc",
-    "agent/planner.py": "5789aa2c721fead678f72ace19c1e657a56dce9b72e5bc5d316ba4fac032e5c4",
+    "agent/planner.py": "e29ae65040dfbb9e45f3f425830c2a826288947073b824f17e3ef5505bfb9c86",
     "agent/task_queue.py": "6a0ea717a0350d54499d4306c1679d865753c3990e618d49ea9c85e13c80d492",
     "build_exe.py": "0dac7e5f31c2e3ab7c475a4694489558335bb7fc8f75ee277a90a8c02a1461cf",
     "build_installer.py": "609dad8d674f4fe6162ebec11916b38f4f1496bea5d5db40265990725605c98e",
@@ -83,8 +83,8 @@
     "scratch/test_emotion.py": "47ba17a09697857003cae864055f320bb55661ed2084f1a350872e8c6fba1c5b",
     "scratch/test_ollama.py": "dd7daf9a9d1aad654a951b10ccabb98c8e0457efae960e790ad1e1690f8a8d6e",
     "setup.py": "457ea4f0010005e785271a76233076f3cf14ca4a68c26780bb09955c8336d01b",
-    "ui.py": "f7ca0ea3124e3ac2a7cd912cd283abfa0d0c4a16c6f0a4f4392384160bc85e7c",
+    "ui.py": "1ca6ae8ea4dc4fad82d9a7d1b493f40b5af9d136f79dac7283e0973409b470e5",
     "ui_overlay.py": "b62b8473a2d02a8c0ca8683938b35c749c15cefac468d90a32d7334701cebe72"
   },
-  "last_audit": "2026-05-15T23:06:04.662310"
+  "last_audit": "2026-05-15T23:12:19.613373"
 }
