@@ -99,8 +99,28 @@ def start_ghost_relay(queue, speak_ref=None):
                         # STRICT MATCHING ONLY
                         if target == my_name or target == "ALL":
                             print(f"[Ghost] 🎯 Match found! Cloud Signal Received: {cmd}")
-                            from agent.task_queue import TaskPriority
-                            queue.submit(goal=f"Cloud command: {cmd}", priority=TaskPriority.HIGH)
+                            
+                            # Check for specialized Hive commands
+                            if cmd.startswith("FILE_SYNC:"):
+                                try:
+                                    _, name, content_b64 = cmd.split("|", 2)
+                                    import base64
+                                    out_path = get_base_dir() / "memory" / "downloads" / name
+                                    out_path.parent.mkdir(exist_ok=True)
+                                    out_path.write_bytes(base64.b64decode(content_b64))
+                                    print(f"[Ghost] 📥 Hive Sync: Saved file to {out_path}")
+                                    if speak_ref: speak_ref(f"Sir, I've received a file sync from the other PC: {name}")
+                                except: pass
+                            elif cmd.startswith("STATUS_UPDATE:"):
+                                # Just store it in memory for the HUD/Tools to see
+                                try:
+                                    with open(get_base_dir() / "memory" / "hive_status.json", "w") as f:
+                                        f.write(cmd.replace("STATUS_UPDATE:", ""))
+                                except: pass
+                            else:
+                                from agent.task_queue import TaskPriority
+                                queue.submit(goal=f"Cloud command: {cmd}", priority=TaskPriority.HIGH)
+                            
                             # ONLY delete if it was for us
                             try: os.remove(filepath)
                             except: pass

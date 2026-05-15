@@ -858,10 +858,45 @@ TOOL_DECLARATIONS = [
             "type": "OBJECT",
             "properties": {
                 "action": {"type": "STRING", "enum": ["navigate", "search", "capture"]},
-                "url": {"type": "STRING", "description": "The URL to visit."},
-                "query": {"type": "STRING", "description": "Search query if action is 'search'."}
+                "url": {"type": "STRING"},
+                "query": {"type": "STRING"}
             },
             "required": ["action"]
+        }
+    },
+    {
+        "name": "remote_command",
+        "description": "Send a command/goal to your OTHER PC (EVA or CIFIK) to execute it remotely.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "target": {"type": "STRING", "description": "EVA | CIFIK | ALL"},
+                "command": {"type": "STRING", "description": "The goal to execute (e.g. 'open notepad' or 'search for AI news')"}
+            },
+            "required": ["target", "command"]
+        }
+    },
+    {
+        "name": "hive_sync",
+        "description": "Teleport/Transfer a file from this PC to your OTHER PC instantly via the cloud relay.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "target": {"type": "STRING", "description": "EVA | CIFIK"},
+                "file_path": {"type": "STRING", "description": "Absolute path to the local file to send"}
+            },
+            "required": ["target", "file_path"]
+        }
+    },
+    {
+        "name": "hive_status",
+        "description": "Get the hardware status (CPU, GPU, Temp) and activity of your OTHER PC.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "target": {"type": "STRING", "description": "EVA | CIFIK"}
+            },
+            "required": ["target"]
         }
     }
 ]
@@ -1142,6 +1177,32 @@ class ToolDispatcher:
                     if action == "set" and key and val:
                         remember(key, val, "preferences")
                         return f"Preference '{key}' set to '{val}', sir."
+
+                elif name == "remote_command":
+                    from actions.ghost_relay import publish_command
+                    target = args.get("target", "ALL").upper()
+                    cmd = args.get("command", "")
+                    if publish_command(target, cmd):
+                        return f"Command '{cmd}' sent to {target} hive node, sir."
+                    return "Hive communication failed."
+
+                elif name == "hive_sync":
+                    from actions.ghost_relay import publish_command
+                    target = args.get("target", "").upper()
+                    path = Path(args.get("file_path", ""))
+                    if not path.exists(): return "File not found."
+                    
+                    import base64
+                    content = base64.b64encode(path.read_bytes()).decode("utf-8")
+                    payload = f"FILE_SYNC:|{path.name}|{content}"
+                    if publish_command(target, payload):
+                        return f"File '{path.name}' teleported to {target}, sir."
+                    return "Teleportation failed."
+
+                elif name == "hive_status":
+                    status_path = get_base_dir() / "memory" / "hive_status.json"
+                    if not status_path.exists(): return f"Target hive node {args.get('target')} is currently offline."
+                    return status_path.read_text(encoding="utf-8")
                     elif action == "get" and key:
                         p = mm.get_preference(key)
                         return f"The preference for '{key}' is '{p}', sir." if p else f"No preference found for '{key}', sir."

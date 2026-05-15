@@ -1302,6 +1302,9 @@ class JarvisLive:
             "ghost_browser",    # Autonomous Web Agent
             "system_reboot",    # Restart PC
             "system_shutdown",  # Shutdown PC
+            "remote_command",   # Send command to other PC
+            "hive_sync",        # Teleport file to other PC
+            "hive_status",      # Get status of other PC
         ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")

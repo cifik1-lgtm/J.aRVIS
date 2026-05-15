@@ -129,6 +129,17 @@ gesture_control
 detect_cameras
   (no parameters) — Scans the system for physically connected cameras and their indices.
 
+remote_command
+  target: "EVA" | "CIFIK" | "ALL"
+  command: string — goal to execute on the other PC
+
+hive_sync
+  target: "EVA" | "CIFIK"
+  file_path: string — local file to send to the other PC
+
+hive_status
+  target: "EVA" | "CIFIK" — get hardware status of other PC
+
 ghost_browser
   action: "navigate" | "search" | "capture" (required)
   url: string (for navigate)
@@ -208,8 +219,11 @@ Convert the user's request into a JSON plan using ONLY these tools:
 6. system_control: { "action": "switch_brain", "brain": "gemini|local|openrouter" }
 7. ghost_browser: { "action": "navigate|search|capture", "url": "string", "query": "string" }
 8. detect_cameras: {} -- Use this to find all connected cameras and their indices.
-9. self_fix: { "file_name": "string", "error_message": "string" }
-10. talk: { "text": "your response to the user" }
+9. remote_command: { "target": "EVA|CIFIK", "command": "goal" }
+10. hive_sync: { "target": "EVA|CIFIK", "file_path": "path" }
+11. hive_status: { "target": "EVA|CIFIK" }
+12. self_fix: { "file_name": "string", "error_message": "string" }
+13. talk: { "text": "your response to the user" }
 
 When navigating to a URL in a browser manually via computer_control:
 1. Type the URL using computer_control(action='type', text='url')
