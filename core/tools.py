@@ -819,6 +819,39 @@ TOOL_DECLARATIONS = [
             },
             "required": ["skill_name", "objective"]
         }
+    {
+        "name": "self_fix",
+        "description": "Uses AI to diagnose and repair a specific file in the JARVIS system if an error occurs.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "file_name": {"type": "STRING", "description": "The name of the file to fix (e.g. 'ui.py' or 'tools.py')."},
+                "error_message": {"type": "STRING", "description": "The specific error message or traceback observed."}
+            },
+            "required": ["file_name"]
+        }
+    },
+    {
+        "name": "system_reboot",
+        "description": "Restarts the computer immediately. Use with caution.",
+        "parameters": {"type": "OBJECT", "properties": {}}
+    },
+    {
+        "name": "system_shutdown",
+        "description": "Shuts down the computer immediately. Use with caution.",
+        "parameters": {"type": "OBJECT", "properties": {}}
+    {
+        "name": "ghost_browser",
+        "description": "Autonomous Web Agent: Navigate, search, and extract content from websites in a dedicated background browser. Actions: 'navigate', 'search', 'capture'.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "enum": ["navigate", "search", "capture"]},
+                "url": {"type": "STRING", "description": "The URL to visit."},
+                "query": {"type": "STRING", "description": "Search query if action is 'search'."}
+            },
+            "required": ["action"]
+        }
     },
 ]
 
@@ -1457,6 +1490,10 @@ class ToolDispatcher:
                         return f"Self-fix result for {target}: {msg}"
                     return "Self-healing system not initialized."
 
+                elif name == "ghost_browser":
+                    from actions.ghost_browser import ghost_browser
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: ghost_browser(parameters=args, player=self.ui)) or "Done."
+
                 elif name == "learn_skill":
                     from actions.skill_engine import skill_engine
                     return await asyncio.get_event_loop().run_in_executor(None, lambda: skill_engine(parameters=args, player=self.ui, jarvis=self.orch)) or "Done."
@@ -1476,6 +1513,34 @@ class ToolDispatcher:
                                 results.append(f)
                         return f"Full audit complete. Found {len(results)} verified vulnerabilities in {repo}."
                     return f"Action {action} initiated for {repo}."
+
+                elif name == "self_fix":
+                    target = args.get("file_name", "")
+                    error = args.get("error_message", "Unknown error")
+                    if not target: return "Please specify which file to fix, sir."
+                    
+                    if hasattr(self.orch, "healer") and self.orch.healer:
+                        self.ui.write_log(f"🛠️ Manual Self-Fix triggered for {target}...")
+                        full_path = self.orch.healer.base_dir / target
+                        # Search for the file if not in root
+                        if not full_path.exists():
+                            for folder in ["core", "actions", "memory"]:
+                                p = self.orch.healer.base_dir / folder / target
+                                if p.exists():
+                                    full_path = p
+                                    break
+                        
+                        success, msg = self.orch.healer.attempt_repair(full_path, error)
+                        return f"Self-fix result for {target}: {msg}"
+                    return "Self-healing system not initialized."
+
+                elif name == "system_reboot":
+                    from actions.computer_settings import restart_computer
+                    return restart_computer() or "Rebooting system, Sir."
+
+                elif name == "system_shutdown":
+                    from actions.computer_settings import shutdown_computer
+                    return shutdown_computer() or "Shutting down, Sir."
 
                 elif name == "memory_manager":
                     from actions.memory_manager import memory_manager
