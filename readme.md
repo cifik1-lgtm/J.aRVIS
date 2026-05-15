@@ -66,7 +66,7 @@ JARVIS intelligently routes tasks across a distributed network of local and clou
 ---
 
 ## 🚀 Getting Started
-1. **Requirements**: Windows 10/11, Python 3.12+, RX 580 or RTX GPU.
+1. **Requirements**: Windows 10/11, Python 3.12+, RX 580 or RTX GPU Newer better for Local LLMs.
 2. **Setup**:
    ```bash
    pip install -r requirements.txt
