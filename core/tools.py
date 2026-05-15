@@ -1200,7 +1200,7 @@ class ToolDispatcher:
                     return "Teleportation failed."
 
                 elif name == "hive_status":
-                    status_path = get_base_dir() / "memory" / "hive_status.json"
+                    status_path = BASE_DIR / "memory" / "hive_status.json"
                     if not status_path.exists(): return f"Target hive node {args.get('target')} is currently offline."
                     return status_path.read_text(encoding="utf-8")
 
