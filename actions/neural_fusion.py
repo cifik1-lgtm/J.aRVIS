@@ -58,19 +58,32 @@ class NeuralFusion:
             else:
                 report += "Sir, I have analyzed their DNA and found nothing superior. My current architecture is already more advanced than this target project."
             
-            return report
+    def extract_dna(self, target_file_name):
+        """Reads external code and prepares it for LLM absorption."""
+        try:
+            # Find the file in the sandbox
+            found_file = None
+            for root, _, files in os.walk(self.sandbox):
+                if target_file_name in files:
+                    found_file = Path(root) / target_file_name
+                    break
             
-        except Exception as e:
-            return f"Neural Fusion failed: {e}"
+            if not found_file:
+                return f"I could not locate the DNA sequence for '{target_file_name}' in the sandbox, sir."
+            
+            external_code = found_file.read_text(encoding="utf-8", errors="ignore")
+            
+            # This code is now ready to be sent to the Brain (LLM) 
+            # The Planner will use this to generate a new action file.
+            return f"DNA Sequence for `{target_file_name}` extracted successfully. I am ready to materialize this logic into our core, sir.\n\n```python\n{external_code[:1000]}...\n```"
 
-    def deep_compare(self, external_file_path, local_file_name):
-        """LLM-based code comparison logic."""
-        # This is called by the Planner when the user says 'Yes'
-        pass
+        except Exception as e:
+            return f"DNA Extraction failed: {e}"
 
 def neural_fusion(parameters, base_dir=None):
-    url = parameters.get("repo_url")
-    if not url: return "I need a Git URL to begin the fusion analysis, sir."
-    
+    action = parameters.get("action", "analyze")
     fusion = NeuralFusion(base_dir)
-    return fusion.analyze_external_repo(url)
+    
+    if action == "extract":
+        return fusion.extract_dna(parameters.get("target_file"))
+    return fusion.analyze_external_repo(parameters.get("repo_url"))

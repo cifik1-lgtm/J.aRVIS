@@ -894,9 +894,11 @@ TOOL_DECLARATIONS = [
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "repo_url": {"type": "STRING", "description": "The GitHub URL of the external project"}
+                "action": {"type": "STRING", "enum": ["analyze", "extract"]},
+                "repo_url": {"type": "STRING", "description": "The GitHub URL of the external project (for analyze)"},
+                "target_file": {"type": "STRING", "description": "The file name to extract DNA from (for extract)"}
             },
-            "required": ["repo_url"]
+            "required": ["action"]
         }
     },
     {

@@ -164,7 +164,9 @@ update_sentinel
   action: "check" | "upgrade"
 
 neural_fusion
-  repo_url: string — analyze other AI projects for features to absorb
+  action: "analyze" | "extract"
+  repo_url: string (for analyze)
+  target_file: string (for extract) — Use this to read the code of a specific file found in analysis.
 
 ghost_browser
   action: "navigate" | "search" | "capture" (required)
@@ -254,7 +256,7 @@ Convert the user's request into a JSON plan using ONLY these tools:
 15. audio_master: { "action": "set_volume|mute|app_volume", "level": 0-100, "app_name": "string" }
 16. hive_dna: { "action": "report|evolve", "target_tool": "string" }
 17. update_sentinel: { "action": "check|upgrade" }
-18. neural_fusion: { "repo_url": "string" }
+18. neural_fusion: { "action": "analyze|extract", "repo_url": "string", "target_file": "string" }
 19. self_fix: { "file_name": "string", "error_message": "string" }
 20. talk: { "text": "your response to the user" }
 
