@@ -171,6 +171,9 @@ class BrainRouter:
             if self.engines.get('qwen_coder'):
                 print("[Router] [CODE] Code task -> Qwen Coder")
                 return self._call_agent("qwen_coder", user_input, context)
+            else:
+                print("[Router] [CODE] Local code brain offline -> Using OpenRouter")
+                return self._route_to_openrouter(user_input, context)
 
         # ===== STEP 4: Personality / Agent Tasks =====
         hermes_keywords = ["act as", "pretend", "roleplay", "character", "be more", "persona", "british", "butler"]
@@ -233,8 +236,15 @@ class BrainRouter:
 
     def _route_to_gemini(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.llm_provider import call_llm
-        resp = call_llm(prompt, model="gemini-2.5-flash")
-        return ("gemini", {"response": resp})
+        try:
+            resp = call_llm(prompt, model="gemini-2.5-flash")
+            if "RESOURCE_EXHAUSTED" in str(resp) or "429" in str(resp):
+                print("[Router] ⚠️ Gemini Exhausted. Falling back to OpenRouter...")
+                return self._route_to_openrouter(prompt, context)
+            return ("gemini", {"response": resp})
+        except Exception as e:
+            print(f"[Router] ❌ Gemini Error: {e}. Falling back...")
+            return self._route_to_openrouter(prompt, context)
 
     def _route_to_groq(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.llm_provider import call_llm
