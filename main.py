@@ -24,6 +24,7 @@ os.environ["USE_TF"]                             = "0"
 os.environ["USE_TORCH"]                          = "1"
 import warnings
 import logging
+import numpy as np
 
 # Silence all Python warnings (Deprecation, User, etc.)
 warnings.filterwarnings("ignore")
@@ -249,7 +250,7 @@ if not API_CONFIG_PATH.exists():
 LIVE_MODEL          = "models/gemini-2.5-flash-native-audio-preview-12-2025"
 CHANNELS            = 1
 SEND_SAMPLE_RATE    = 16000
-RECEIVE_SAMPLE_RATE = 24000
+RECEIVE_SAMPLE_RATE = 24000 # Restored to native Gemini frequency
 CHUNK_SIZE          = 1024
 
 def _get_api_key() -> str:
@@ -1491,13 +1492,8 @@ class JarvisLive:
                         self.set_speaking(True)
                         self._last_speech_time = datetime.now()
                         if not self.silent_mode:
-                            audio_bytes = response.data
-                            try:
-                                import base64
-                                audio_bytes = base64.b64decode(audio_bytes)
-                            except Exception:
-                                pass
-                            await self.audio_in_queue.put(audio_bytes)
+                            # response.data is already raw PCM bytes - no decode needed
+                            await self.audio_in_queue.put(response.data)
 
                     if response.server_content:
                         sc = response.server_content
@@ -1589,15 +1585,37 @@ class JarvisLive:
 
     async def _play_audio(self):
         print("[JARVIS] 🔊 Play started")
-        
-        stream = sd.RawOutputStream(
-            samplerate=RECEIVE_SAMPLE_RATE,
-            channels=CHANNELS,
-            dtype="int16",
-            blocksize=CHUNK_SIZE,
-        )
-        stream.start()
-        
+
+        import queue
+        import pyaudio
+        audio_queue = queue.Queue()
+
+        def playback_worker():
+            try:
+                pya = pyaudio.PyAudio()
+                stream = pya.open(
+                    format=pyaudio.paInt16,
+                    channels=CHANNELS,
+                    rate=RECEIVE_SAMPLE_RATE,
+                    output=True,
+                    frames_per_buffer=CHUNK_SIZE,
+                )
+                while self.session:
+                    try:
+                        chunk = audio_queue.get(timeout=0.1)
+                        if chunk:
+                            stream.write(chunk)
+                    except queue.Empty:
+                        continue
+                stream.stop_stream()
+                stream.close()
+                pya.terminate()
+            except Exception as e:
+                print(f"[JARVIS] ❌ Audio Thread Error: {e}")
+
+        # Start the dedicated PyAudio playback thread
+        threading.Thread(target=playback_worker, daemon=True).start()
+
         try:
             while True:
                 try:
@@ -1607,16 +1625,14 @@ class JarvisLive:
                         self.set_speaking(False)
                         self._turn_done_event.clear()
                     continue
-                
+
                 self.set_speaking(True)
-                await asyncio.to_thread(stream.write, chunk)
+                audio_queue.put(chunk)
         except Exception as e:
-            print(f"[JARVIS] ❌ Play error: {e}")
+            print(f"[JARVIS] ❌ Play controller error: {e}")
             raise
         finally:
             self.set_speaking(False)
-            stream.stop()
-            stream.close()
 
     async def _proactive_checker(self):
         print("[JARVIS] 🔍 Proactive checker started")
