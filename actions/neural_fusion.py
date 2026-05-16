@@ -58,6 +58,11 @@ class NeuralFusion:
             else:
                 report += "Sir, I have analyzed their DNA and found nothing superior. My current architecture is already more advanced than this target project."
             
+            return report
+            
+        except Exception as e:
+            return f"Neural Fusion Analysis failed: {e}"
+
     def extract_dna(self, target_file_name):
         """Reads external code and prepares it for LLM absorption."""
         try:
