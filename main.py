@@ -1309,6 +1309,8 @@ class JarvisLive:
             "shadow_audit",     # Monitor productivity
             "hot_reload",       # Refresh tools live
             "audio_master",     # Control sound
+            "camera_scanner",   # Hardware camera discovery
+            "detect_monitors",  # Hardware display discovery
         ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
