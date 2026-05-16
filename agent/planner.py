@@ -166,7 +166,8 @@ update_sentinel
 neural_fusion
   action: "analyze" | "extract"
   repo_url: string (for analyze)
-  target_file: string (for extract) — Use this to read the code of a specific file found in analysis.
+  target_file: string (for extract)
+  RULE: When analyzing, if you find a superior module, IMMEDIATELY call 'extract' to read its DNA and then use 'file_controller' to implement it. DO NOT JUST TALK ABOUT IT.
 
 ghost_browser
   action: "navigate" | "search" | "capture" (required)
