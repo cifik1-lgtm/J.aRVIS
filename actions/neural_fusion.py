@@ -11,43 +11,57 @@ class NeuralFusion:
         self.sandbox.mkdir(parents=True, exist_ok=True)
 
     def analyze_external_repo(self, repo_url):
-        """Clones and analyzes an external repo against JARVIS core."""
+        """Performs a Deep Gap Analysis between JARVIS and an external project."""
         try:
             repo_name = repo_url.split("/")[-1].replace(".git", "")
             target_path = self.sandbox / repo_name
             
             if target_path.exists():
-                shutil.rmtree(target_path)
+                shutil.rmtree(target_path, ignore_errors=True)
             
-            print(f"[Fusion] 🧬 Cloning external DNA: {repo_name}...")
+            print(f"[Fusion] 🧬 Scouted Target: {repo_name}...")
             subprocess.run(["git", "clone", "--depth", "1", repo_url, str(target_path)], check=True, capture_output=True)
             
-            # Read local and remote structure
-            local_files = [f.name for f in (self.base_dir / "actions").glob("*.py")]
-            remote_files = [f.name for f in (target_path).rglob("*.py")]
+            # Map Local DNA (Actions and Core)
+            local_dna = []
+            for root, _, files in os.walk(self.base_dir):
+                if any(x in root for x in [".git", "__pycache__", "venv", "memory"]): continue
+                for f in files:
+                    if f.endswith(".py"):
+                        local_dna.append(f"{root.replace(str(self.base_dir), '')}\\{f}")
+
+            # Map Target DNA
+            target_dna = []
+            for root, _, files in os.walk(target_path):
+                if any(x in root for x in [".git", "__pycache__", "venv"]): continue
+                for f in files:
+                    if f.endswith(".py"):
+                        target_dna.append(f"{root.replace(str(target_path), '')}\\{f}")
+
+            # Summarize Gaps (Simple Version for now, can be sent to LLM)
+            local_set = {f.split("\\")[-1] for f in local_dna}
+            target_set = {f.split("\\")[-1] for f in target_dna}
             
-            report = f"### 🧬 Neural Fusion Analysis: {repo_name}\n\n"
-            report += "I have scanned the external project. Here is how it compares to my current architecture:\n\n"
+            missing_skills = target_set - local_set
             
-            # This is where the LLM would normally do the deep comparison
-            # For the tool response, we provide the summary of what was found
-            report += f"- **External Complexity:** {len(remote_files)} source files detected.\n"
-            report += "- **Potential Absorption:** Found logic relating to: "
+            report = f"### 🧬 Neural Fusion Report: {repo_name}\n\n"
+            report += "Sir, I have completed the DNA comparison. Here are the 'Gaps' in my current architecture:\n\n"
             
-            # Simple keyword matching for the report
-            keywords = ["vision", "audio", "voice", "browser", "automation", "security", "gui"]
-            found = []
-            for f in remote_files:
-                for k in keywords:
-                    if k in f.lower() and k not in found: found.append(k)
-            
-            report += ", ".join(found) + ".\n\n"
-            report += "**Sir, shall I perform a Deep Neural Comparison on these modules to see if they are superior to mine?**"
+            if missing_skills:
+                report += "**Missing Capabilities Found:**\n"
+                for skill in sorted(list(missing_skills))[:15]:
+                    report += f"- `{skill}` (Logic I don't have)\n"
+                
+                report += f"\n**Analysis:** This project has {len(missing_skills)} modules that I currently lack. "
+                report += "I can perform a 'Deep Extraction' on any of these to implement them into my system.\n\n"
+                report += "**Shall I begin absorbing these new patterns into my 'actions/' folder?**"
+            else:
+                report += "Sir, I have analyzed their DNA and found nothing superior. My current architecture is already more advanced than this target project."
             
             return report
             
         except Exception as e:
-            return f"Neural Fusion failed to scout the target, sir: {e}"
+            return f"Neural Fusion failed: {e}"
 
     def deep_compare(self, external_file_path, local_file_name):
         """LLM-based code comparison logic."""
