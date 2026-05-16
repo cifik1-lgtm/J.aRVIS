@@ -86,7 +86,7 @@
     "memory/__init__.py": "bbcccc1fd12222d026ae988c0bd66740b6ad31691b842ec046c813c12b58c54b",
     "memory/config_manager.py": "3336b41edf4de5b43278732f87e77c8cda6240690d588618716b9dc8de66650b",
     "memory/memory_manager.py": "337d28db65da9c87075af664ae3c81c54492036464ece6058b72706be8715769",
-    "memory/rag_engine.py": "e8d5bf7a56a17cb88ad0a760d5c5d478f9b06b2d2266c8436cb774637bc9ee94",
+    "memory/rag_engine.py": "e5b4ef64ab7a4d2502d6b8b893d41287f3678720c6de264cea02716d840213a2",
     "scratch/create_router.py": "451c3312b18fd1f962d0ee1053ace70e373d4bd3e34d69a8395e467bfaa6f1a0",
     "scratch/test_emotion.py": "47ba17a09697857003cae864055f320bb55661ed2084f1a350872e8c6fba1c5b",
     "scratch/test_ollama.py": "dd7daf9a9d1aad654a951b10ccabb98c8e0457efae960e790ad1e1690f8a8d6e",
@@ -375,5 +375,5 @@
     "ui.py": "1ca6ae8ea4dc4fad82d9a7d1b493f40b5af9d136f79dac7283e0973409b470e5",
     "ui_overlay.py": "b62b8473a2d02a8c0ca8683938b35c749c15cefac468d90a32d7334701cebe72"
   },
-  "last_audit": "2026-05-16T15:10:27.675422"
+  "last_audit": "2026-05-16T18:51:13.278898"
 }

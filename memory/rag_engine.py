@@ -107,28 +107,59 @@ class RAGMemoryEngine:
             embeddings = self._embedder.encode(docs, show_progress_bar=False).tolist()
             self._collection.add(documents=docs, ids=ids, metadatas=metas, embeddings=embeddings)
     def ingest_skills(self):
-        """Index all .md files in the skills directory."""
+        """Index skills incrementally in batches to prevent MemoryError."""
         skills_dir = BASE_DIR / "skills"
         if not skills_dir.exists():
             return
 
-        print("[RAG] 🧠 Ingesting Expert Skills from /skills...")
+        import gc
+        print("[RAG] 🧠 Performing Incremental Skill Sync...")
+        
+        # Get existing IDs to avoid re-indexing
+        existing_ids = set(self._collection.get(include=[])["ids"])
+        
+        new_skills = []
         for skill_file in skills_dir.rglob("*.md"):
-            try:
-                # Skip top-level README
-                if skill_file.name.lower() == "readme.md" and skill_file.parent == skills_dir:
-                    continue
+            # Use relative path as the unique ID
+            skill_rel_path = str(skill_file.relative_to(skills_dir)).replace("\\", "/")
+            
+            # Skip if already indexed
+            if skill_rel_path in existing_ids:
+                continue
                 
-                content = skill_file.read_text(encoding="utf-8")
-                skill_name = skill_file.parent.name if skill_file.name.lower() == "skill.md" else skill_file.stem
-                
-                self.index_memory(
-                    category="expert_skill",
-                    key=skill_name,
-                    value=content[:2000] # Index first 2k chars for retrieval
-                )
-            except Exception as e:
-                print(f"[RAG] ⚠️ Skill indexing error ({skill_file.name}): {e}")
+            # Skip top-level README
+            if skill_file.name.lower() == "readme.md" and skill_file.parent == skills_dir:
+                continue
+            
+            new_skills.append(skill_file)
+
+        if not new_skills:
+            print(f"[RAG] ✅ Skill library is up-to-date ({len(existing_ids)} neurons).")
+            return
+
+        print(f"[RAG] 📥 Found {len(new_skills)} new skills. Ingesting in batches...")
+        
+        batch_size = 50
+        for i in range(0, len(new_skills), batch_size):
+            batch = new_skills[i:i + batch_size]
+            for skill_file in batch:
+                try:
+                    content = skill_file.read_text(encoding="utf-8")
+                    skill_rel_path = str(skill_file.relative_to(skills_dir)).replace("\\", "/")
+                    
+                    self.index_memory(
+                        category="expert_skill",
+                        key=skill_rel_path,
+                        value=content[:2000]
+                    )
+                except Exception as e:
+                    pass # Skip broken files
+            
+            # Force memory cleanup after each batch
+            gc.collect()
+            print(f"[RAG] 🔄 Indexed {i + len(batch)}/{len(new_skills)}...")
+
+        print(f"[RAG] ✅ Skill ingestion complete. Total neurons: {self._collection.count()}")
 
     def index_memory(self, category: str, key: str, value: str):
         """Add or update a single memory in the vector index."""
