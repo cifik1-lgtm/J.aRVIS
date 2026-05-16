@@ -36,8 +36,8 @@ Direct physical awareness. JARVIS scans the USB bus for cameras, monitors displa
 An autonomous security operative. JARVIS can clone GitHub repositories and perform full security audits (SQLi, XSS, etc.), verify vulnerabilities with LLMs, and create patches automatically.
 *   **Tool:** `hunt_bugs`
 
-### 8. 🧬 **The Specialist (Expert Skills Library)**
-Modular, high-density AI skill DNA. JARVIS consults a library of professional standards (Clean Code, Git, Architecture) to ensure all autonomous work meets elite industry benchmarks.
+### 8. 🧬 **The Universal Polymath (Expert Skills Library)**
+A massive library of **340+ modular AI skills** and 1,700+ reference files. JARVIS consults this professional DNA to act as a specialist in Science, Architecture, ML, Security, and more.
 *   **Memory:** RAG-indexed `/skills` directory.
 
 ---
