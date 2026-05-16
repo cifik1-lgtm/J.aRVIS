@@ -95,7 +95,7 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                             {"role": "user", "content": prompt}
                         ]
                     }),
-                    timeout=60
+                    timeout=180
                 )
                 return resp.json()["choices"][0]["message"]["content"]
 
@@ -113,7 +113,7 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                             {"role": "user", "content": prompt}
                         ]
                     }),
-                    timeout=60
+                    timeout=180
                 )
                 data = resp.json()
                 if "choices" not in data:
@@ -126,7 +126,7 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                 resp = requests.post(
                     "http://localhost:11434/api/generate",
                     json={"model": l_model, "prompt": f"{system_prompt}\n\n{prompt}", "stream": False},
-                    timeout=60
+                    timeout=180
                 )
                 return resp.json()["response"]
 

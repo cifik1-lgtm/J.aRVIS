@@ -38,7 +38,7 @@ def call_ollama(prompt: str, system_prompt: str = "", model: str = None) -> Opti
     }
     
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=60) # Increased timeout for large prompts
+        response = requests.post(OLLAMA_URL, json=payload, timeout=180) # Increased timeout for slow GPUs (RX 580)
         response.raise_for_status()
         data = response.json()
         return data.get("response", "").strip()
