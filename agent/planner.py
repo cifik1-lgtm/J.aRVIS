@@ -151,6 +151,11 @@ shadow_audit
 hot_reload
   (no parameters) — Refresh skills without reboot
 
+audio_master
+  action: "set_volume" | "mute" | "unmute" | "app_volume"
+  level: number (0-100)
+  app_name: string (for app_volume)
+
 ghost_browser
   action: "navigate" | "search" | "capture" (required)
   url: string (for navigate)
@@ -236,8 +241,9 @@ Convert the user's request into a JSON plan using ONLY these tools:
 12. project_architect: { "name": "string", "description": "string", "tech_stack": "python|web" }
 13. shadow_audit: { "action": "start|report" }
 14. hot_reload: {}
-15. self_fix: { "file_name": "string", "error_message": "string" }
-16. talk: { "text": "your response to the user" }
+15. audio_master: { "action": "set_volume|mute|app_volume", "level": 0-100, "app_name": "string" }
+16. self_fix: { "file_name": "string", "error_message": "string" }
+17. talk: { "text": "your response to the user" }
 
 When navigating to a URL in a browser manually via computer_control:
 1. Type the URL using computer_control(action='type', text='url')

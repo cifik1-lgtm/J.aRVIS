@@ -1,6 +1,6 @@
 {
   "config_hash": "a0aa5b36e6870c56f6e92ca3afc5f8bc44b8a0baffe7786875f0c7236de5cf9d",
-  "tools_hash": "5dc9b7b0987263ffd084de3f00831c507163cc6d6b94438faf6cc6a079c7c256",
+  "tools_hash": "2c5537ccc5bdfea097ebaef798b57f7c5be3c2ae464ab40145f9ea14b1427c66",
   "brains_hash": "",
   "source_hashes": {
     "actions/__init__.py": "fd4fe17573217a74a07143e29a2dd8fecc5c30c5ee75365e5c78d305d43393ab",
@@ -35,6 +35,7 @@
     "actions/neural_inspector.py": "54a651bed7ac0abced7f89f58e6f912f067ed5efdfcf87f007f14d7e4276ee6e",
     "actions/notification_manager.py": "6564e972beaa86e7a1c101e06f5b1f37502e3980e315803aeae2520f21c77d00",
     "actions/open_app.py": "79b0a9d05726c71bac6bd97e25890693995d7608f5bdc8aa5ed279aeddd7df24",
+    "actions/project_architect.py": "041bfd658afed38fb91b73c7513ce2b745f8097c83ba2356d3a1df5061622b35",
     "actions/python_sandbox.py": "f3e5d4487a02cd7a9ebc5649d86a5bc971748c12cb6bfb569a0335596f00da25",
     "actions/reminder.py": "ba027e5cd0725763c5324d214711d77aa887bcd5a3ff818dd50944a7341cd7d1",
     "actions/routines.py": "6ab98e4f38015f8a7fc7e695a96c7a86e2e3f1bf958c67e6a28bf25e1f916f6c",
@@ -58,7 +59,7 @@
     "agent/__init__.py": "1e1e59cc32d5231ac2af68285220bd040ed25ae4910992c01ad9f88759f5ad08",
     "agent/error_handler.py": "702b2d84dca74f82c520110f3943028624d4369162bae70c7b1678d8b471c0a8",
     "agent/executor.py": "6dc76ce0373f8fd66764def861f2361134b0c9e380042b17a3860cc145271b17",
-    "agent/planner.py": "6bd021d218f8c7276f5dfa470e307b0ee4aaa3e6246c646b0561decaf9f81c5f",
+    "agent/planner.py": "afec198fcbec6c5cbdff4fd7907b5eff1d82f74d33c0a2388fca2829e99e4ed3",
     "agent/task_queue.py": "6a0ea717a0350d54499d4306c1679d865753c3990e618d49ea9c85e13c80d492",
     "build_exe.py": "0dac7e5f31c2e3ab7c475a4694489558335bb7fc8f75ee277a90a8c02a1461cf",
     "build_installer.py": "609dad8d674f4fe6162ebec11916b38f4f1496bea5d5db40265990725605c98e",
@@ -72,10 +73,10 @@
     "core/local_llm.py": "6b61047505c5a00010c02c53b1a8d07afa0be5085e2987d61ef83833b8a245a7",
     "core/self_audit.py": "e182162d320fe0369c615c9fe3b5aa8cf1b788ee7db0d95114819dc5af2f5d19",
     "core/self_healing.py": "0862b736a7fa510a5c29eace4fd85f0bf224a9f6c2e397a2df1fa16678855493",
-    "core/tools.py": "a32f1223a86654c236ad2931e6fcc82ce668e1bfbf8dc83f1fe361a78502cc6b",
+    "core/tools.py": "7832ab34556f9b3945c557c84461463d6bcaa25243d7b1659c4f704a8435abd8",
     "documents/vision_inspector_source.py": "aa23799c8acefb563405f91851e7b6f24089655172efc952234ba1e233eb5a65",
     "installer_stub.py": "ee0f9d49aac7d66a8fc03ebfde43c2e6f59e728973eed3b0b5e78387bb0cf84a",
-    "main.py": "7c1c5c9fd5669dba968a206a74b72ad729e74d771a540ea754de5d1e3ed6d4ee",
+    "main.py": "4b64d4c4ab01675703b6ac73db08a36207dcf87347f3c2844612ab0e90e8a9a4",
     "memory/__init__.py": "bbcccc1fd12222d026ae988c0bd66740b6ad31691b842ec046c813c12b58c54b",
     "memory/config_manager.py": "3336b41edf4de5b43278732f87e77c8cda6240690d588618716b9dc8de66650b",
     "memory/memory_manager.py": "337d28db65da9c87075af664ae3c81c54492036464ece6058b72706be8715769",
@@ -87,5 +88,5 @@
     "ui.py": "1ca6ae8ea4dc4fad82d9a7d1b493f40b5af9d136f79dac7283e0973409b470e5",
     "ui_overlay.py": "b62b8473a2d02a8c0ca8683938b35c749c15cefac468d90a32d7334701cebe72"
   },
-  "last_audit": "2026-05-15T23:51:32.257596"
+  "last_audit": "2026-05-16T08:14:09.457911"
 }

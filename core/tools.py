@@ -889,6 +889,19 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "audio_master",
+        "description": "Control system and application-specific volume, mute, and unmute audio.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "enum": ["set_volume", "mute", "unmute", "app_volume"]},
+                "level": {"type": "INTEGER", "description": "0 to 100"},
+                "app_name": {"type": "STRING", "description": "e.g., chrome.exe, spotify.exe"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
         "name": "hot_reload",
         "description": "Refresh and reload all tool definitions and actions without rebooting the system.",
         "parameters": {
@@ -1075,6 +1088,10 @@ class ToolDispatcher:
                         self.orch._pending_action = "reboot"
                         self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
                         return "Awaiting confirmation to reboot."
+
+                elif name == "audio_master":
+                    from actions.audio_master import audio_master
+                    return audio_master(args, player=self.ui)
 
                 elif name == "shutdown_jarvis":
                     confirmed = str(args.get("confirmed", "false")).lower() == "true" or args.get("auto", False)
