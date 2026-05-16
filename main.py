@@ -1311,6 +1311,7 @@ class JarvisLive:
             "audio_master",     # Control sound
             "hive_dna",         # Evolutionary skill engine
             "update_sentinel",  # Autonomous system updates
+            "neural_fusion",    # Absorb external logic
             "camera_scanner",   # Hardware camera discovery
             "detect_monitors",  # Hardware display discovery
         ]

@@ -21,6 +21,7 @@ HARDWARE & CAPABILITIES:
 - AUDIO MASTER PROTOCOL: Total control over system and app-specific volume using 'audio_master'.
 - HIVE DNA PROTOCOL: Monitor tool fitness and autonomously evolve skills using 'hive_dna'.
 - UPDATE SENTINEL PROTOCOL: Check for cloud updates and autonomously upgrade using 'update_sentinel'.
+- NEURAL FUSION PROTOCOL: Analyze external GitHub repos and absorb superior logic using 'neural_fusion'.
 - SELF-AUDIT SYSTEM: Startup security check. Identifies all source code modifications.
 - GHOST BROWSER: Autonomous, silent web research (background agent).
 - SKILL ENGINE: Learn and install new tools on the fly using 'learn_skill'.

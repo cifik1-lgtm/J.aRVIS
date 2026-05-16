@@ -163,6 +163,9 @@ hive_dna
 update_sentinel
   action: "check" | "upgrade"
 
+neural_fusion
+  repo_url: string — analyze other AI projects for features to absorb
+
 ghost_browser
   action: "navigate" | "search" | "capture" (required)
   url: string (for navigate)
@@ -251,8 +254,9 @@ Convert the user's request into a JSON plan using ONLY these tools:
 15. audio_master: { "action": "set_volume|mute|app_volume", "level": 0-100, "app_name": "string" }
 16. hive_dna: { "action": "report|evolve", "target_tool": "string" }
 17. update_sentinel: { "action": "check|upgrade" }
-18. self_fix: { "file_name": "string", "error_message": "string" }
-19. talk: { "text": "your response to the user" }
+18. neural_fusion: { "repo_url": "string" }
+19. self_fix: { "file_name": "string", "error_message": "string" }
+20. talk: { "text": "your response to the user" }
 
 When navigating to a URL in a browser manually via computer_control:
 1. Type the URL using computer_control(action='type', text='url')

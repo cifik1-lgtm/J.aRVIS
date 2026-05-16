@@ -889,6 +889,17 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "neural_fusion",
+        "description": "Analyze an external GitHub repository and compare its code to JARVIS to identify superior features for absorption.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "repo_url": {"type": "STRING", "description": "The GitHub URL of the external project"}
+            },
+            "required": ["repo_url"]
+        }
+    },
+    {
         "name": "update_sentinel",
         "description": "Check for cloud updates and autonomously upgrade the JARVIS system code.",
         "parameters": {
@@ -1111,6 +1122,10 @@ class ToolDispatcher:
                         self.orch._pending_action = "reboot"
                         self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
                         return "Awaiting confirmation to reboot."
+
+                elif name == "neural_fusion":
+                    from actions.neural_fusion import neural_fusion
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: neural_fusion(args, base_dir=BASE_DIR))
 
                 elif name == "update_sentinel":
                     from actions.update_sentinel import update_sentinel
