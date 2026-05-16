@@ -1309,6 +1309,7 @@ class JarvisLive:
             "shadow_audit",     # Monitor productivity
             "hot_reload",       # Refresh tools live
             "audio_master",     # Control sound
+            "hive_dna",         # Evolutionary skill engine
             "camera_scanner",   # Hardware camera discovery
             "detect_monitors",  # Hardware display discovery
         ]

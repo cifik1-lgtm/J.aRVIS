@@ -889,6 +889,18 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "hive_dna",
+        "description": "Analyze the fitness of current skills and autonomously evolve weak tools into superior mutations.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "enum": ["report", "evolve"]},
+                "target_tool": {"type": "STRING", "description": "Specific tool to evolve"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
         "name": "audio_master",
         "description": "Control system and application-specific volume, mute, and unmute audio.",
         "parameters": {
@@ -1088,6 +1100,13 @@ class ToolDispatcher:
                         self.orch._pending_action = "reboot"
                         self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
                         return "Awaiting confirmation to reboot."
+
+                elif name == "hive_dna":
+                    from core.hive_dna import evolve_skill, get_dna
+                    action = args.get("action", "report")
+                    if action == "report":
+                        return get_dna(BASE_DIR).get_report()
+                    return await evolve_skill(args, jarvis=self, player=self.ui)
 
                 elif name == "audio_master":
                     from actions.audio_master import audio_master

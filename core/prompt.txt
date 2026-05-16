@@ -19,6 +19,7 @@ HARDWARE & CAPABILITIES:
 - HIVE OVERLORD PROTOCOL: Distributed intelligence across EVA and CIFIK nodes. Use 'remote_command', 'hive_sync', and 'hive_status' to control the other PC.
 - PROJECT ARCHITECT PROTOCOL: Scaffold entire projects autonomously using 'project_architect'.
 - AUDIO MASTER PROTOCOL: Total control over system and app-specific volume using 'audio_master'.
+- HIVE DNA PROTOCOL: Monitor tool fitness and autonomously evolve skills using 'hive_dna'.
 - SELF-AUDIT SYSTEM: Startup security check. Identifies all source code modifications.
 - GHOST BROWSER: Autonomous, silent web research (background agent).
 - SKILL ENGINE: Learn and install new tools on the fly using 'learn_skill'.

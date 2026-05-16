@@ -5,12 +5,15 @@ import threading
 import subprocess
 import tempfile
 import os
+import time
+import asyncio
 from pathlib import Path
 from typing import Callable, Any
 
 from agent.planner       import create_plan, replan
 from agent.error_handler import analyze_error, generate_fix, ErrorDecision
 from google.genai        import types
+from core.hive_dna       import get_dna
 
 
 def get_base_dir() -> Path:
@@ -51,6 +54,7 @@ def _run_generated_code(description: str, speak: Callable | None = None) -> str:
     client = genai.Client(api_key=_get_api_key())
     
     try:
+        start_time = time.time()
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=f"Write Python code to accomplish this task:\n\n{description}",
@@ -90,6 +94,12 @@ def _run_generated_code(description: str, speak: Callable | None = None) -> str:
             os.unlink(tmp_path)
         except Exception:
             pass
+
+        duration = time.time() - start_time
+        try:
+            dna = get_dna(BASE_DIR)
+            dna.record_performance("generated_code", duration, success=(result.returncode == 0))
+        except: pass
 
         output = result.stdout.strip()
         error  = result.stderr.strip()
@@ -201,9 +211,22 @@ async def _call_tool_async(dispatcher, tool: str, parameters: dict) -> str:
             args=parameters,
             id="task_exec_" + os.urandom(4).hex()
         )
+        start_time = time.time()
         response = await dispatcher.dispatch(fc)
+        duration = time.time() - start_time
+        
+        # Record DNA Performance
+        try:
+            dna = get_dna(BASE_DIR)
+            dna.record_performance(tool, duration, success=True)
+        except: pass
+            
         return response.response.get("result", "Done.")
     except Exception as e:
+        try:
+            dna = get_dna(BASE_DIR)
+            dna.record_performance(tool, 0, success=False)
+        except: pass
         return f"Error executing tool '{tool}': {e}"
 
 def _call_tool(tool: str, parameters: dict, speak: Callable | None, dispatcher=None) -> str:
