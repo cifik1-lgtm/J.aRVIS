@@ -264,7 +264,7 @@ class BrainRouter:
             return models.get("agentic", "nvidia/nemotron-3-super-120b-a12b:free")
         
         # 2. Multimodal/Image Tasks -> Llama 4 Maverick
-        multimodal_keywords = ["image", "picture", "screenshot", "see", "visual", "screen", "photo", "camera"]
+        multimodal_keywords = ["image", "picture", "screenshot", "visual", "screen", "photo", "camera"]
         if any(kw in goal_lower for kw in multimodal_keywords):
             print("[Router] [IMAGE] Multimodal task -> Llama 4 Maverick")
             return models.get("multimodal", "meta-llama/llama-4-maverick:free")
