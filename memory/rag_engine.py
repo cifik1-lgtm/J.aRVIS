@@ -11,6 +11,7 @@ This module wraps the existing MemoryManager and adds:
 import json
 import os
 import threading
+import gc
 from pathlib import Path
 from datetime import datetime
 from typing import List, Tuple, Optional
@@ -51,14 +52,13 @@ class RAGMemoryEngine:
             from chromadb.config import Settings
             from sentence_transformers import SentenceTransformer
 
-            print("[RAG] 🧠 Initializing ChromaDB vector store...")
+            print("[RAG] 🧠 Initializing Neural Core...")
             self._client = chromadb.PersistentClient(path=str(CHROMA_DIR))
             self._collection = self._client.get_or_create_collection(
                 name="jarvis_memory",
                 metadata={"hnsw:space": "cosine"}
             )
 
-            print("[RAG] 📐 Loading sentence embedding model...")
             self._embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
             # Sync existing long_term.json into the vector DB
@@ -68,13 +68,13 @@ class RAGMemoryEngine:
             self.ingest_skills()
 
             self._ready = True
-            print(f"[RAG] ✅ Ready — {self._collection.count()} vectors indexed.")
+            print(f"[RAG] ✅ Neural Link Active — {self._collection.count()} neurons indexed.")
 
         except Exception as e:
-            print(f"[RAG] ⚠️ Failed to initialize: {e}. Falling back to keyword search.")
+            print(f"[RAG] ⚠️ Initialization error: {e}")
 
     def _sync_from_json(self):
-        """Load all memories from long_term.json into ChromaDB if not already indexed."""
+        """Load all memories from long_term.json into ChromaDB."""
         json_path = BASE_DIR / "memory" / "long_term.json"
         if not json_path.exists():
             return
@@ -84,61 +84,34 @@ class RAGMemoryEngine:
         except Exception:
             return
 
-        docs, ids, metas = [], [], []
         for category, items in data.items():
             if not isinstance(items, dict):
                 continue
             for key, entry in items.items():
                 if not isinstance(entry, dict) or "value" not in entry:
                     continue
-                doc_id = f"{category}::{key}"
-                # Only add if not already in DB
-                existing = self._collection.get(ids=[doc_id])
-                if not existing["ids"]:
-                    docs.append(entry["value"][:500])
-                    ids.append(doc_id)
-                    metas.append({
-                        "category": category,
-                        "key": key,
-                        "updated": entry.get("updated", datetime.now().strftime("%Y-%m-%d"))
-                    })
+                self.index_memory(category, key, entry["value"])
 
-        if docs:
-            embeddings = self._embedder.encode(docs, show_progress_bar=False).tolist()
-            self._collection.add(documents=docs, ids=ids, metadatas=metas, embeddings=embeddings)
     def ingest_skills(self):
-        """Index skills incrementally in batches to prevent MemoryError."""
+        """Index skills incrementally in batches."""
         skills_dir = BASE_DIR / "skills"
         if not skills_dir.exists():
             return
 
-        import gc
-        print("[RAG] 🧠 Performing Incremental Skill Sync...")
-        
         # Get existing IDs to avoid re-indexing
         existing_ids = set(self._collection.get(include=[])["ids"])
         
         new_skills = []
         for skill_file in skills_dir.rglob("*.md"):
-            # Use relative path as the unique ID
             skill_rel_path = str(skill_file.relative_to(skills_dir)).replace("\\", "/")
-            
-            # Skip if already indexed
-            if skill_rel_path in existing_ids:
-                continue
-                
-            # Skip top-level README
-            if skill_file.name.lower() == "readme.md" and skill_file.parent == skills_dir:
-                continue
-            
-            new_skills.append(skill_file)
+            doc_id = f"expert_skill::{skill_rel_path}"
+            if doc_id not in existing_ids:
+                new_skills.append(skill_file)
 
         if not new_skills:
-            print(f"[RAG] ✅ Skill library is up-to-date ({len(existing_ids)} neurons).")
             return
 
-        print(f"[RAG] 📥 Found {len(new_skills)} new skills. Ingesting in batches...")
-        
+        # Batch ingestion to save RAM
         batch_size = 50
         for i in range(0, len(new_skills), batch_size):
             batch = new_skills[i:i + batch_size]
@@ -146,24 +119,14 @@ class RAGMemoryEngine:
                 try:
                     content = skill_file.read_text(encoding="utf-8")
                     skill_rel_path = str(skill_file.relative_to(skills_dir)).replace("\\", "/")
-                    
-                    self.index_memory(
-                        category="expert_skill",
-                        key=skill_rel_path,
-                        value=content[:2000]
-                    )
-                except Exception as e:
-                    pass # Skip broken files
-            
-            # Force memory cleanup after each batch
+                    self.index_memory("expert_skill", skill_rel_path, content[:2000])
+                except Exception:
+                    pass
             gc.collect()
-            print(f"[RAG] 🔄 Indexed {i + len(batch)}/{len(new_skills)}...")
-
-        print(f"[RAG] ✅ Skill ingestion complete. Total neurons: {self._collection.count()}")
 
     def index_memory(self, category: str, key: str, value: str):
         """Add or update a single memory in the vector index."""
-        if not self._ready:
+        if self._embedder is None:
             return
         try:
             doc_id = f"{category}::{key}"
@@ -174,7 +137,6 @@ class RAGMemoryEngine:
                 "updated": datetime.now().strftime("%Y-%m-%d")
             }
             with self._lock:
-                # Upsert (add or update)
                 self._collection.upsert(
                     documents=[value[:500]],
                     ids=[doc_id],
@@ -182,7 +144,8 @@ class RAGMemoryEngine:
                     embeddings=embedding
                 )
         except Exception as e:
-            print(f"[RAG] ⚠️ Index error: {e}")
+            # Silent fail for individual items to prevent log bloat
+            pass
 
     def index_conversation(self, user_text: str, jarvis_text: str):
         """Ingest a conversation turn as episodic memory."""
@@ -192,23 +155,12 @@ class RAGMemoryEngine:
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             doc_id = f"conversation::{ts}"
             combined = f"User: {user_text[:250]}\nJARVIS: {jarvis_text[:250]}"
-            embedding = self._embedder.encode([combined], show_progress_bar=False).tolist()
-            with self._lock:
-                self._collection.add(
-                    documents=[combined],
-                    ids=[doc_id],
-                    metadatas=[{"category": "conversation", "key": ts,
-                                "updated": datetime.now().strftime("%Y-%m-%d")}],
-                    embeddings=embedding
-                )
-        except Exception as e:
-            print(f"[RAG] ⚠️ Conversation index error: {e}")
+            self.index_memory("conversation", ts, combined)
+        except Exception:
+            pass
 
     def search(self, query: str, top_k: int = 5, category_filter: str = None) -> List[dict]:
-        """
-        Semantic search. Returns list of {category, key, value, score} dicts.
-        Falls back to empty list if not ready.
-        """
+        """Semantic search."""
         if not self._ready:
             return []
         try:
@@ -226,7 +178,7 @@ class RAGMemoryEngine:
             for i, doc in enumerate(results["documents"][0]):
                 meta = results["metadatas"][0][i]
                 dist = results["distances"][0][i]
-                score = 1.0 - dist  # cosine distance → similarity
+                score = 1.0 - dist
                 if score > 0.25:
                     hits.append({
                         "category": meta.get("category", ""),
@@ -235,15 +187,10 @@ class RAGMemoryEngine:
                         "score": round(score, 3)
                     })
             return hits
-        except Exception as e:
-            print(f"[RAG] ⚠️ Search error: {e}")
+        except Exception:
             return []
 
     def format_rag_context(self, query: str, top_k: int = 4) -> str:
-        """
-        Returns a formatted string of the most relevant memories for injection
-        into the JARVIS system prompt at call time.
-        """
         hits = self.search(query, top_k=top_k)
         if not hits:
             return ""
@@ -261,12 +208,7 @@ class RAGMemoryEngine:
         return {"ready": True, "count": self._collection.count()}
 
 
-# ============================================================================
-# Singleton
-# ============================================================================
-
 _rag_engine: Optional[RAGMemoryEngine] = None
-
 
 def get_rag_engine() -> RAGMemoryEngine:
     global _rag_engine

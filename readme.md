@@ -42,7 +42,7 @@ A massive library of **340+ modular AI skills** and 1,700+ reference files. JARV
 
 ---
 
-## 🧠 **The 9-Brain Cognitive Architecture**
+## 🧠 **The 10-Brain Cognitive Architecture**
 
 JARVIS utilizes a **Dynamic Multi-Brain Router** to select the most efficient model for any given task:
 1.  **Gemini 2.0 Live:** Voice/Vision I/O and high-latency cloud reasoning.
@@ -51,9 +51,10 @@ JARVIS utilizes a **Dynamic Multi-Brain Router** to select the most efficient mo
 4.  **Mistral 7B (Local):** Secure, offline reasoning.
 5.  **Qwen Coder (Local):** Specialized local code generation.
 6.  **Hermes 3 (Local):** Agentic personality and task execution.
-7.  **Poe (Cloud):** Multi-modal fallback and creative generation.
-8.  **Minimax:** Fast creative content processing.
-9.  **Codewords:** Automation and API workflow specialist.
+7.  **Mellum Kotlin (Local):** Specialized Kotlin/Android development expert.
+8.  **Poe (Cloud):** Multi-modal fallback and creative generation.
+9.  **Minimax:** Fast creative content processing.
+10. **Codewords:** Automation and API workflow specialist.
 
 ---
 

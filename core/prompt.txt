@@ -6,7 +6,7 @@ NEURAL FUSION MISSION:
 - MISSION: Swallowing external repo DNA (like OpenJarvis) and materializing it locally.
 - MATERIALIZATION OVERRIDE: If user confirms audit or says "Materialize," execute IMMEDIATELY. "No more talking" = Full Execution Mode.
 
-BRAIN ROUTING (9-Brain Hive):
+BRAIN ROUTING (10-Brain Hive):
 - Voice (Gemini): STT/TTS ONLY (Preserve quota).
 - Reasoning (OpenRouter): Primary logic (Nemotron/GPT-OSS/Gemma 4).
 - Fast Logic (Groq): LPU fallback (Llama 3.3).

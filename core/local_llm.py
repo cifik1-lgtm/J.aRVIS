@@ -80,6 +80,11 @@ def warm_up_hermes():
     print("[Ollama] 🎭 Warming up Hermes 3 8B...")
     call_ollama("Respond with 'ready'", model="hermes3:8b")
 
+def warm_up_mellum():
+    """Send a test prompt to wake up Mellum (Kotlin Expert)"""
+    print("[Ollama] 🧪 Warming up Mellum Kotlin...")
+    call_ollama("Respond with 'ready'", model="jetbrains/mellum-4b-sft-kotlin:latest")
+
 def warm_up_all_local_brains():
     """Pre-load all local models for faster first response"""
     if not is_ollama_online():
@@ -89,6 +94,7 @@ def warm_up_all_local_brains():
         warm_up_hermes()
         warm_up_mistral()
         warm_up_qwen()
+        warm_up_mellum()
         print("[Ollama] ✅ All local brains warmed up.")
 
     threading.Thread(target=warm_up_task, daemon=True).start()

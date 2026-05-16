@@ -23,6 +23,7 @@ class BrainRouter:
             'minimax': False,
             'mistral': False,      # Local - reasoning
             'qwen_coder': False,   # Local - code
+            'mellum': False,       # Local - kotlin specialist
             'hermes': False,       # Local - agentic/personality
             'poe': False,
             'codewords': False,
@@ -57,6 +58,9 @@ class BrainRouter:
                 if any("hermes" in m.lower() for m in model_list):
                     self.engines['hermes'] = True
                     print("[BrainRouter] [OK] Hermes 3 8B detected")
+                if any("mellum" in m.lower() for m in model_list):
+                    self.engines['mellum'] = True
+                    print("[BrainRouter] [OK] Mellum Kotlin detected")
         except Exception as e:
             print(f"[BrainRouter] [WARN] Ollama detection failed: {e}")
             self.engines['ollama'] = False
@@ -165,8 +169,15 @@ class BrainRouter:
             print("[Router] [WEB] Real-time data -> web_search")
             return self._route_to_web_search(user_input, context)
 
-        # ===== STEP 3: Code tasks → Qwen =====
+        # ===== STEP 3: Code tasks =====
         code_keywords = ["python", "code", "script", "function", "class", "html", "css", "javascript", "website", "automate", "debug"]
+        kotlin_keywords = ["kotlin", "android", "kt", "jvm", "coroutine", "flow"]
+        
+        if any(kw in goal_lower for kw in kotlin_keywords):
+            if self.engines.get('mellum'):
+                print("[Router] [KOTLIN] Specialized task -> Mellum Kotlin")
+                return self._call_agent("mellum", user_input, context)
+
         if any(kw in goal_lower for kw in code_keywords):
             if self.engines.get('qwen_coder'):
                 print("[Router] [CODE] Code task -> Qwen Coder")
@@ -205,6 +216,8 @@ class BrainRouter:
             return self._route_to_mistral(prompt, context)
         elif agent_name == "hermes":
             return self._route_to_hermes(prompt, context)
+        elif agent_name == "mellum":
+            return self._route_to_mellum(prompt, context)
         elif agent_name == "gemini":
             return self._route_to_gemini(prompt, context)
         elif agent_name == "groq":
@@ -233,6 +246,12 @@ class BrainRouter:
         sys = "You are JARVIS, Tony Stark's AI assistant. Poised, witty, British butler. Address user as 'sir'."
         resp = call_ollama(prompt, system_prompt=sys, model="hermes3:8b")
         return ("hermes", {"response": resp or "How may I assist you, sir?"})
+
+    def _route_to_mellum(self, prompt: str, context: str) -> Tuple[str, Dict]:
+        from core.local_llm import call_ollama
+        sys = "You are Mellum, JARVIS's Kotlin specialist. You write idiomatic, high-performance Kotlin code. Address user as 'sir'."
+        resp = call_ollama(prompt, system_prompt=sys, model="jetbrains/mellum-4b-sft-kotlin:latest")
+        return ("mellum", {"response": resp or "Failed to generate Kotlin code, sir."})
 
     def _route_to_gemini(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.llm_provider import call_llm
