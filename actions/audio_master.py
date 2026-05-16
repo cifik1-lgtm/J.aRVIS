@@ -1,65 +1,56 @@
 # JARVIS Audio Master - Soundscape Controller
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume, ISimpleAudioVolume
+# ============================================================
+# CRITICAL: DO NOT MODIFY _get_volume_interface()
+# AudioUtilities.GetSpeakers() returns a pycaw AudioDevice
+# object which wraps the COM interface. Use .EndpointVolume
+# directly. DO NOT call .Activate() - it does not exist.
+# ============================================================
+from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume
 
 def _get_volume_interface():
-    """Get the Windows master volume interface via pycaw AudioDevice.EndpointVolume."""
+    """Get Windows master volume interface. Uses EndpointVolume property."""
     return AudioUtilities.GetSpeakers().EndpointVolume
 
 class AudioMaster:
     @staticmethod
     def set_master_volume(level):
-        """Sets global system volume (0 to 100)."""
         volume = _get_volume_interface()
-        normalized = max(0.0, min(1.0, level / 100.0))
-        volume.SetMasterVolumeLevelScalar(normalized, None)
+        volume.SetMasterVolumeLevelScalar(max(0.0, min(1.0, level / 100.0)), None)
         return f"Master volume set to {level}%, sir."
 
     @staticmethod
     def get_master_volume():
-        """Gets current system volume."""
         volume = _get_volume_interface()
-        level = round(volume.GetMasterVolumeLevelScalar() * 100)
-        return f"Current volume is at {level}%, sir."
+        return f"Current volume is at {round(volume.GetMasterVolumeLevelScalar() * 100)}%, sir."
 
     @staticmethod
     def volume_up(amount=10):
-        """Increase volume by amount."""
         volume = _get_volume_interface()
-        current = volume.GetMasterVolumeLevelScalar()
-        new_level = min(1.0, current + amount / 100.0)
-        volume.SetMasterVolumeLevelScalar(new_level, None)
-        return f"Volume increased to {round(new_level * 100)}%, sir."
+        new = min(1.0, volume.GetMasterVolumeLevelScalar() + amount / 100.0)
+        volume.SetMasterVolumeLevelScalar(new, None)
+        return f"Volume increased to {round(new * 100)}%, sir."
 
     @staticmethod
     def volume_down(amount=10):
-        """Decrease volume by amount."""
         volume = _get_volume_interface()
-        current = volume.GetMasterVolumeLevelScalar()
-        new_level = max(0.0, current - amount / 100.0)
-        volume.SetMasterVolumeLevelScalar(new_level, None)
-        return f"Volume decreased to {round(new_level * 100)}%, sir."
+        new = max(0.0, volume.GetMasterVolumeLevelScalar() - amount / 100.0)
+        volume.SetMasterVolumeLevelScalar(new, None)
+        return f"Volume decreased to {round(new * 100)}%, sir."
 
     @staticmethod
     def mute_all(status=True):
-        """Mutes or unmutes system audio."""
-        volume = _get_volume_interface()
-        volume.SetMute(1 if status else 0, None)
+        _get_volume_interface().SetMute(1 if status else 0, None)
         return "System muted, sir." if status else "System unmuted, sir."
 
     @staticmethod
     def set_app_volume(app_name, level):
-        """Sets volume for a specific application."""
-        sessions = AudioUtilities.GetAllSessions()
         normalized = max(0.0, min(1.0, level / 100.0))
-        found = False
-        for session in sessions:
+        for session in AudioUtilities.GetAllSessions():
             if session.Process and session.Process.name().lower() == app_name.lower():
                 vol = session._ctl.QueryInterface(ISimpleAudioVolume)
                 vol.SetMasterVolume(normalized, None)
-                found = True
-        return f"Volume for {app_name} set to {level}%, sir." if found else f"No active audio session for '{app_name}', sir."
+                return f"Volume for {app_name} set to {level}%, sir."
+        return f"No active audio session for '{app_name}', sir."
 
 def audio_master(parameters, player=None):
     action = parameters.get("action", "set_volume").lower()
@@ -68,18 +59,10 @@ def audio_master(parameters, player=None):
     app    = parameters.get("app_name", None)
 
     master = AudioMaster()
-
-    if action == "mute":
-        return master.mute_all(True)
-    elif action == "unmute":
-        return master.mute_all(False)
-    elif action == "volume_up":
-        return master.volume_up(amount)
-    elif action == "volume_down":
-        return master.volume_down(amount)
-    elif action == "get_volume":
-        return master.get_master_volume()
-    elif action == "app_volume" and app:
-        return master.set_app_volume(app, level)
-    else:
-        return master.set_master_volume(level)
+    if action == "mute":           return master.mute_all(True)
+    elif action == "unmute":       return master.mute_all(False)
+    elif action == "volume_up":    return master.volume_up(amount)
+    elif action == "volume_down":  return master.volume_down(amount)
+    elif action == "get_volume":   return master.get_master_volume()
+    elif action == "app_volume" and app: return master.set_app_volume(app, level)
+    else:                          return master.set_master_volume(level)

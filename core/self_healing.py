@@ -19,6 +19,10 @@ class SelfHealingProtocol:
         self.base_dir = Path(__file__).resolve().parent.parent
         self.backups_dir = self.base_dir / "memory" / "backups"
         self.backups_dir.mkdir(exist_ok=True)
+        # Files the self-healer must NEVER overwrite (manually verified fixes)
+        self.EXEMPT_FILES = {
+            "audio_master.py",  # Uses EndpointVolume - LLM keeps breaking with Activate()
+        }
 
     def log(self, message):
         print(f"[SelfHealing] {message}")
@@ -47,6 +51,11 @@ class SelfHealingProtocol:
         """Use AI to repair the file (with smart path finding)"""
         try:
             file_path = Path(file_path_str)
+            # Check exemption list first
+            if file_path.name in self.EXEMPT_FILES:
+                self.log(f"[EXEMPT] Skipping {file_path.name} - manually verified fix in place.")
+                return False, "File is exempt from self-healing."
+
             if not file_path.exists() or not file_path.is_file():
                 # Try to find it in the workspace
                 self.log(f"Path '{file_path_str}' not found. Searching workspace for '{file_path_str}'...")
