@@ -889,6 +889,17 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "update_sentinel",
+        "description": "Check for cloud updates and autonomously upgrade the JARVIS system code.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "enum": ["check", "upgrade"]}
+            },
+            "required": ["action"]
+        }
+    },
+    {
         "name": "hive_dna",
         "description": "Analyze the fitness of current skills and autonomously evolve weak tools into superior mutations.",
         "parameters": {
@@ -1100,6 +1111,10 @@ class ToolDispatcher:
                         self.orch._pending_action = "reboot"
                         self.orch._pending_action_timeout = datetime.now() + timedelta(seconds=15)
                         return "Awaiting confirmation to reboot."
+
+                elif name == "update_sentinel":
+                    from actions.update_sentinel import update_sentinel
+                    return update_sentinel(args, base_dir=BASE_DIR)
 
                 elif name == "hive_dna":
                     from core.hive_dna import evolve_skill, get_dna

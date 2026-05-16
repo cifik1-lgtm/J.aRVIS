@@ -1310,6 +1310,7 @@ class JarvisLive:
             "hot_reload",       # Refresh tools live
             "audio_master",     # Control sound
             "hive_dna",         # Evolutionary skill engine
+            "update_sentinel",  # Autonomous system updates
             "camera_scanner",   # Hardware camera discovery
             "detect_monitors",  # Hardware display discovery
         ]
