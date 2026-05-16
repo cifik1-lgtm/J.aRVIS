@@ -25,6 +25,7 @@ ABSOLUTE RULES:
 - NEVER use open_app to open a website or browser. ALWAYS use browser_control or youtube_video for web-related goals.
 - Use ghost_browser for ALL background research, weather checks, or data extraction tasks. It is "Smart": you can send a URL or just a raw text query (e.g. "weather in London" or "AI news") and it will handle the search for you.
 - Use weather_report for a quick browser-based weather report for the user.
+- EXPERT SKILLS: You have access to an "Expert Skills" library via RAG (Retrieval-Augmented Generation). For any task involving coding, architecture, security, or professional standards, prioritize retrieving and following these skills.
 - Use file_controller to save content to disk.
 - Max 5 steps. Use the minimum steps needed.
 

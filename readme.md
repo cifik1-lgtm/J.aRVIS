@@ -6,7 +6,7 @@
 
 ---
 
-## 🏛️ **The Seven Pillars of Supremacy**
+## 🏛️ **The Eight Pillars of Supremacy**
 
 ### 1. 🏗️ **The Architect (Project Scaffolding)**
 JARVIS is a Lead Software Engineer. He can autonomously scaffold entire professional projects (Python, Web, Node) with complete directory structures, professional boilerplate, `.gitignore`, and automatic Git initialization.
@@ -35,6 +35,10 @@ Direct physical awareness. JARVIS scans the USB bus for cameras, monitors displa
 ### 7. 🛡️ **The Hunter (Security Audit)**
 An autonomous security operative. JARVIS can clone GitHub repositories and perform full security audits (SQLi, XSS, etc.), verify vulnerabilities with LLMs, and create patches automatically.
 *   **Tool:** `hunt_bugs`
+
+### 8. 🧬 **The Specialist (Expert Skills Library)**
+Modular, high-density AI skill DNA. JARVIS consults a library of professional standards (Clean Code, Git, Architecture) to ensure all autonomous work meets elite industry benchmarks.
+*   **Memory:** RAG-indexed `/skills` directory.
 
 ---
 

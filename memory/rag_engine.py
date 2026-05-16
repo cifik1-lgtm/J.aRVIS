@@ -63,6 +63,9 @@ class RAGMemoryEngine:
 
             # Sync existing long_term.json into the vector DB
             self._sync_from_json()
+            
+            # Index Expert Skills from the /skills folder
+            self.ingest_skills()
 
             self._ready = True
             print(f"[RAG] ✅ Ready — {self._collection.count()} vectors indexed.")
@@ -103,7 +106,29 @@ class RAGMemoryEngine:
         if docs:
             embeddings = self._embedder.encode(docs, show_progress_bar=False).tolist()
             self._collection.add(documents=docs, ids=ids, metadatas=metas, embeddings=embeddings)
-            print(f"[RAG] 📥 Synced {len(docs)} memories from JSON into vector DB.")
+    def ingest_skills(self):
+        """Index all .md files in the skills directory."""
+        skills_dir = BASE_DIR / "skills"
+        if not skills_dir.exists():
+            return
+
+        print("[RAG] 🧠 Ingesting Expert Skills from /skills...")
+        for skill_file in skills_dir.rglob("*.md"):
+            try:
+                # Skip top-level README
+                if skill_file.name.lower() == "readme.md" and skill_file.parent == skills_dir:
+                    continue
+                
+                content = skill_file.read_text(encoding="utf-8")
+                skill_name = skill_file.parent.name if skill_file.name.lower() == "skill.md" else skill_file.stem
+                
+                self.index_memory(
+                    category="expert_skill",
+                    key=skill_name,
+                    value=content[:2000] # Index first 2k chars for retrieval
+                )
+            except Exception as e:
+                print(f"[RAG] ⚠️ Skill indexing error ({skill_file.name}): {e}")
 
     def index_memory(self, category: str, key: str, value: str):
         """Add or update a single memory in the vector index."""
