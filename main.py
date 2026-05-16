@@ -1586,35 +1586,13 @@ class JarvisLive:
     async def _play_audio(self):
         print("[JARVIS] 🔊 Play started")
 
-        import queue
-        import pyaudio
-        audio_queue = queue.Queue()
-
-        def playback_worker():
-            try:
-                pya = pyaudio.PyAudio()
-                stream = pya.open(
-                    format=pyaudio.paInt16,
-                    channels=CHANNELS,
-                    rate=RECEIVE_SAMPLE_RATE,
-                    output=True,
-                    frames_per_buffer=CHUNK_SIZE,
-                )
-                while self.session:
-                    try:
-                        chunk = audio_queue.get(timeout=0.1)
-                        if chunk:
-                            stream.write(chunk)
-                    except queue.Empty:
-                        continue
-                stream.stop_stream()
-                stream.close()
-                pya.terminate()
-            except Exception as e:
-                print(f"[JARVIS] ❌ Audio Thread Error: {e}")
-
-        # Start the dedicated PyAudio playback thread
-        threading.Thread(target=playback_worker, daemon=True).start()
+        stream = sd.RawOutputStream(
+            samplerate=RECEIVE_SAMPLE_RATE,
+            channels=CHANNELS,
+            dtype="int16",
+            blocksize=CHUNK_SIZE,
+        )
+        stream.start()
 
         try:
             while True:
@@ -1627,12 +1605,15 @@ class JarvisLive:
                     continue
 
                 self.set_speaking(True)
-                audio_queue.put(chunk)
+                await asyncio.to_thread(stream.write, chunk)
         except Exception as e:
-            print(f"[JARVIS] ❌ Play controller error: {e}")
+            print(f"[JARVIS] ❌ Play error: {e}")
             raise
         finally:
             self.set_speaking(False)
+            stream.stop()
+            stream.close()
+
 
     async def _proactive_checker(self):
         print("[JARVIS] 🔍 Proactive checker started")
