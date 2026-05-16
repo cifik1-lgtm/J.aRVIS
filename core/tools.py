@@ -865,6 +865,17 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "shadow_audit",
+        "description": "Observe and audit user activity to generate productivity reports and optimize workflow.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "enum": ["start", "stop", "report"]}
+            },
+            "required": ["action"]
+        }
+    },
+    {
         "name": "remote_command",
         "description": "Send a command/goal to your OTHER PC (EVA or CIFIK) to execute it remotely.",
         "parameters": {
@@ -1352,6 +1363,10 @@ class ToolDispatcher:
                         success, msg = self.orch.healer.attempt_repair(target, error)
                         return f"Self-fix result for {target}: {msg}"
                     return "Self-healing system not initialized."
+
+                elif name == "shadow_audit":
+                    from actions.shadow_audit import shadow_audit
+                    return shadow_audit(args, player=self.ui, base_dir=BASE_DIR)
 
                 elif name == "project_architect":
                     from actions.project_architect import project_architect

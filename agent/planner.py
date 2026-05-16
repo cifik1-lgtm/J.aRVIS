@@ -145,6 +145,9 @@ project_architect
   description: string — what to build
   tech_stack: "python" | "web" | "node"
 
+shadow_audit
+  action: "start" | "stop" | "report"
+
 ghost_browser
   action: "navigate" | "search" | "capture" (required)
   url: string (for navigate)
@@ -228,8 +231,9 @@ Convert the user's request into a JSON plan using ONLY these tools:
 10. hive_sync: { "target": "EVA|CIFIK", "file_path": "path" }
 11. hive_status: { "target": "EVA|CIFIK" }
 12. project_architect: { "name": "string", "description": "string", "tech_stack": "python|web" }
-13. self_fix: { "file_name": "string", "error_message": "string" }
-14. talk: { "text": "your response to the user" }
+13. shadow_audit: { "action": "start|report" }
+14. self_fix: { "file_name": "string", "error_message": "string" }
+15. talk: { "text": "your response to the user" }
 
 When navigating to a URL in a browser manually via computer_control:
 1. Type the URL using computer_control(action='type', text='url')
