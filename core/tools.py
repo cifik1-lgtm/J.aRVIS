@@ -889,6 +889,14 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "hot_reload",
+        "description": "Refresh and reload all tool definitions and actions without rebooting the system.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {}
+        }
+    },
+    {
         "name": "project_architect",
         "description": "Scaffold a complete new project autonomously with folders, files, and Git initialization.",
         "parameters": {
@@ -1372,6 +1380,18 @@ class ToolDispatcher:
                 elif name == "system_shutdown":
                     from actions.computer_settings import shutdown_computer
                     return shutdown_computer() or "Shutting down, Sir."
+
+                elif name == "hot_reload":
+                    # Re-import this module to refresh declarations
+                    import importlib
+                    import core.tools
+                    importlib.reload(core.tools)
+                    
+                    # Update the live session tools if possible
+                    if hasattr(self.orch, "update_tools"):
+                        self.orch.update_tools()
+                    
+                    return "Neural synchronization complete, sir. My new skills are now active without a reboot."
 
                 else:
                     # Dynamic Fallback for modular tools
