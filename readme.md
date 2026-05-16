@@ -48,8 +48,8 @@ JARVIS utilizes a **Dynamic Multi-Brain Router** to select the most efficient mo
 1.  **Gemini 2.0 Live:** Voice/Vision I/O and high-latency cloud reasoning.
 2.  **OpenRouter (Gemma 4/Llama 4):** Primary Reasoning and Complex Planning.
 3.  **Groq (LPU):** Ultra-fast sub-second logical fallbacks.
-4.  **Mistral 7B (Local):** Secure, offline reasoning.
-5.  **Qwen Coder (Local):** Specialized local code generation.
+4.  **Gemma 4 (Local):** Secure, offline reasoning.
+5.  **Qwen 3.5 9B (Local):** Specialized local code generation.
 6.  **Hermes 3 (Local):** Agentic personality and task execution.
 7.  **Mellum Kotlin (Local):** Specialized Kotlin/Android development expert.
 8.  **Poe (Cloud):** Multi-modal fallback and creative generation.

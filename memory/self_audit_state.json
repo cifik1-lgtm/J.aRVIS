@@ -1,5 +1,5 @@
 {
-  "config_hash": "a0aa5b36e6870c56f6e92ca3afc5f8bc44b8a0baffe7786875f0c7236de5cf9d",
+  "config_hash": "c62b5b6eff8e241d6b559b85f217f92dfdd238beeafa855b25b26bbb8baa2216",
   "tools_hash": "c9b47307d1cb996b16f6854e6122f476e41d522f7b455d82bfd77ea27bdc3aa6",
   "brains_hash": "",
   "source_hashes": {
@@ -70,12 +70,12 @@
     "check_deps.py": "7fa3fc621f4d7067585b9574017e641e7be66769da592812f7c34d608a9e2b4e",
     "config/__init__.py": "49caefd67880a504e9011b8342aa7b6dd17e709ef71859d9e5e6c3a821778a6d",
     "core/__init__.py": "1e1e59cc32d5231ac2af68285220bd040ed25ae4910992c01ad9f88759f5ad08",
-    "core/brain_router.py": "5440b37d014006452d45684995bd7dd4ef287799cca09dfc6323a74c10d07b0d",
+    "core/brain_router.py": "76e9b4bbeba35ffe242faae4f7ba2e2f5220fa763220de30aabf9fee003aab5b",
     "core/emotion_engine.py": "93f696fb14325e0f93878299a1f33336275f6b82b550339d3f46845f4444a347",
     "core/hive_dna.py": "7fe9f42d2f96bea61cfd4ccf4f7020eb41694ffb192c8faebeb5b65235963e32",
     "core/intent_classifier.py": "584883f9a0b8cd908dbcd6f3d12b5ced26626de9c798be5aa3a35c5689511e44",
     "core/llm_provider.py": "d43c0541e1415c09e740c1be2e2d5d4279bdac8299b867fac41c412e0b4f8a0b",
-    "core/local_llm.py": "6d5190f4b2b251228092dea46680565d801bf544a849f848dcccea9a3208981b",
+    "core/local_llm.py": "43bb9439c2315179c1c99d12af4a272f2d665acc18335ab4f5fff16470d1f346",
     "core/self_audit.py": "e182162d320fe0369c615c9fe3b5aa8cf1b788ee7db0d95114819dc5af2f5d19",
     "core/self_healing.py": "187ff57ede35a8364548d96b9b30d9110a1ec6c9eaf20a9a88d05d14e3d80ec0",
     "core/tools.py": "3fb6876c343b3e6abb8ebd39f8b208fa984b5ff129b3b78e36ec3353f3d78473",
@@ -86,7 +86,9 @@
     "memory/__init__.py": "bbcccc1fd12222d026ae988c0bd66740b6ad31691b842ec046c813c12b58c54b",
     "memory/config_manager.py": "3336b41edf4de5b43278732f87e77c8cda6240690d588618716b9dc8de66650b",
     "memory/memory_manager.py": "337d28db65da9c87075af664ae3c81c54492036464ece6058b72706be8715769",
-    "memory/rag_engine.py": "e5b4ef64ab7a4d2502d6b8b893d41287f3678720c6de264cea02716d840213a2",
+    "memory/rag_engine.py": "d901d6ac7f55223c2d84710733f7a3101e2c9feb97d39d283f8c6a4a0627cb35",
+    "scratch/check_chroma.py": "fdf902b128cbe94056836bf5717972c9cb8fa9f3c2c9566c9757b385741c9634",
+    "scratch/check_ports.py": "991dd1d659789cb30b7be49930ddbc6aa59ab7f83c52d5fc940fbc38b1d74164",
     "scratch/create_router.py": "451c3312b18fd1f962d0ee1053ace70e373d4bd3e34d69a8395e467bfaa6f1a0",
     "scratch/test_emotion.py": "47ba17a09697857003cae864055f320bb55661ed2084f1a350872e8c6fba1c5b",
     "scratch/test_ollama.py": "dd7daf9a9d1aad654a951b10ccabb98c8e0457efae960e790ad1e1690f8a8d6e",
@@ -375,5 +377,5 @@
     "ui.py": "1ca6ae8ea4dc4fad82d9a7d1b493f40b5af9d136f79dac7283e0973409b470e5",
     "ui_overlay.py": "b62b8473a2d02a8c0ca8683938b35c749c15cefac468d90a32d7334701cebe72"
   },
-  "last_audit": "2026-05-16T18:51:13.278898"
+  "last_audit": "2026-05-16T23:23:45.697362"
 }

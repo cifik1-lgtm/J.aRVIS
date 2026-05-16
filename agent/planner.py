@@ -458,18 +458,18 @@ def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = N
     if any(word in goal_lower for word in ["python", "code", "script", "function", "javascript", "html", "css", "c#", "java"]):
         from core.local_llm import call_ollama, is_ollama_online
         if is_ollama_online():
-            print("[Planner] 🐍 PRIORITY 1: Qwen Coder (local)")
-            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="qwen2.5-coder:7b")
+            print("[Planner] 🐍 PRIORITY 1: Qwen 3.5 9B (local)")
+            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="qwen3.5-9b:latest")
             if response:
                 plan = _parse_and_validate_plan(response)
                 if plan: return plan
     
-    # ===== PRIORITY 2: LOCAL MISTRAL (Reasoning) =====
+    # ===== PRIORITY 2: LOCAL GEMMA (Reasoning) =====
     if any(word in goal_lower for word in ["explain", "why", "how", "calculate", "analyze", "reason"]):
         from core.local_llm import call_ollama, is_ollama_online
         if is_ollama_online():
-            print("[Planner] 🧠 PRIORITY 2: Mistral 7B (local)")
-            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="mistral:7b")
+            print("[Planner] 🧠 PRIORITY 2: Gemma 4 (local)")
+            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="gemma-4:latest")
             if response:
                 plan = _parse_and_validate_plan(response)
                 if plan: return plan

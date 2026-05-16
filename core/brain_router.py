@@ -21,8 +21,8 @@ class BrainRouter:
             'groq': False,
             'openrouter': False,
             'minimax': False,
-            'mistral': False,      # Local - reasoning
-            'qwen_coder': False,   # Local - code
+            'gemma': False,      # Local - reasoning
+            'qwen': False,   # Local - code
             'mellum': False,       # Local - kotlin specialist
             'hermes': False,       # Local - agentic/personality
             'poe': False,
@@ -49,12 +49,12 @@ class BrainRouter:
                 self.engines['ollama'] = True
                 model_list = [m['name'] for m in resp.json().get('models', [])]
                 
-                if any("mistral" in m.lower() for m in model_list):
-                    self.engines['mistral'] = True
-                    print("[BrainRouter] [OK] Mistral 7B detected")
-                if any("qwen" in m.lower() and "coder" in m.lower() for m in model_list):
-                    self.engines['qwen_coder'] = True
-                    print("[BrainRouter] [OK] Qwen Coder detected")
+                if any("gemma" in m.lower() for m in model_list):
+                    self.engines['gemma'] = True
+                    print("[BrainRouter] [OK] Gemma 4 detected")
+                if any("qwen" in m.lower() for m in model_list):
+                    self.engines['qwen'] = True
+                    print("[BrainRouter] [OK] Qwen 3.5 9B detected")
                 if any("hermes" in m.lower() for m in model_list):
                     self.engines['hermes'] = True
                     print("[BrainRouter] [OK] Hermes 3 8B detected")
@@ -94,7 +94,7 @@ class BrainRouter:
             return forced
         
         # Fallback sequence
-        for engine in ['openrouter', 'gemini', 'groq', 'hermes', 'mistral']:
+        for engine in ['openrouter', 'gemini', 'groq', 'hermes', 'gemma']:
             if self.engines.get(engine):
                 return engine
         return 'offline'
@@ -146,9 +146,9 @@ class BrainRouter:
             if self.engines.get('openrouter'):
                 print("[Router] [BRAIN] Complex reasoning detected -> OpenRouter")
                 return self._route_to_openrouter(user_input, context)
-            elif self.engines.get('mistral'):
-                print("[Router] [BRAIN] Complex reasoning detected -> Mistral")
-                return self._route_to_mistral(user_input, context)
+            elif self.engines.get('gemma'):
+                print("[Router] [BRAIN] Complex reasoning detected -> Gemma 4")
+                return self._route_to_gemma(user_input, context)
         
         goal_lower = user_input.lower()
 
@@ -179,9 +179,9 @@ class BrainRouter:
                 return self._call_agent("mellum", user_input, context)
 
         if any(kw in goal_lower for kw in code_keywords):
-            if self.engines.get('qwen_coder'):
-                print("[Router] [CODE] Code task -> Qwen Coder")
-                return self._call_agent("qwen_coder", user_input, context)
+            if self.engines.get('qwen'):
+                print("[Router] [CODE] Code task -> Qwen 3.5 9B")
+                return self._call_agent("qwen", user_input, context)
             else:
                 print("[Router] [CODE] Local code brain offline -> Using OpenRouter")
                 return self._route_to_openrouter(user_input, context)
@@ -210,10 +210,10 @@ class BrainRouter:
         if self.ui:
             self.ui.write_log(f"[BRAIN] Router -> Using {agent_name.upper()}")
             
-        if agent_name == "qwen_coder":
+        if agent_name == "qwen":
             return self._route_to_qwen(prompt, context)
-        elif agent_name == "mistral":
-            return self._route_to_mistral(prompt, context)
+        elif agent_name == "gemma":
+            return self._route_to_gemma(prompt, context)
         elif agent_name == "hermes":
             return self._route_to_hermes(prompt, context)
         elif agent_name == "mellum":
@@ -231,15 +231,15 @@ class BrainRouter:
 
     def _route_to_qwen(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.local_llm import call_ollama
-        sys = "You are Qwen Coder, JARVIS's code specialist. Write clean code. Address user as 'sir'."
-        resp = call_ollama(prompt, system_prompt=sys, model="qwen2.5-coder:7b")
-        return ("qwen_coder", {"response": resp or "Failed to generate code, sir."})
+        sys = "You are Qwen 3.5 9B, JARVIS's code specialist. Write clean code. Address user as 'sir'."
+        resp = call_ollama(prompt, system_prompt=sys, model="qwen3.5-9b:latest")
+        return ("qwen", {"response": resp or "Failed to generate code, sir."})
 
-    def _route_to_mistral(self, prompt: str, context: str) -> Tuple[str, Dict]:
+    def _route_to_gemma(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.local_llm import call_ollama
-        sys = "You are JARVIS using Mistral. You excel at reasoning and analysis. Address user as 'sir'."
-        resp = call_ollama(prompt, system_prompt=sys, model="mistral:7b")
-        return ("mistral", {"response": resp or "Failed to reason, sir."})
+        sys = "You are JARVIS using Gemma 4. You excel at reasoning and analysis. Address user as 'sir'."
+        resp = call_ollama(prompt, system_prompt=sys, model="gemma-4:latest")
+        return ("gemma", {"response": resp or "Failed to reason, sir."})
 
     def _route_to_hermes(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.local_llm import call_ollama

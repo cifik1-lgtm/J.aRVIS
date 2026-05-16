@@ -5,6 +5,7 @@ import threading
 from typing import Optional
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
+LMSTUDIO_URL = "http://localhost:1234/v1/chat/completions"
 DEFAULT_MODEL = "hermes3:8b"
 
 def call_ollama(prompt: str, system_prompt: str = "", model: str = None) -> Optional[str]:
@@ -64,16 +65,54 @@ def get_available_models() -> list:
     except:
         return []
 
+def call_lmstudio(prompt: str, system_prompt: str = "", model: str = None) -> Optional[str]:
+    """Calls local LMStudio API with specified model."""
+    if model is None:
+        try:
+            from core.llm_provider import get_config
+            config = get_config()
+            # fallback to whatever is default
+            model = config.get("lmstudio_models", {}).get("fallback", "local-model")
+        except:
+            model = "local-model"
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1,
+        "stream": False
+    }
+    
+    try:
+        response = requests.post(LMSTUDIO_URL, json=payload, timeout=180)
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        print(f"[LMStudio] Error calling {model}: {e}")
+        return None
+
+def is_lmstudio_online() -> bool:
+    """Checks if LMStudio is running and responsive."""
+    try:
+        response = requests.get("http://localhost:1234/v1/models", timeout=2)
+        return response.status_code == 200
+    except:
+        return False
+
 # Warm up functions to pre-load models
 def warm_up_qwen():
     """Send a test prompt to wake up Qwen"""
-    print("[Ollama] 🐍 Warming up Qwen Coder...")
-    call_ollama("Respond with 'ready'", model="qwen2.5-coder:7b")
+    print("[Ollama] 🐍 Warming up Qwen 3.5 9B...")
+    call_ollama("Respond with 'ready'", model="qwen3.5-9b:latest")
 
-def warm_up_mistral():
-    """Send a test prompt to wake up Mistral"""
-    print("[Ollama] 🧠 Warming up Mistral 7B...")
-    call_ollama("Respond with 'ready'", model="mistral:7b")
+def warm_up_gemma():
+    """Send a test prompt to wake up Gemma 4"""
+    print("[Ollama] 🧠 Warming up Gemma 4...")
+    call_ollama("Respond with 'ready'", model="gemma-4:latest")
 
 def warm_up_hermes():
     """Send a test prompt to wake up Hermes"""
@@ -92,7 +131,7 @@ def warm_up_all_local_brains():
         
     def warm_up_task():
         warm_up_hermes()
-        warm_up_mistral()
+        warm_up_gemma()
         warm_up_qwen()
         warm_up_mellum()
         print("[Ollama] ✅ All local brains warmed up.")
