@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "aspnet-identity",
+  "displayName": "ASP.NET Core Identity",
+  "description": "Guidance for ASP.NET Core Identity authentication and user management. USE FOR: user registration, login/logout flows, password management, two-factor authentication, role-based authorization, external login providers, account confirmation, token generation. DO NOT USE FOR: fine-grained policy-based authorization (use Enforcer/Casbin), API key management, OAuth2 server implementation (use Duende IdentityServer), or cryptographic operations (use CryptoNet).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Introduction to Identity on ASP.NET Core",
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity"
+    },
+    {
+      "title": "Microsoft.AspNetCore.Identity.EntityFrameworkCore NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.AspNetCore.Identity.EntityFrameworkCore"
+    }
+  ]
+}

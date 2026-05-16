@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "extensions-caching",
+  "displayName": "Caching",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Caching in .NET Documentation",
+      "url": "https://learn.microsoft.com/dotnet/core/extensions/caching"
+    },
+    {
+      "title": "Microsoft.Extensions.Caching.Memory NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.Caching.Memory"
+    },
+    {
+      "title": ".NET Runtime GitHub Repository",
+      "url": "https://github.com/dotnet/runtime"
+    }
+  ]
+}

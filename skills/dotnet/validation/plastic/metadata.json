@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "plastic",
+  "displayName": "Plastic",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Plastic GitHub Repository",
+      "url": "https://github.com/sang-hyeon/Plastic"
+    }
+  ]
+}

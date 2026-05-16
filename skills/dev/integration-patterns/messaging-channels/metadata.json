@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "messaging-channels",
+  "displayName": "Messaging Channels",
+  "description": "Use when designing how messages travel between applications -- channel types, delivery guarantees, and bridging strategies from Enterprise Integration Patterns (Hohpe & Woolf).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Enterprise Integration Patterns — Messaging Channels",
+      "url": "https://www.enterpriseintegrationpatterns.com/patterns/messaging/MessagingChannelsIntro.html"
+    },
+    {
+      "title": "Enterprise Integration Patterns — Hohpe & Woolf",
+      "url": "https://www.enterpriseintegrationpatterns.com/"
+    }
+  ]
+}

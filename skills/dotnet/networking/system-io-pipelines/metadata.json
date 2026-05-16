@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "system-io-pipelines",
+  "displayName": "System.IO.Pipelines",
+  "description": "Guidance for System.IO.Pipelines high-performance I/O in .NET. USE FOR: high-throughput stream parsing, zero-copy buffer management, PipeReader/PipeWriter patterns, network protocol parsing, ReadOnlySequence processing, replacing Stream-based I/O bottlenecks. DO NOT USE FOR: simple file reads (use Stream or File APIs), HTTP request handling (use ASP.NET Core), gRPC communication (use grpc-dotnet), email (use mimekit).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "System.IO.Pipelines Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/standard/io/pipelines"
+    },
+    {
+      "title": "System.IO.Pipelines NuGet Package",
+      "url": "https://www.nuget.org/packages/System.IO.Pipelines"
+    },
+    {
+      "title": ".NET Runtime GitHub Repository",
+      "url": "https://github.com/dotnet/runtime"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "blazor-fusion",
+  "displayName": "Blazor Fusion",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Stl.Fusion GitHub Repository",
+      "url": "https://github.com/servicetitan/Stl.Fusion"
+    },
+    {
+      "title": "Stl.Fusion NuGet Package",
+      "url": "https://www.nuget.org/packages/Stl.Fusion"
+    }
+  ]
+}

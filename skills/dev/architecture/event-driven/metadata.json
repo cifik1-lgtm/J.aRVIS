@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "event-driven",
+  "displayName": "Event-Driven Architecture",
+  "description": "Event-Driven Architecture (EDA), Event Sourcing, and CQRS -- complementary but independent patterns for building reactive, scalable systems with rich audit trails and temporal queries.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Martin Fowler — Event Sourcing",
+      "url": "https://martinfowler.com/eaaDev/EventSourcing.html"
+    },
+    {
+      "title": "Martin Fowler — CQRS",
+      "url": "https://martinfowler.com/bliki/CQRS.html"
+    },
+    {
+      "title": "Martin Fowler — What Do You Mean by Event-Driven?",
+      "url": "https://martinfowler.com/articles/201701-event-driven.html"
+    }
+  ]
+}

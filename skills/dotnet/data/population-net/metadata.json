@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "population-net",
+  "displayName": "Population.NET",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Population.NET GitHub Repository",
+      "url": "https://github.com/Authentic199/Population.NET"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "azure-functions",
+  "displayName": "Azure Functions",
+  "description": "Use when building serverless event-driven applications with Azure Functions in .NET. Covers the isolated worker model, HTTP/Timer/Queue/Blob triggers, dependency injection, Durable Functions orchestration, and deployment.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Azure Functions Documentation",
+      "url": "https://learn.microsoft.com/azure/azure-functions"
+    },
+    {
+      "title": "Azure Functions .NET Worker GitHub Repository",
+      "url": "https://github.com/Azure/azure-functions-dotnet-worker"
+    },
+    {
+      "title": "Microsoft.Azure.Functions.Worker NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Azure.Functions.Worker"
+    }
+  ]
+}

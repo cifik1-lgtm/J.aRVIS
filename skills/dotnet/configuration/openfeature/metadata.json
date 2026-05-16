@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "openfeature",
+  "displayName": "OpenFeature",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "OpenFeature Official Website",
+      "url": "https://openfeature.dev"
+    },
+    {
+      "title": "OpenFeature .NET SDK GitHub Repository",
+      "url": "https://github.com/open-feature/dotnet-sdk"
+    },
+    {
+      "title": "OpenFeature NuGet Package",
+      "url": "https://www.nuget.org/packages/OpenFeature"
+    }
+  ]
+}

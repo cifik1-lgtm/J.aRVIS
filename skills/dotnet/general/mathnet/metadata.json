@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "mathnet",
+  "displayName": "Math.NET",
+  "description": "Guidance for Math.NET Numerics library for .NET. USE FOR: linear algebra (matrices, vectors, decompositions), statistics (descriptive, distributions, regression), numerical integration, interpolation, random number generation, signal processing. DO NOT USE FOR: symbolic math (use AngouriMath), expression parsing from strings (use NCalc), machine learning models (use ML.NET), GPU-accelerated computation.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Math.NET Numerics Documentation",
+      "url": "https://numerics.mathdotnet.com/"
+    },
+    {
+      "title": "Math.NET Numerics GitHub Repository",
+      "url": "https://github.com/mathnet/mathnet-numerics"
+    },
+    {
+      "title": "MathNet.Numerics NuGet Package",
+      "url": "https://www.nuget.org/packages/MathNet.Numerics"
+    }
+  ]
+}

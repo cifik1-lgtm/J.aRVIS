@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "appcontext",
+  "displayName": "AppContext",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "AppContext Class API Reference",
+      "url": "https://learn.microsoft.com/dotnet/api/system.appcontext"
+    },
+    {
+      "title": ".NET Runtime GitHub Repository",
+      "url": "https://github.com/dotnet/runtime"
+    }
+  ]
+}

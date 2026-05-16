@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "nservicebus",
+  "displayName": "NServiceBus",
+  "description": "Use when building enterprise-grade distributed systems with NServiceBus for reliable messaging, sagas, and recoverability in .NET.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "NServiceBus Official Documentation",
+      "url": "https://docs.particular.net/nservicebus/"
+    },
+    {
+      "title": "NServiceBus GitHub Repository",
+      "url": "https://github.com/Particular/NServiceBus"
+    },
+    {
+      "title": "NServiceBus NuGet Package",
+      "url": "https://www.nuget.org/packages/NServiceBus"
+    }
+  ]
+}

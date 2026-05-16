@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "aspnet-core",
+  "displayName": "ASP.NET Core",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "ASP.NET Core Documentation",
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/"
+    },
+    {
+      "title": "ASP.NET Core GitHub Repository",
+      "url": "https://github.com/dotnet/aspnetcore"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "typescript",
+  "displayName": "TypeScript",
+  "description": "Use when working with TypeScript projects, tooling, and ecosystem. Covers the type system, project configuration, package management, CLI development, and library packages.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "TypeScript Documentation",
+      "url": "https://www.typescriptlang.org"
+    },
+    {
+      "title": "TypeScript GitHub Repository",
+      "url": "https://github.com/microsoft/TypeScript"
+    },
+    {
+      "title": "typescript npm Package",
+      "url": "https://www.npmjs.com/package/typescript"
+    }
+  ]
+}

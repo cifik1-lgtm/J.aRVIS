@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "integration-patterns",
+  "displayName": "Integration Patterns",
+  "description": "Use when designing or evaluating enterprise integration architectures based on Hohpe & Woolf's Enterprise Integration Patterns.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Enterprise Integration Patterns — Hohpe & Woolf",
+      "url": "https://www.enterpriseintegrationpatterns.com/"
+    },
+    {
+      "title": "Enterprise Integration Patterns — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Enterprise_Integration_Patterns"
+    }
+  ]
+}

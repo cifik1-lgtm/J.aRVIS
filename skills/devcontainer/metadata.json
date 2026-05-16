@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "devcontainer",
+  "displayName": "Dev Containers",
+  "description": "Use when configuring dev containers or GitHub Codespaces. Covers devcontainer.json schema, features, lifecycle hooks, port forwarding, and customizations.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Dev Containers Specification",
+      "url": "https://containers.dev/"
+    },
+    {
+      "title": "Dev Containers — GitHub Repository",
+      "url": "https://github.com/devcontainers/spec"
+    },
+    {
+      "title": "VS Code — Developing Inside a Container",
+      "url": "https://code.visualstudio.com/docs/devcontainers/containers"
+    }
+  ]
+}

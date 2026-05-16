@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "twilio",
+  "displayName": "Twilio",
+  "description": "Guidance for Twilio .NET SDK for communications APIs. USE FOR: sending SMS and MMS, making voice calls, Twilio Verify for phone verification, WhatsApp messaging, webhook handling for incoming messages/calls, Twilio programmable video. DO NOT USE FOR: email sending (use mimekit), HTTP APIs (use ASP.NET Core), gRPC services (use grpc-dotnet), custom socket protocols (use dotnetty).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Twilio Documentation",
+      "url": "https://www.twilio.com/docs"
+    },
+    {
+      "title": "Twilio C#/.NET SDK GitHub Repository",
+      "url": "https://github.com/twilio/twilio-csharp"
+    },
+    {
+      "title": "Twilio NuGet Package",
+      "url": "https://www.nuget.org/packages/Twilio"
+    }
+  ]
+}

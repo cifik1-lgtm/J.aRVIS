@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "curryfy",
+  "displayName": "Currying & Partial Application",
+  "description": "Use when applying function currying and partial application patterns in C# to create specialized, reusable function compositions.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Curryfy GitHub Repository",
+      "url": "https://github.com/leandromoh/Curryfy"
+    },
+    {
+      "title": "Curryfy NuGet Package",
+      "url": "https://www.nuget.org/packages/Curryfy"
+    }
+  ]
+}

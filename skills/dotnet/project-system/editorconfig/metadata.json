@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "editorconfig",
+  "displayName": "EditorConfig for .NET",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "EditorConfig Official Website",
+      "url": "https://editorconfig.org/"
+    },
+    {
+      "title": "EditorConfig Specification",
+      "url": "https://spec.editorconfig.org/"
+    },
+    {
+      "title": "Code Style Rule Options in .NET",
+      "url": "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/code-style-rule-options"
+    }
+  ]
+}

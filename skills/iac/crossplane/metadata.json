@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "crossplane",
+  "displayName": "Crossplane",
+  "description": "Use when managing cloud infrastructure through Kubernetes with Crossplane. Covers providers, managed resources, compositions, XRDs, claims, and the control plane pattern.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Crossplane Documentation",
+      "url": "https://docs.crossplane.io"
+    },
+    {
+      "title": "Crossplane GitHub Repository",
+      "url": "https://github.com/crossplane/crossplane"
+    }
+  ]
+}

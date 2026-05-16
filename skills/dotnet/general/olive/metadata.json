@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "olive",
+  "displayName": "Olive",
+  "description": "Guidance for Olive productivity framework for .NET. USE FOR: common string extensions (null-safe operations, validation), collection utilities, date/time helpers, file name sanitization, fluent API helpers, reducing boilerplate in business applications. DO NOT USE FOR: full web frameworks (use ASP.NET Core), ORM functionality (use EF Core), UI frameworks, large-scale enterprise architecture.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Olive Documentation",
+      "url": "https://geeksltd.github.io/Olive/"
+    },
+    {
+      "title": "Olive GitHub Repository",
+      "url": "https://github.com/Geeksltd/Olive"
+    },
+    {
+      "title": "Olive NuGet Package",
+      "url": "https://www.nuget.org/packages/Olive"
+    }
+  ]
+}

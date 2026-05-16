@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "mediatr",
+  "displayName": "MediatR",
+  "description": "Use when implementing in-process mediator, CQRS, and pipeline behavior patterns with MediatR in .NET applications.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "MediatR GitHub Repository",
+      "url": "https://github.com/jbogard/MediatR"
+    },
+    {
+      "title": "MediatR NuGet Package",
+      "url": "https://www.nuget.org/packages/MediatR"
+    }
+  ]
+}

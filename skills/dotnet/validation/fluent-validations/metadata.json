@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "fluent-validations",
+  "displayName": "FluentValidation",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "FluentValidation Documentation",
+      "url": "https://docs.fluentvalidation.net/"
+    },
+    {
+      "title": "FluentValidation GitHub Repository",
+      "url": "https://github.com/FluentValidation/FluentValidation"
+    },
+    {
+      "title": "FluentValidation NuGet Package",
+      "url": "https://www.nuget.org/packages/FluentValidation"
+    }
+  ]
+}

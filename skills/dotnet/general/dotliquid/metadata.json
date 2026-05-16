@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "dotliquid",
+  "displayName": "DotLiquid",
+  "description": "Guidance for DotLiquid template engine for .NET. USE FOR: safe user-generated templates, email templates, CMS content rendering, sandboxed template execution, report generation from data models. DO NOT USE FOR: Razor-based server-side views (use ASP.NET Razor), logic-heavy templates requiring full C# (use Scriban or Razor), compiled template performance-critical paths.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "DotLiquid Official Website",
+      "url": "https://www.dotliquid.org"
+    },
+    {
+      "title": "DotLiquid GitHub Repository",
+      "url": "https://github.com/dotliquid/dotliquid"
+    },
+    {
+      "title": "DotLiquid NuGet Package",
+      "url": "https://www.nuget.org/packages/DotLiquid"
+    }
+  ]
+}

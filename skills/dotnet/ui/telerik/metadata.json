@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "telerik",
+  "displayName": "Telerik UI",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Telerik UI for Blazor Documentation",
+      "url": "https://www.telerik.com/blazor-ui/documentation/introduction"
+    },
+    {
+      "title": "Telerik UI for Blazor Official Site",
+      "url": "https://www.telerik.com/blazor-ui"
+    }
+  ]
+}

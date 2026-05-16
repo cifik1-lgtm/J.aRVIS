@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "cryptonet",
+  "displayName": "CryptoNet",
+  "description": "Guidance for CryptoNet cryptography library in .NET. USE FOR: RSA encryption/decryption, symmetric AES encryption, X.509 certificate-based crypto, self-signed certificate generation, key pair management, encrypting sensitive data at rest. DO NOT USE FOR: password hashing (use ASP.NET Core Identity), TLS/HTTPS configuration, JWT token signing (use Microsoft.IdentityModel), or authorization (use Casbin/Enforcer).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "CryptoNet GitHub Repository",
+      "url": "https://github.com/itbackyard/CryptoNet"
+    },
+    {
+      "title": "CryptoNet NuGet Package",
+      "url": "https://www.nuget.org/packages/CryptoNet"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "masstransit",
+  "displayName": "MassTransit",
+  "description": "Use when building message-based distributed systems with MassTransit for pub/sub, request/response, sagas, and outbox patterns in .NET.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "MassTransit Official Documentation",
+      "url": "https://masstransit.io/"
+    },
+    {
+      "title": "MassTransit GitHub Repository",
+      "url": "https://github.com/MassTransit/MassTransit"
+    },
+    {
+      "title": "MassTransit NuGet Package",
+      "url": "https://www.nuget.org/packages/MassTransit"
+    }
+  ]
+}

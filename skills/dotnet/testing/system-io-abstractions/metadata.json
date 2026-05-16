@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "system-io-abstractions",
+  "displayName": "System.IO.Abstractions",
+  "description": "Guidance for System.IO.Abstractions file system abstraction library. USE FOR: wrapping file and directory operations for testability, mocking file system access in unit tests, replacing static File/Directory/Path calls with injectable interfaces, using MockFileSystem for deterministic test scenarios, testing code that reads/writes files. DO NOT USE FOR: actual file I/O performance optimization, replacing stream-based APIs, or scenarios where you need raw file system performance without abstraction overhead.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "System.IO.Abstractions GitHub Repository",
+      "url": "https://github.com/TestableIO/System.IO.Abstractions"
+    },
+    {
+      "title": "System.IO.Abstractions NuGet Package",
+      "url": "https://www.nuget.org/packages/System.IO.Abstractions"
+    },
+    {
+      "title": "System.IO.Abstractions TestingHelpers NuGet Package",
+      "url": "https://www.nuget.org/packages/System.IO.Abstractions.TestingHelpers"
+    }
+  ]
+}

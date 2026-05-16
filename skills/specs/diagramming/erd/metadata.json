@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "erd",
+  "displayName": "Entity-Relationship Diagrams",
+  "description": "Use when creating entity-relationship diagrams for database design and data modeling. Covers entity types, attributes, relationships, cardinality, Chen and Crow's Foot notation, normalization forms, and Mermaid ERD syntax.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Entity-Relationship Model — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Entity%E2%80%93relationship_model"
+    },
+    {
+      "title": "Peter Chen — The Entity-Relationship Model (Original Paper)",
+      "url": "https://dl.acm.org/doi/10.1145/320434.320440"
+    }
+  ]
+}

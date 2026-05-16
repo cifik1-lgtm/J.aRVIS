@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "resources-localization",
+  "displayName": "Resources and Localization",
+  "description": "Guidance for .NET resource files (.resx) and IStringLocalizer-based localization. USE FOR: .resx resource file management, IStringLocalizer and IStringLocalizerFactory usage, strongly-typed resource access, satellite assembly localization. DO NOT USE FOR: culture-aware number/date formatting (use globalization-localization), ICU plural/gender patterns (use messageformat-net), full i18n architecture (use i18n).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": ".NET Localization Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/localization"
+    },
+    {
+      "title": "Globalization and Localization in ASP.NET Core",
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/localization"
+    },
+    {
+      "title": "Globalize and Localize .NET Applications",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-and-localization"
+    }
+  ]
+}

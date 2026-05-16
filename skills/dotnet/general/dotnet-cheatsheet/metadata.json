@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "dotnet-cheatsheet",
+  "displayName": ".NET Cheatsheet (Modern)",
+  "description": "Guidance for modern .NET code patterns and libraries. Use when working with dotnet cheatsheet.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "",
+  "references": [
+    {
+      "title": ".NET Documentation on Microsoft Learn",
+      "url": "https://learn.microsoft.com/dotnet/"
+    },
+    {
+      "title": ".NET GitHub Repository",
+      "url": "https://github.com/dotnet/runtime"
+    }
+  ]
+}

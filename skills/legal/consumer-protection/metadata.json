@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "consumer-protection",
+  "displayName": "Consumer Protection",
+  "description": "Use when identifying consumer protection laws that apply to software products and digital services. Covers terms of service, EULAs, refund policies, dark patterns regulation, subscription practices, the EU Digital Markets Act, and consumer rights across jurisdictions.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Federal Trade Commission (FTC) — Consumer Protection",
+      "url": "https://www.ftc.gov/about-ftc/bureaus-offices/bureau-consumer-protection"
+    },
+    {
+      "title": "EU Digital Markets Act (EUR-Lex)",
+      "url": "https://eur-lex.europa.eu/eli/reg/2022/1925/oj"
+    },
+    {
+      "title": "EU Digital Services Act (EUR-Lex)",
+      "url": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj"
+    }
+  ]
+}

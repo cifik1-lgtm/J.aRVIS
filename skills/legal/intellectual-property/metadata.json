@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "intellectual-property",
+  "displayName": "Intellectual Property",
+  "description": "Use when identifying intellectual property considerations for software products. Covers patents, copyrights, trademarks, trade secrets, and IP assignment with jurisdiction-specific considerations for software companies.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "World Intellectual Property Organization (WIPO)",
+      "url": "https://www.wipo.int"
+    },
+    {
+      "title": "United States Patent and Trademark Office (USPTO)",
+      "url": "https://www.uspto.gov"
+    },
+    {
+      "title": "U.S. Copyright Office",
+      "url": "https://www.copyright.gov"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "extensions-logging",
+  "displayName": "Microsoft.Extensions.Logging",
+  "description": "Guidance for Microsoft.Extensions.Logging and LoggerMessage source generators. USE FOR: ILogger abstraction, LoggerMessage source-generated logging, structured logging with event IDs, log filtering and configuration, high-performance logging patterns. DO NOT USE FOR: Serilog-specific sinks and enrichers (use serilog), NLog-specific targets and routing (use nlog), OpenTelemetry log export (use otlp-logging).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Logging in .NET Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/logging"
+    },
+    {
+      "title": "Microsoft.Extensions.Logging NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.Logging"
+    },
+    {
+      "title": "Compile-Time Logging Source Generation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/logger-message-generator"
+    }
+  ]
+}

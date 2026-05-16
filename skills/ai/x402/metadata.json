@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "x402",
+  "displayName": "x402 (HTTP Payment Protocol)",
+  "description": "Use when implementing the x402 protocol for HTTP-native micropayments. Covers server middleware, client payment flows, facilitator integration, and stablecoin payments for APIs and AI agents.",
+  "author": "Tyler-R-Kendrick",
+  "license": "Apache-2.0",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "x402 Protocol GitHub Repository",
+      "url": "https://github.com/coinbase/x402"
+    },
+    {
+      "title": "x402 Documentation",
+      "url": "https://www.x402.org"
+    }
+  ]
+}

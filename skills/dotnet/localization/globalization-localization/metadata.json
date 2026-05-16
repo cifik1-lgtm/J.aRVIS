@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "globalization-localization",
+  "displayName": "Globalization and Localization",
+  "description": "Guidance for globalization and localization in .NET. USE FOR: culture-aware formatting, request localization middleware, date/number/currency formatting across cultures, locale-sensitive string comparison. DO NOT USE FOR: simple resource file lookup (use resources-localization), ICU message formatting (use messageformat-net), general i18n architecture (use i18n).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Globalization and Localization in ASP.NET Core",
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/localization"
+    },
+    {
+      "title": "Globalize and Localize .NET Applications",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-and-localization"
+    },
+    {
+      "title": ".NET Globalization Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization"
+    }
+  ]
+}

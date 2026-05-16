@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "entity-framework-core",
+  "displayName": "Entity Framework Core",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Entity Framework Core Documentation",
+      "url": "https://learn.microsoft.com/en-us/ef/core/"
+    },
+    {
+      "title": "Entity Framework Core GitHub Repository",
+      "url": "https://github.com/dotnet/efcore"
+    },
+    {
+      "title": "Microsoft.EntityFrameworkCore NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.EntityFrameworkCore"
+    }
+  ]
+}

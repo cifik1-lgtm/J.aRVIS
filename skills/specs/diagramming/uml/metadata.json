@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "uml",
+  "displayName": "UML",
+  "description": "Use when modeling software systems using the Unified Modeling Language (UML) standard. Covers structural and behavioral diagram types, notation, relationships, multiplicity, visibility, and stereotypes.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "OMG Unified Modeling Language (UML) Specification",
+      "url": "https://www.omg.org/spec/UML/"
+    },
+    {
+      "title": "UML — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Unified_Modeling_Language"
+    }
+  ]
+}

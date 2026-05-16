@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "onnx",
+  "displayName": "ONNX Runtime",
+  "description": "Use when running pre-trained ONNX models for inference in .NET with ONNX Runtime. Covers session management, tensor inputs/outputs, execution providers (CPU/GPU/DirectML), model optimization, and integration with ASP.NET Core.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "ONNX Runtime Documentation",
+      "url": "https://onnxruntime.ai"
+    },
+    {
+      "title": "ONNX Runtime GitHub Repository",
+      "url": "https://github.com/microsoft/onnxruntime"
+    },
+    {
+      "title": "Microsoft.ML.OnnxRuntime NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime"
+    }
+  ]
+}

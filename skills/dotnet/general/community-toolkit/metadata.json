@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "community-toolkit",
+  "displayName": "Community Toolkit",
+  "description": "Guidance for .NET Community Toolkit libraries including MVVM Toolkit, Diagnostics, and HighPerformance. USE FOR: MVVM source-generated view models, observable properties, relay commands, messenger pattern, guard clauses, high-performance array pooling, string pooling. DO NOT USE FOR: UI framework specifics (use WPF/MAUI/WinUI skills), full reactive programming (use Rx), dependency injection container logic.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": ".NET Community Toolkit Documentation on Microsoft Learn",
+      "url": "https://learn.microsoft.com/dotnet/communitytoolkit/introduction"
+    },
+    {
+      "title": ".NET Community Toolkit GitHub Repository",
+      "url": "https://github.com/CommunityToolkit/dotnet"
+    },
+    {
+      "title": "CommunityToolkit.Mvvm NuGet Package",
+      "url": "https://www.nuget.org/packages/CommunityToolkit.Mvvm"
+    }
+  ]
+}

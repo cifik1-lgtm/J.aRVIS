@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "aspectcore",
+  "displayName": "AspectCore",
+  "description": "Guidance for AspectCore AOP framework for .NET Core. USE FOR: cross-cutting concerns via interceptors, method-level AOP, dynamic proxies, logging/caching/authorization interception, decorating service interfaces. DO NOT USE FOR: compile-time weaving (use PostSharp), full IL rewriting, non-DI scenarios, .NET Framework-only projects.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "AspectCore Framework GitHub Repository",
+      "url": "https://github.com/dotnetcore/AspectCore-Framework"
+    },
+    {
+      "title": "AspectCore.Core NuGet Package",
+      "url": "https://www.nuget.org/packages/AspectCore.Core"
+    }
+  ]
+}

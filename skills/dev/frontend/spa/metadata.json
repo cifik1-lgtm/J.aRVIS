@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "spa",
+  "displayName": "Single Page Applications",
+  "description": "Single Page Application architecture — client-side routing, state management, data fetching, bundle optimization, and the SPA vs MPA tradeoff. Covers React, Vue, Angular, Svelte, and Solid ecosystems.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "MDN Web Docs — Single-Page Applications",
+      "url": "https://developer.mozilla.org/en-US/docs/Glossary/SPA"
+    },
+    {
+      "title": "Single-Page Application — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Single-page_application"
+    }
+  ]
+}

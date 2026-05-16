@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "billing-taxation",
+  "displayName": "Billing & Taxation",
+  "description": "Use when identifying tax, billing, and revenue recognition obligations for software products sold globally. Covers service type classification and billing codes, VAT/GST/sales tax, invoicing requirements, revenue recognition (ASC 606/IFRS 15), cloud credits and stored-value models, and money transmission risks for prepaid systems.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "OECD International VAT/GST Guidelines",
+      "url": "https://www.oecd.org/tax/consumption/international-vat-gst-guidelines.htm"
+    },
+    {
+      "title": "IFRS 15 Revenue from Contracts with Customers",
+      "url": "https://www.ifrs.org/issued-standards/list-of-standards/ifrs-15-revenue-from-contracts-with-customers/"
+    },
+    {
+      "title": "FASB ASC 606 Revenue Recognition",
+      "url": "https://asc.fasb.org/606"
+    }
+  ]
+}

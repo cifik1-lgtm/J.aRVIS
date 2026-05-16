@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "system-management",
+  "displayName": "System Management",
+  "description": "Use when designing observability, testing, debugging, and operational control for messaging systems based on Enterprise Integration Patterns (Hohpe & Woolf).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Enterprise Integration Patterns — System Management",
+      "url": "https://www.enterpriseintegrationpatterns.com/patterns/messaging/SystemManagementIntro.html"
+    },
+    {
+      "title": "Enterprise Integration Patterns — Hohpe & Woolf",
+      "url": "https://www.enterpriseintegrationpatterns.com/"
+    }
+  ]
+}

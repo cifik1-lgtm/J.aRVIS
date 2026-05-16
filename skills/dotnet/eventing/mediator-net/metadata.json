@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "mediator-net",
+  "displayName": "Mediator.NET",
+  "description": "Use when implementing the mediator pattern with Mediator.NET (source-generated) for high-performance in-process command/query dispatch in .NET.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Mediator.NET GitHub Repository",
+      "url": "https://github.com/martinothamar/Mediator"
+    },
+    {
+      "title": "Mediator.SourceGenerator NuGet Package",
+      "url": "https://www.nuget.org/packages/Mediator.SourceGenerator"
+    },
+    {
+      "title": "Mediator.Abstractions NuGet Package",
+      "url": "https://www.nuget.org/packages/Mediator.Abstractions"
+    }
+  ]
+}

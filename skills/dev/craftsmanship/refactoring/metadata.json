@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "refactoring",
+  "displayName": "Refactoring",
+  "description": "Use when identifying code smells and applying systematic refactoring techniques — based on Martin Fowler's \"Refactoring.\"",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Refactoring.com — Catalog of Refactorings",
+      "url": "https://refactoring.com/catalog/"
+    },
+    {
+      "title": "Martin Fowler — Refactoring (2nd Edition)",
+      "url": "https://martinfowler.com/books/refactoring.html"
+    },
+    {
+      "title": "Refactoring.Guru — Refactoring",
+      "url": "https://refactoring.guru/refactoring"
+    }
+  ]
+}

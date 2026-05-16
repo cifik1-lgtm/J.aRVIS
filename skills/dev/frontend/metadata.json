@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "frontend",
+  "displayName": "Frontend Architecture",
+  "description": "Frontend architecture approaches — from Multi-Page Apps through Single Page Apps, Server-Side Rendering, Islands Architecture, and Micro-Frontends. Covers the full spectrum of client-side concerns: routing, state management, data fetching, code splitting, and hydration.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "MDN Web Docs — Web Technology for Developers",
+      "url": "https://developer.mozilla.org/en-US/docs/Web"
+    },
+    {
+      "title": "web.dev — Building for the Modern Web",
+      "url": "https://web.dev/"
+    }
+  ]
+}

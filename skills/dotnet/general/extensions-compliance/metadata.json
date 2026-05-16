@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "extensions-compliance",
+  "displayName": "Compliance",
+  "description": "Guidance for Microsoft.Extensions.Compliance data classification and redaction. USE FOR: classifying sensitive data (PII, EUII, financial), redacting log output, enforcing data handling policies, compliance-aware telemetry, audit-safe logging pipelines. DO NOT USE FOR: encryption at rest (use Data Protection APIs), access control/authorization (use ASP.NET Identity), GDPR consent management, full DLP solutions.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Data Redaction in .NET Documentation on Microsoft Learn",
+      "url": "https://learn.microsoft.com/dotnet/core/extensions/data-redaction"
+    },
+    {
+      "title": "Microsoft.Extensions.Compliance.Redaction NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.Compliance.Redaction"
+    },
+    {
+      "title": "Microsoft.Extensions.Compliance.Abstractions NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.Compliance.Abstractions"
+    }
+  ]
+}

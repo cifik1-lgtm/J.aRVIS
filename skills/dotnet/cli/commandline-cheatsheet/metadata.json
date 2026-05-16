@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "commandline-cheatsheet",
+  "displayName": "Command-Line Cheatsheet",
+  "description": "Use when building command-line applications in .NET with System.CommandLine. Covers command/option/argument definitions, middleware, tab completion, parsing, and hosting integration for CLI tools.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "System.CommandLine Documentation",
+      "url": "https://learn.microsoft.com/dotnet/standard/commandline"
+    },
+    {
+      "title": "System.CommandLine GitHub Repository",
+      "url": "https://github.com/dotnet/command-line-api"
+    },
+    {
+      "title": "System.CommandLine NuGet Package",
+      "url": "https://www.nuget.org/packages/System.CommandLine"
+    }
+  ]
+}

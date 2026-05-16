@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "dev",
+  "displayName": "Development Fundamentals",
+  "description": "Use when working with fundamental software development knowledge — patterns, algorithms, architecture, and craftsmanship principles drawn from canonical published works.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Refactoring.Guru — Design Patterns",
+      "url": "https://refactoring.guru/design-patterns"
+    },
+    {
+      "title": "Enterprise Integration Patterns — Hohpe & Woolf",
+      "url": "https://www.enterpriseintegrationpatterns.com/"
+    },
+    {
+      "title": "Martin Fowler — Software Architecture Guide",
+      "url": "https://martinfowler.com/architecture/"
+    }
+  ]
+}

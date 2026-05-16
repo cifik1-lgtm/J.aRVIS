@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "extensions-service-discovery",
+  "displayName": "Service Discovery",
+  "description": "Use when resolving service endpoints dynamically with Microsoft.Extensions.ServiceDiscovery. Covers configuration-based, DNS-based, and Aspire-integrated service resolution for HttpClient, endpoint selection strategies, and health-aware routing.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Service Discovery in .NET Documentation",
+      "url": "https://learn.microsoft.com/dotnet/core/extensions/service-discovery"
+    },
+    {
+      "title": "Microsoft.Extensions.ServiceDiscovery NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.ServiceDiscovery"
+    },
+    {
+      "title": ".NET Aspire GitHub Repository",
+      "url": "https://github.com/dotnet/aspire"
+    }
+  ]
+}

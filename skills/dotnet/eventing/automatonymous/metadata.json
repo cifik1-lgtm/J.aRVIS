@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "automatonymous",
+  "displayName": "Automatonymous",
+  "description": "Use when building state machine workflows integrated with MassTransit for distributed sagas and long-running processes.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "MassTransit Documentation (includes Automatonymous)",
+      "url": "https://masstransit.io/"
+    },
+    {
+      "title": "Automatonymous GitHub Repository",
+      "url": "https://github.com/MassTransit/Automatonymous"
+    },
+    {
+      "title": "MassTransit NuGet Package",
+      "url": "https://www.nuget.org/packages/MassTransit"
+    }
+  ]
+}

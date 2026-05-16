@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "pwa",
+  "displayName": "Progressive Web Apps",
+  "description": "Progressive Web App architecture — service workers, web app manifest, caching strategies, offline support, push notifications, background sync, and Workbox. Covers the full lifecycle of building installable, offline-capable web applications.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "web.dev — Learn PWA",
+      "url": "https://web.dev/learn/pwa"
+    },
+    {
+      "title": "MDN Web Docs — Progressive Web Apps",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps"
+    }
+  ]
+}

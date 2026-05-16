@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "brighter",
+  "displayName": "Brighter",
+  "description": "Use when implementing CQRS command dispatching, request pipelines, and asynchronous task queues with Paramore Brighter in .NET.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Brighter Official Website",
+      "url": "https://www.goparamore.io/"
+    },
+    {
+      "title": "Brighter GitHub Repository",
+      "url": "https://github.com/BrighterCommand/Brighter"
+    },
+    {
+      "title": "Paramore.Brighter NuGet Package",
+      "url": "https://www.nuget.org/packages/Paramore.Brighter"
+    }
+  ]
+}

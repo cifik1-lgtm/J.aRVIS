@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "mcp",
+  "displayName": "MCP (Model Context Protocol)",
+  "description": "Use when implementing or integrating with the Model Context Protocol (MCP) for AI tool servers, resources, prompts, and context management.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Model Context Protocol Specification",
+      "url": "https://modelcontextprotocol.io"
+    },
+    {
+      "title": "MCP GitHub Repository",
+      "url": "https://github.com/modelcontextprotocol"
+    },
+    {
+      "title": "Anthropic MCP Documentation",
+      "url": "https://docs.anthropic.com/en/docs/agents-and-tools/mcp"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "ap2",
+  "displayName": "AP2 (Agent Payments Protocol)",
+  "description": "Use when implementing the Agent Payments Protocol (AP2) for secure, compliant AI-driven commerce. Covers intent mandates, cart mandates, payment flows, and merchant integration.",
+  "author": "Tyler-R-Kendrick",
+  "license": "Apache-2.0",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "AP2 (Agent Payments Protocol) GitHub Repository",
+      "url": "https://github.com/google/anthropic-agent-payments-protocol"
+    },
+    {
+      "title": "Google A2A Protocol (AP2 Extension)",
+      "url": "https://github.com/google/A2A"
+    }
+  ]
+}

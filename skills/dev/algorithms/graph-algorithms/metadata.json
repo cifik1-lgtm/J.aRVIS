@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "graph-algorithms",
+  "displayName": "Graph Algorithms",
+  "description": "Use when working with graph problems including traversal, shortest paths, minimum spanning trees, topological sorting, and connectivity analysis. Covers BFS, DFS, Dijkstra, Bellman-Ford, Floyd-Warshall, Prim, Kruskal, Tarjan, Kosaraju, A*, and Union-Find. Based on Knuth's TAOCP.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "The Art of Computer Programming, Vol. 4B: Combinatorial Algorithms — Donald Knuth",
+      "url": "https://www-cs-faculty.stanford.edu/~knuth/taocp.html"
+    },
+    {
+      "title": "Graph Algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Graph_algorithm"
+    }
+  ]
+}

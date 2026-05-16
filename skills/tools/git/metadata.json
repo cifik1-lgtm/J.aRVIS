@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "git",
+  "displayName": "Git",
+  "description": "Use when working with Git version control — branching strategies, common workflows, conflict resolution, history manipulation, hooks, and configuration. Covers everyday commands through advanced operations like rebase, cherry-pick, bisect, and worktrees.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Git Documentation",
+      "url": "https://git-scm.com/doc"
+    },
+    {
+      "title": "Pro Git Book (Official)",
+      "url": "https://git-scm.com/book/en/v2"
+    },
+    {
+      "title": "Git GitHub Repository",
+      "url": "https://github.com/git/git"
+    }
+  ]
+}

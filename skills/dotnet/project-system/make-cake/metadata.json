@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "make-cake",
+  "displayName": "Cake Build",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Cake Build Documentation",
+      "url": "https://cakebuild.net/docs/"
+    },
+    {
+      "title": "Cake Build GitHub Repository",
+      "url": "https://github.com/cake-build/cake"
+    },
+    {
+      "title": "Cake.Tool NuGet Package",
+      "url": "https://www.nuget.org/packages/Cake.Tool"
+    }
+  ]
+}

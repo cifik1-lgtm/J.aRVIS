@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "pidgin",
+  "displayName": "Pidgin",
+  "description": "Use when building high-performance parsers in C# using Pidgin's parser combinator library for structured text, DSLs, and expression grammars.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Pidgin GitHub Repository",
+      "url": "https://github.com/benjamin-hodgson/Pidgin"
+    },
+    {
+      "title": "Pidgin NuGet Package",
+      "url": "https://www.nuget.org/packages/Pidgin"
+    }
+  ]
+}

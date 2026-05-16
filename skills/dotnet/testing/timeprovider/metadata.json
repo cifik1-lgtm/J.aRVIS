@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "timeprovider",
+  "displayName": "TimeProvider",
+  "description": "Guidance for TimeProvider abstraction for testable time-dependent code. USE FOR: making time-dependent code testable, replacing DateTime.UtcNow and DateTimeOffset.UtcNow with injectable abstractions, controlling time in unit tests with FakeTimeProvider, testing expiration logic, scheduling, token lifetimes, and time-based business rules. DO NOT USE FOR: high-precision timing or benchmarking (use Stopwatch), NTP synchronization, or scenarios running on .NET versions prior to .NET 8.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "TimeProvider Class Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/standard/datetime/timeprovider-overview"
+    },
+    {
+      "title": "Microsoft.Extensions.TimeProvider.Testing NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.TimeProvider.Testing"
+    }
+  ]
+}

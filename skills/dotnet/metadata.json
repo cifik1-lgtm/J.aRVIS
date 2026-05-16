@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "dotnet",
+  "displayName": ".NET",
+  "description": "Use when working with C#, F#, .NET libraries, ASP.NET Core, Blazor, Entity Framework Core, and the broader .NET ecosystem.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": ".NET Documentation",
+      "url": "https://learn.microsoft.com/dotnet"
+    },
+    {
+      "title": ".NET Runtime GitHub Repository",
+      "url": "https://github.com/dotnet/runtime"
+    },
+    {
+      "title": "NuGet Package Gallery",
+      "url": "https://www.nuget.org"
+    }
+  ]
+}

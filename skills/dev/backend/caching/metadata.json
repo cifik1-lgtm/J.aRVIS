@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "caching",
+  "displayName": "Caching Strategies & Patterns",
+  "description": "Use when designing caching strategies — choosing between cache-aside, read-through, write-through, write-behind, and write-around patterns, planning cache invalidation, and implementing multi-tier caching architectures.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "MDN Web Docs — HTTP Caching",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching"
+    },
+    {
+      "title": "Cache (Computing) — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Cache_(computing)"
+    }
+  ]
+}

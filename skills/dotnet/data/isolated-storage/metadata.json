@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "isolated-storage",
+  "displayName": "Isolated Storage",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Isolated Storage Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/standard/io/isolated-storage"
+    },
+    {
+      "title": "IsolatedStorageFile Class API Reference",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.io.isolatedstorage.isolatedstoragefile"
+    }
+  ]
+}

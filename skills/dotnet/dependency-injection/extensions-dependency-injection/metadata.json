@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "extensions-dependency-injection",
+  "displayName": "Dependency Injection",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": ".NET Dependency Injection Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection"
+    },
+    {
+      "title": "Microsoft.Extensions.DependencyInjection NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection"
+    },
+    {
+      "title": ".NET Runtime GitHub Repository",
+      "url": "https://github.com/dotnet/runtime"
+    }
+  ]
+}

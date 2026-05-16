@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "a2a",
+  "displayName": "A2A Protocol",
+  "description": "Use when building agent-to-agent communication in .NET with the A2A (Agent-to-Agent) protocol. Covers agent cards, task lifecycle, streaming, push notifications, and multi-agent orchestration.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "A2A Protocol GitHub Repository",
+      "url": "https://github.com/a2aproject/A2A"
+    },
+    {
+      "title": "SharpA2A.Core NuGet Package",
+      "url": "https://www.nuget.org/packages/SharpA2A.Core"
+    },
+    {
+      "title": "SharpA2A GitHub Repository",
+      "url": "https://github.com/darrelmiller/sharpa2a"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "fake-json-server",
+  "displayName": "Fake JSON Server",
+  "description": "Guidance for FakeServer and fake JSON API servers for .NET testing. USE FOR: mocking REST APIs during development, creating stub HTTP endpoints for integration tests, simulating third-party API responses, building prototype backends for frontend development, testing HTTP client code without external dependencies. DO NOT USE FOR: production API hosting, load testing (use proper test infrastructure), contract testing (use Pact), or testing real database interactions (use Testcontainers).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Fake JSON Server GitHub Repository",
+      "url": "https://github.com/ttu/dotnet-fake-json-server"
+    },
+    {
+      "title": "FakeServer NuGet Package",
+      "url": "https://www.nuget.org/packages/FakeServer"
+    }
+  ]
+}

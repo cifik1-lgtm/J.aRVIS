@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "extensions-primitives",
+  "displayName": "Microsoft.Extensions.Primitives",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Microsoft.Extensions.Primitives Documentation",
+      "url": "https://learn.microsoft.com/dotnet/core/extensions/primitives"
+    },
+    {
+      "title": "Microsoft.Extensions.Primitives NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.Extensions.Primitives"
+    },
+    {
+      "title": ".NET Runtime GitHub Repository",
+      "url": "https://github.com/dotnet/runtime"
+    }
+  ]
+}

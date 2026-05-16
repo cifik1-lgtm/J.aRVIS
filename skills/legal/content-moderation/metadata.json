@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "content-moderation",
+  "displayName": "Content Moderation",
+  "description": "Use when identifying legal obligations for platforms hosting user-generated content. Covers intermediary liability (Section 230, EU DSA), DMCA takedown procedures, illegal content obligations, CSAM reporting requirements, and content moderation transparency mandates.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "EU Digital Services Act (EUR-Lex)",
+      "url": "https://eur-lex.europa.eu/eli/reg/2022/2065/oj"
+    },
+    {
+      "title": "U.S. Code Section 230 — Communications Decency Act",
+      "url": "https://www.law.cornell.edu/uscode/text/47/230"
+    },
+    {
+      "title": "U.S. Copyright Office — DMCA",
+      "url": "https://www.copyright.gov/dmca/"
+    }
+  ]
+}

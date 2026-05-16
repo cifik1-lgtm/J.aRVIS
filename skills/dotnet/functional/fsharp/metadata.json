@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "fsharp",
+  "displayName": "F#",
+  "description": "Use when writing F# code on .NET, leveraging functional-first programming with discriminated unions, pattern matching, computation expressions, and type inference.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "F# Official Website",
+      "url": "https://fsharp.org"
+    },
+    {
+      "title": "F# Documentation on Microsoft Learn",
+      "url": "https://learn.microsoft.com/dotnet/fsharp"
+    },
+    {
+      "title": "F# GitHub Repository",
+      "url": "https://github.com/dotnet/fsharp"
+    }
+  ]
+}

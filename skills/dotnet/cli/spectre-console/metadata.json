@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "spectre-console",
+  "displayName": "Spectre.Console",
+  "description": "Use when building rich terminal UIs in .NET with Spectre.Console. Covers tables, trees, progress bars, prompts, live rendering, markup formatting, and the Spectre.Console.Cli command framework.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Spectre.Console Documentation",
+      "url": "https://spectreconsole.net"
+    },
+    {
+      "title": "Spectre.Console GitHub Repository",
+      "url": "https://github.com/spectreconsole/spectre.console"
+    },
+    {
+      "title": "Spectre.Console NuGet Package",
+      "url": "https://www.nuget.org/packages/Spectre.Console"
+    }
+  ]
+}

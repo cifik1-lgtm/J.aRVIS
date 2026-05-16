@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "i18n",
+  "displayName": "Internationalization (i18n)",
+  "description": "Guidance for internationalization (i18n) architecture in .NET applications. USE FOR: designing i18n-ready applications, externalizing user-facing strings, building multi-language ASP.NET Core apps, Razor view localization, data annotation localization. DO NOT USE FOR: low-level culture formatting (use globalization-localization), ICU plural/gender patterns (use messageformat-net), basic resource file operations (use resources-localization).",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Globalization and Localization in ASP.NET Core",
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/localization"
+    },
+    {
+      "title": "Globalize and Localize .NET Applications",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-and-localization"
+    },
+    {
+      "title": ".NET Localization Documentation",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/localization"
+    }
+  ]
+}

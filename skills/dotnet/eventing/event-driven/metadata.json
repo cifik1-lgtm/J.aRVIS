@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "event-driven",
+  "displayName": "Event-Driven Architecture",
+  "description": "Use when designing event-driven architectures and patterns for loosely coupled, asynchronous .NET systems.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Event-Driven Architecture Style",
+      "url": "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+    },
+    {
+      "title": ".NET Microservices Architecture Guidance",
+      "url": "https://learn.microsoft.com/en-us/dotnet/architecture/microservices/"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "rebus",
+  "displayName": "Rebus",
+  "description": "Use when building message-driven .NET applications with Rebus, a lean and extensible service bus supporting multiple transports.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Rebus Official Website",
+      "url": "https://rebus.fm/"
+    },
+    {
+      "title": "Rebus GitHub Repository",
+      "url": "https://github.com/rebus-org/Rebus"
+    },
+    {
+      "title": "Rebus NuGet Package",
+      "url": "https://www.nuget.org/packages/Rebus"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "monoliths",
+  "displayName": "Monoliths",
+  "description": "Monolithic architecture patterns including modular monolith design, monolith-first strategy, and migration paths to microservices via the Strangler Fig pattern.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Martin Fowler — Monolith First",
+      "url": "https://martinfowler.com/bliki/MonolithFirst.html"
+    },
+    {
+      "title": "Monolithic Application — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Monolithic_application"
+    }
+  ]
+}

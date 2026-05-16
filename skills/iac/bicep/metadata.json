@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "bicep",
+  "displayName": "Azure Bicep",
+  "description": "Use when writing Azure Bicep templates for infrastructure deployment. Covers resource declarations, modules, parameters, outputs, and deployment commands.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Azure Bicep Documentation",
+      "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/"
+    },
+    {
+      "title": "Bicep GitHub Repository",
+      "url": "https://github.com/Azure/bicep"
+    }
+  ]
+}

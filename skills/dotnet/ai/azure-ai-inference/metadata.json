@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "azure-ai-inference",
+  "displayName": "Azure.AI.Inference",
+  "description": "Use when calling Azure-hosted AI models via the Azure.AI.Inference SDK. Covers chat completions, embeddings, streaming, model selection, and Azure AI model catalog integration.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "Azure AI Model Inference API Documentation",
+      "url": "https://learn.microsoft.com/azure/ai-studio/reference/reference-model-inference-api"
+    },
+    {
+      "title": "Azure SDK for .NET GitHub Repository",
+      "url": "https://github.com/Azure/azure-sdk-for-net"
+    },
+    {
+      "title": "Azure.AI.Inference NuGet Package",
+      "url": "https://www.nuget.org/packages/Azure.AI.Inference"
+    }
+  ]
+}

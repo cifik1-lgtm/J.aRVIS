@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "design-system",
+  "displayName": "Design System",
+  "description": "Use when building or maintaining a design system — the coordinated set of design tokens, component libraries, documentation, and tooling that ensures visual and behavioral consistency across products.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "W3C Design Tokens Community Group",
+      "url": "https://www.w3.org/community/design-tokens/"
+    },
+    {
+      "title": "Design Tokens Specification",
+      "url": "https://www.designtokens.org/"
+    }
+  ]
+}

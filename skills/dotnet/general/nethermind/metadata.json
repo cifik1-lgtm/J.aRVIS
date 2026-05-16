@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "nethermind",
+  "displayName": "Nethermind",
+  "description": "Guidance for Nethermind Ethereum client and Ethereum development in .NET. USE FOR: running Ethereum full/archive nodes, interacting with Ethereum via JSON-RPC, building Ethereum plugins, blockchain data indexing, smart contract interaction from .NET, EVM chain development. DO NOT USE FOR: Solidity smart contract authoring (use Foundry/Hardhat), front-end dApp UI (use JavaScript/TypeScript), non-EVM blockchains, cryptocurrency trading bots.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Nethermind Documentation",
+      "url": "https://docs.nethermind.io/"
+    },
+    {
+      "title": "Nethermind GitHub Repository",
+      "url": "https://github.com/NethermindEth/nethermind"
+    },
+    {
+      "title": "Nethermind Official Website",
+      "url": "https://www.nethermind.io/"
+    }
+  ]
+}

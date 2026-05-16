@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "orchard-cms",
+  "displayName": "Orchard CMS",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Orchard Core Documentation",
+      "url": "https://docs.orchardcore.net/"
+    },
+    {
+      "title": "Orchard Core GitHub Repository",
+      "url": "https://github.com/OrchardCMS/OrchardCore"
+    },
+    {
+      "title": "OrchardCore.Application.Cms.Targets NuGet Package",
+      "url": "https://www.nuget.org/packages/OrchardCore.Application.Cms.Targets"
+    }
+  ]
+}

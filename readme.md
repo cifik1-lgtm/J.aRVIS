@@ -32,9 +32,9 @@ Real-time, supervised oversight of the system's autonomous activities. The Hive 
 Direct physical awareness. JARVIS scans the USB bus for cameras, monitors display configurations, and uses OpenCV/MediaPipe for real-time gesture control and face recognition.
 *   **Tools:** `detect_cameras`, `detect_monitors`, `gesture_control`, `face_manager`
 
-### 7. 🛡️ **The Hunter (Security Audit)**
-An autonomous security operative. JARVIS can clone GitHub repositories and perform full security audits (SQLi, XSS, etc.), verify vulnerabilities with LLMs, and create patches automatically.
-*   **Tool:** `hunt_bugs`
+### 7. 🛡️ **The Guardian (Advanced Security Operative)**
+A specialized cyber-security suite. With over **5,300+ Pentest-specific skills**, JARVIS can perform professional vulnerability assessments, compliance audits, and security architecture reviews autonomously.
+*   **Tool:** `hunt_bugs`, `security_audit`
 
 ### 8. 🧬 **The Universal Polymath (Expert Skills Library)**
 A massive library of **340+ modular AI skills** and 1,700+ reference files. JARVIS consults this professional DNA to act as a specialist in Science, Architecture, ML, Security, and more.

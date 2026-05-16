@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "restsharp",
+  "displayName": "RestSharp",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "RestSharp Documentation",
+      "url": "https://restsharp.dev/"
+    },
+    {
+      "title": "RestSharp GitHub Repository",
+      "url": "https://github.com/restsharp/RestSharp"
+    },
+    {
+      "title": "RestSharp NuGet Package",
+      "url": "https://www.nuget.org/packages/RestSharp"
+    }
+  ]
+}

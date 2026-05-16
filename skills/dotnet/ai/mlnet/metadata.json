@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "mlnet",
+  "displayName": "ML.NET",
+  "description": "Use when building custom machine learning models in .NET with ML.NET. Covers data loading, training pipelines, prediction engines, AutoML, model evaluation, and deployment for classification, regression, clustering, and anomaly detection.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "ML.NET Documentation",
+      "url": "https://learn.microsoft.com/dotnet/machine-learning"
+    },
+    {
+      "title": "ML.NET GitHub Repository",
+      "url": "https://github.com/dotnet/machinelearning"
+    },
+    {
+      "title": "Microsoft.ML NuGet Package",
+      "url": "https://www.nuget.org/packages/Microsoft.ML"
+    }
+  ]
+}

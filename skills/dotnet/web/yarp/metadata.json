@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "yarp",
+  "displayName": "YARP",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "YARP Documentation",
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/yarp/getting-started"
+    },
+    {
+      "title": "YARP GitHub Repository",
+      "url": "https://github.com/dotnet/yarp"
+    },
+    {
+      "title": "Yarp.ReverseProxy NuGet Package",
+      "url": "https://www.nuget.org/packages/Yarp.ReverseProxy"
+    }
+  ]
+}

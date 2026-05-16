@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "well-architected",
+  "displayName": "Well-Architected Frameworks",
+  "description": "Cloud well-architected frameworks from AWS, Azure, and GCP -- covering pillars, design principles, review processes, and cross-cloud comparison for building reliable, secure, cost-effective cloud workloads.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "AWS Well-Architected Framework",
+      "url": "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html"
+    },
+    {
+      "title": "Microsoft Azure Well-Architected Framework",
+      "url": "https://learn.microsoft.com/en-us/azure/well-architected/"
+    },
+    {
+      "title": "Google Cloud Architecture Framework",
+      "url": "https://cloud.google.com/architecture/framework"
+    }
+  ]
+}

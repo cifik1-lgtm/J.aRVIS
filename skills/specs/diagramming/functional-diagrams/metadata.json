@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "name": "functional-diagrams",
+  "displayName": "Functional Diagrams",
+  "description": "Use when creating data flow diagrams (DFD), functional decomposition trees, IDEF0 diagrams, or BPMN process models. Covers process-oriented and data-oriented diagram types for analyzing system behavior and data transformation.",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "OMG Business Process Model and Notation (BPMN) Specification",
+      "url": "https://www.omg.org/spec/BPMN/"
+    },
+    {
+      "title": "Data-Flow Diagram — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Data-flow_diagram"
+    }
+  ]
+}

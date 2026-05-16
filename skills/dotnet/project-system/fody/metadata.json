@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "fody",
+  "displayName": "Fody",
+  "description": "",
+  "author": "Tyler-R-Kendrick",
+  "license": "MIT",
+  "date": "February 2026",
+  "compatibility": [
+    "claude",
+    "copilot",
+    "cursor"
+  ],
+  "references": [
+    {
+      "title": "Fody GitHub Repository",
+      "url": "https://github.com/Fody/Fody"
+    },
+    {
+      "title": "Fody Home and Documentation",
+      "url": "https://github.com/Fody/Home"
+    },
+    {
+      "title": "Fody NuGet Package",
+      "url": "https://www.nuget.org/packages/Fody"
+    }
+  ]
+}
