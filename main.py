@@ -1833,6 +1833,8 @@ def main():
             start_telegram_bot(get_queue(), ui.write_log)
             from actions.ghost_relay import start_ghost_relay
             start_ghost_relay(get_queue(), ui.write_log)
+            from actions.skill_cockpit import start_skill_cockpit
+            start_skill_cockpit(ui.write_log)
         except Exception as e:
             print(f"Background services could not start: {e}")
         
