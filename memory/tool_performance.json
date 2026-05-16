@@ -1,13 +1,13 @@
 {
     "project_architect": {
-        "calls": 2,
-        "avg_time": 0.1626594066619873,
+        "calls": 4,
+        "avg_time": 0.11819040775299072,
         "success_rate": 100.0,
         "failures": 0
     },
     "neural_fusion": {
-        "calls": 1,
-        "avg_time": 0.003996133804321289,
+        "calls": 2,
+        "avg_time": 5.062694668769836,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -26,6 +26,18 @@
     "remote_command": {
         "calls": 1,
         "avg_time": 0.015001773834228516,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "computer_settings": {
+        "calls": 4,
+        "avg_time": 5.5594329833984375,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "hot_reload": {
+        "calls": 1,
+        "avg_time": 0.002997875213623047,
         "success_rate": 100.0,
         "failures": 0
     }

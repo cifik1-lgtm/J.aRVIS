@@ -80,12 +80,12 @@ class NeuralFusion:
             
             # This code is now ready to be sent to the Brain (LLM) 
             # The Planner will use this to generate a new action file.
-            return f"DNA Sequence for `{target_file_name}` extracted successfully. I am ready to materialize this logic into our core, sir.\n\n\n{external_code[:1000]}...\n"
+            return f"DNA Sequence for `{target_file_name}` extracted successfully. I am ready to materialize this logic into our core, sir.\n\n```python\n{external_code[:1000]}...\n```"
 
         except Exception as e:
             return f"DNA Extraction failed: {e}"
 
-def neural_fusion(parameters, base_dir=None, **kwargs):
+def neural_fusion(parameters, base_dir=None):
     action = parameters.get("action", "analyze")
     fusion = NeuralFusion(base_dir)
     

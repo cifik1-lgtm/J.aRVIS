@@ -242,7 +242,8 @@ if not API_CONFIG_PATH.exists():
                 "network": {
                     "EVA": "TOKEN_FOR_EVA",
                     "OFFICE": "TOKEN_FOR_OFFICE"
-                }
+                },
+                "ollama_timeout": 180 # ADDED: Increased timeout for Ollama operations to prevent read timeout errors.
             }, f, indent=4)
 
 LIVE_MODEL          = "models/gemini-2.5-flash-native-audio-preview-12-2025"
