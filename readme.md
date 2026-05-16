@@ -6,7 +6,7 @@
 
 ---
 
-## 🏛️ **The Six Pillars of Supremacy**
+## 🏛️ **The Seven Pillars of Supremacy**
 
 ### 1. 🏗️ **The Architect (Project Scaffolding)**
 JARVIS is a Lead Software Engineer. He can autonomously scaffold entire professional projects (Python, Web, Node) with complete directory structures, professional boilerplate, `.gitignore`, and automatic Git initialization.
@@ -20,15 +20,19 @@ A unified control protocol for multi-device environments. JARVIS synchronizes co
 JARVIS possesses a biological "Immune System." He detects his own runtime crashes, parses tracebacks, and uses a specialized coding LLM to **patch his own source code** in real-time without human intervention.
 *   **Tool:** `self_fix`, `ErrorHandler`
 
-### 4. 👻 **The Ghost (Silent Research)**
-An invisible, background web agent that performs deep research, data extraction, and visual analysis without ever opening a visible browser window.
+### 4. 👻 **The Ghost (Smart Autonomous Research)**
+An invisible, background web agent that performs deep research, data extraction, and visual analysis. Now equipped with **Smart-Routing**: it intelligently detects if an input is a URL or a raw text query and auto-navigates to the most relevant source without human formatting.
 *   **Tool:** `ghost_browser`
 
-### 5. 📸 **The Sentinel (Vision & Hardware)**
+### 5. 🛰️ **The Command Center (Hive Dashboard)**
+Real-time, supervised oversight of the system's autonomous activities. The Hive Dashboard (Gradio-powered) provides a live telemetry stream of active goals, self-healing repairs, and neural skill synchronizations.
+*   **Monitor:** `http://127.0.0.1:18788`
+
+### 6. 📸 **The Sentinel (Vision & Hardware)**
 Direct physical awareness. JARVIS scans the USB bus for cameras, monitors display configurations, and uses OpenCV/MediaPipe for real-time gesture control and face recognition.
 *   **Tools:** `detect_cameras`, `detect_monitors`, `gesture_control`, `face_manager`
 
-### 6. 🛡️ **The Hunter (Security Audit)**
+### 7. 🛡️ **The Hunter (Security Audit)**
 An autonomous security operative. JARVIS can clone GitHub repositories and perform full security audits (SQLi, XSS, etc.), verify vulnerabilities with LLMs, and create patches automatically.
 *   **Tool:** `hunt_bugs`
 

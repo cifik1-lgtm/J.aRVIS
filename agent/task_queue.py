@@ -3,6 +3,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Callable, Any
 
 
@@ -47,6 +48,16 @@ class TaskQueue:
         self._active_count   = 0
         self._executor       = None
         self.dispatcher      = None  
+        self.base_dir        = Path(__file__).resolve().parent.parent
+        self.telemetry_file  = self.base_dir / "memory" / "task_queue_telemetry.json"
+
+    def _save_telemetry(self):
+        try:
+            data = self.get_all_statuses()
+            # Only keep the last 50 tasks in history
+            self.telemetry_file.write_text(json.dumps(data[-50:], indent=2), encoding="utf-8")
+        except:
+            pass
 
     def _get_executor(self):
         if self._executor is None:
@@ -131,6 +142,7 @@ class TaskQueue:
             self._queue.sort(key=lambda t: (t.priority, t.created_at))
             self._tasks[task_id] = task
             self._condition.notify()
+        self._save_telemetry()
 
         print(f"[TaskQueue] 📥 Task queued: [{task_id}] {goal[:60]}")
         return task_id
@@ -244,6 +256,7 @@ class TaskQueue:
                 self._active_count -= 1
             print(f"[TaskQueue] ❌ Failed: [{task.task_id}] {e}")
 
+        self._save_telemetry()
         with self._condition:
             self._condition.notify()
 

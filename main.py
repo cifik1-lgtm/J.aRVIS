@@ -49,6 +49,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 import webrtcvad
 import psutil
+from agent.task_queue import get_queue
 
 # ── GLOBAL CONSOLE FILTER ───────────────────────────────────────────────────
 class StreamFilter:
@@ -499,8 +500,8 @@ class JarvisLive:
         self.vad = VoiceActivityDetector(aggressiveness=1)
         
         # Native Emotion Engine (Brain Emotion Integration)
-        self.emotion_engine = None
-
+        self.emotion_engine = EmotionEngine() # FIX: Initialized here, always available
+        
         # Futuristic Desktop HUD Overlay (lazy reference - created externally)
         self.hud_overlay = None
         
@@ -773,77 +774,9 @@ class JarvisLive:
         if self._handle_voice_commands(cmd):
             return
 
-        # ===== YOUTUBE COMMANDS - HIGHEST PRIORITY =====
-        
-        # Volume control
-        if "volume up" in cmd or "increase volume" in cmd:
-            amount = self._extract_number(cmd, 10)
-            result = self.youtube.volume_up(amount)
-            self.speak(result)
-            return
-        
-        if "volume down" in cmd or "decrease volume" in cmd:
-            amount = self._extract_number(cmd, 10)
-            result = self.youtube.volume_down(amount)
-            self.speak(result)
-            return
-        
-        if "set volume to" in cmd or "volume to" in cmd:
-            level = self._extract_number(cmd, 50)
-            result = self.youtube.set_volume(level)
-            self.speak(result)
-            return
-        
-        # Playback control
-        if "pause" in cmd and ("youtube" in cmd or "music" in cmd or "song" in cmd):
-            result = self.youtube.pause_playback()
-            self.speak(result)
-            return
-        
-        if "resume" in cmd or "unpause" in cmd:
-            result = self.youtube.resume_playback()
-            self.speak(result)
-            return
-        
-        if "skip ad" in cmd:
-            result = self.youtube.skip_ad()
-            self.speak(result)
-            return
-        
-        if "fullscreen" in cmd:
-            result = self.youtube.fullscreen()
-            self.speak(result)
-            return
-        
-        # Playlist commands
-        if "playlist" in cmd and "create" in cmd:
-            # Extract songs from command
-            # Example: "Create playlist with songs: Song1, Song2, Song3"
-            songs_text = cmd.split("with songs:")[-1] if "with songs:" in cmd else ""
-            if songs_text:
-                songs = [s.strip() for s in songs_text.split(",")]
-                result = self.youtube.play_playlist(songs)
-                self.speak(result)
-            return
-        
-        if "next song" in cmd or "next track" in cmd:
-            result = self.youtube.play_next_in_playlist()
-            self.speak(result)
-            return
-        
-        if "previous song" in cmd or "previous track" in cmd:
-            result = self.youtube.play_previous_in_playlist()
-            self.speak(result)
-            return
-        
-        # Play music (intercept BEFORE AI)
-        if any(word in cmd for word in ["play", "listen to", "hear"]) and \
-           any(word in cmd for word in ["youtube", "song", "music", "video", "playlist"]):
-            query = self._extract_song_name(cmd)
-            if query:
-                result = self.youtube.play_song(query)
-                self.speak(result)
-                return
+        # ===== CRITICAL LOCAL COMMANDS - HIGHEST PRIORITY, BYPASS AI =====
+        # These are immediate meta-commands for JARVIS itself or sensitive system functions.
+        # Most other functional commands should be routed through the AI (which might use tools).
 
         # Wake command - comes out of silent mode
         if any(word in cmd for word in ["wake up", "jarvis wake up", "come back", "unmute"]):
@@ -851,8 +784,6 @@ class JarvisLive:
                 self.silent_mode = False
                 self.voice_enabled = True
                 self.ui.write_log("SYS: 🔊 Voice enabled - Woke up from silent mode")
-                # If this was a voice command, the AI will likely respond anyway.
-                # If it's a text/forced command, we speak.
                 if not any(word in cmd for word in ["wake up", "unmute"]): # Minimal speak to avoid double-talk
                     self.speak("I'm back, sir.")
             elif "unmute" in cmd:
@@ -860,25 +791,10 @@ class JarvisLive:
                 self.voice_enabled = True
                 self.speak("Voice enabled, sir.")
             return
-
-        # Bug Hunter Command
-        if "hunt bounties" in cmd or "scan for bugs" in cmd:
-            repo = cmd.replace("hunt bounties", "").replace("scan for bugs", "").strip()
-            if repo:
-                self.ui.write_log(f"🦾 Starting autonomous bug hunt on: {repo}")
-                if self.session and self._loop:
-                    asyncio.run_coroutine_threadsafe(
-                        self.session.send_client_content(
-                            turns={"parts": [{"text": f"hunt_bugs repo_url={repo} action=full_audit"}]},
-                            turn_complete=True
-                        ),
-                        self._loop
-                    )
-                self.speak(f"Starting autonomous security audit on {repo}, sir.")
-            else:
-                self.speak("Which repository should I scan for bounties, sir?")
-            return
         
+        # FIX: Removed YouTube specific command handling. These will now be routed via brain_router
+        #      and trigger the youtube_manager tool via the AI, aligning with architecture.
+
         # Stop recording
         if any(word in cmd for word in ["stop recording", "end recording", "finish recording", "save recording"]):
             if self._recording_active:
@@ -926,7 +842,6 @@ class JarvisLive:
         if any(word in cmd for word in ["silent mode", "go silent", "be quiet", "stop talking"]):
             self.silent_mode = True
             self.voice_enabled = False
-            # self.ui.muted = False # Explicitly NOT muting the mic
             self.ui.write_log("SYS: 🔇 SILENT MODE ENABLED - JARVIS will not speak. Say 'wake up' to exit.")
             return
         
@@ -937,7 +852,7 @@ class JarvisLive:
             self.ui.write_log("SYS: 🔇 MICROPHONE MUTED - JARVIS is deaf.")
             return
 
-        # ===== DIRECT COMMANDS - BYPASS AI =====
+        # Direct shutdown/reboot (with confirmation flow)
         if "shutdown jarvis" in cmd or cmd == "shutdown":
             self._execute_shutdown()
             return
@@ -1054,6 +969,7 @@ class JarvisLive:
             status = "enabled" if self.gesture_enabled else "disabled"
             self.speak(f"Gesture control is {status}, sir.")
             return
+        # FIX: Removed `hunt bounties` shortcut, it will now be routed via brain_router
         elif "diagnostic" in cmd or "check models" in cmd or "system status" in cmd:
             self.ui.write_log("SYS: 🔍 Running Hive Mind Diagnostic...")
             from core.tools import ToolDispatcher
@@ -1070,28 +986,20 @@ class JarvisLive:
                 )
             return
 
-        # Semantic Routing: Face and Camera commands are now handled by tools
-        pass
-        
-        # Browser/URL commands are handled by the AI via browser_control tool.
-        # No hardcoded bypass here — avoids double-execution.
-        
         # If in silent mode, only respond to wake commands (already handled above)
         if self.silent_mode:
-            # In silent mode, we don't process other commands but we log that we ignored them
             self.ui.write_log(f"SYS: ⏸️ Silent mode active - Command ignored: {text[:50]}")
             return
         
         # Use auto-routing for everything else (Hive Mind Logic)
+        # All functional commands (e.g. YouTube, Browser, etc.) should reach here
+        # and be routed by the brain_router, which may lead to Gemini calling a tool.
         agent, response_data = self.brain_router.route_task(text)
         
         # Speak and log the response
         response_text = response_data.get("response", "")
         if response_text:
             self.speak(response_text)
-            # If it wasn't already logged by some other mechanism
-            # (though speak() often logs)
-            # self.ui.write_log(f"🧠 {agent.upper()}: {response_text[:100]}...")
         
         return
 
@@ -1281,42 +1189,33 @@ class JarvisLive:
         
         # TRIPLE-BRAIN ARCHITECTURE:
         # Gemini Live gets conversation tools + youtube_manager for direct media control.
-        # Heavy tools (Browser, Code, etc.) are only used by Expert Brains.
+        # Heavy tools (Browser, Code, etc.) are only used by Expert Brains (delegated).
         live_tools = [
-            "system_control", "delegate_task", "save_memory", "retrieve_memory",
-            "preference_manager", "get_memory_stats", "forget_weak_memories",
-            "youtube_manager",  # Unified YouTube: play, pause, volume, search, trending
-            "generate_image",  # Poe image generation (e.g. nano-banana-2)
-            "codewords_agent",  # CodeWords workflows/agents
-            "detect_monitors",  # Direct API display detection
-            "gesture_control",  # Hand gesture control
-            "camera_feed",      # Show/hide camera window
-            "camera_viewer",    # Open local camera viewer
-            "vision_inspector", # Analyze webcam/screen
-            "open_app",         # Open desktop apps
-            "web_search",       # Quick text search
-            "weather_report",   # Get weather
-            "ip_checker",       # Get IP info
-            "sms_tool",         # Send/receive SMS messages
-            "self_fix",         # AI Self-Repair tool
-            "learn_skill",      # Autonomous Skill Learning
-            "hunt_bugs",        # Security Auditing
-            "ghost_browser",    # Autonomous Web Agent
-            "system_reboot",    # Restart PC
-            "system_shutdown",  # Shutdown PC
-            "remote_command",   # Send command to other PC
-            "hive_sync",        # Teleport file to other PC
-            "hive_status",      # Get status of other PC
-            "project_architect", # Scaffold new projects
-            "shadow_audit",     # Monitor productivity
-            "hot_reload",       # Refresh tools live
-            "audio_master",     # Control sound
-            "hive_dna",         # Evolutionary skill engine
-            "update_sentinel",  # Autonomous system updates
-            "neural_fusion",    # Absorb external logic
-            "camera_scanner",   # Hardware camera discovery
-            "detect_monitors",  # Hardware display discovery
-        ]
+            "delegate_task",      # FIX: The primary tool for delegating to other brains
+            "save_memory",        # Core memory for conversation
+            "retrieve_memory",    # Core memory for conversation
+            "preference_manager", # Manage user preferences
+            "get_memory_stats",   # Informational, for conversational responses
+            "forget_weak_memories", # Maintenance, for conversational responses
+            "youtube_manager",    # Direct user interaction for media
+            "generate_image",     # Creative output for conversation
+            "codewords_agent",    # Trigger predefined agents/workflows (conversational)
+            "system_control",     # UI/state manipulation (e.g. mute, set state, not reboot/shutdown)
+            "gesture_control",    # Start/stop gesture control
+            "camera_feed",        # Show/hide camera window
+            "camera_viewer",      # Open local camera viewer
+            "vision_inspector",   # Analyze webcam/screen (conversational vision)
+            "open_app",           # Open simple desktop applications
+            "web_search",         # Quick info lookup for conversation
+            "weather_report",     # Common utility
+            "ip_checker",         # Common utility
+            "sms_tool",           # Conversational messaging
+            "self_fix",           # AI self-diagnosis/simple repair
+            "learn_skill",        # For learning conversational patterns/preferences
+            "hive_status",        # Check status of other networked PCs (informational)
+            "camera_scanner",     # Hardware discovery for camera
+            "detect_monitors",    # Hardware discovery for displays
+        ] # FIX: Reduced tool set for Gemini Live to adhere to "Voice Front-End" role, emphasizing delegation.
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
 
@@ -1386,6 +1285,7 @@ class JarvisLive:
         
         def callback(indata, frames, time_info, status):
             nonlocal last_interruption_time, interruption_count, last_reset_time, noise_floor, noise_samples
+            current_time = time.time()
 
             with self._speaking_lock:
                 jarvis_speaking = self._is_speaking
@@ -1409,12 +1309,6 @@ class JarvisLive:
                         noise_samples.pop(0)
                         noise_floor = np.mean(noise_samples) * 1.2
                         noise_floor = max(noise_floor, 1500)
-                
-                # Reset counter every 10 seconds
-                current_time = time.time()
-                if current_time - last_reset_time > 10:
-                    interruption_count = 0
-                    last_reset_time = current_time
                 
                 # Only send audio when JARVIS is NOT speaking (normal mic input)
                 if not jarvis_speaking:
@@ -1515,20 +1409,20 @@ class JarvisLive:
                                 if not self.silent_mode:
                                     self.ui.write_log(f"You: {full_in}")
                                 
-                                # Trigger _on_text_command for SYSTEM shortcuts only.
-                                # Media/YouTube commands are handled by the youtube_manager tool via Gemini.
-                                # Adding media keywords here causes double-execution (tool + interceptor).
+                                # Trigger _on_text_command for SYSTEM/META shortcuts only.
+                                # Functional commands (like YouTube) should be handled by the AI's tool calls.
                                 shortcuts = [
                                     "switch to", "force", "diagnostic", "check models", "status",
                                     "reboot", "shutdown", "autonomous", "manual", "silent mode", "wake up",
                                     "gesture control", "hand control", "activate hands",
-                                ]
+                                ] # FIX: Removed "hunt bounties" as it will now be routed via brain_router
                                 if any(s in full_in.lower() for s in shortcuts):
                                     self._on_text_command(full_in)
                             in_buf = []
                             full_out = " ".join(out_buf).strip()
                             if full_out and not self.silent_mode:
                                 # Native Emotion Analysis
+                                # Emotion engine is now initialized in __init__
                                 self.emotion_engine.analyze_async(full_in) if full_in else None
                                 emotion = self.emotion_engine.get_emotion()
                                 if self.hud_overlay: self.hud_overlay.set_emotion(emotion)
@@ -1708,9 +1602,7 @@ class JarvisLive:
                         self.session = session
                         self._loop = asyncio.get_event_loop()
                         
-                        # Initialize Emotion Engine only after connection to ensure env is ready
-                        if not self.emotion_engine:
-                            self.emotion_engine = EmotionEngine()
+                        # FIX: Emotion Engine initialized in __init__, removed redundant initialization here.
                         
                         self.audio_in_queue = asyncio.Queue()
                         self.out_queue = asyncio.Queue(maxsize=50)
@@ -1825,15 +1717,19 @@ def main():
     def runner():
         ui.wait_for_api_key()
         try:
-            from agent.task_queue import get_queue
+            from actions.routines import start_routines
+            from actions.telegram_bot import start_telegram_bot
+            from actions.ghost_relay import start_ghost_relay
+            from actions.skill_cockpit import start_skill_cockpit
+            
             start_routines(get_queue())
             start_telegram_bot(get_queue(), ui.write_log)
-            from actions.ghost_relay import start_ghost_relay
             start_ghost_relay(get_queue(), ui.write_log)
-            from actions.skill_cockpit import start_skill_cockpit
             start_skill_cockpit(ui.write_log)
         except Exception as e:
             print(f"Background services could not start: {e}")
+            import traceback
+            traceback.print_exc()
         
         jarvis = JarvisLive(ui)
         get_queue().dispatcher = jarvis.tools
@@ -1842,6 +1738,19 @@ def main():
         except KeyboardInterrupt:
             print("\n🔴 Shutting down...")
     
+    def start_dashboard():
+        import subprocess
+        import sys
+        import os
+        try:
+            print("[JARVIS] 🛰️ Launching Hive Dashboard...")
+            env = os.environ.copy()
+            env["PYTHONPATH"] = os.getcwd()
+            subprocess.Popen([sys.executable, "hive_dashboard.py"], env=env)
+        except Exception as e:
+            print(f"[JARVIS] ⚠️ Dashboard failed to start: {e}")
+
+    start_dashboard()
     threading.Thread(target=runner, daemon=True).start()
     ui.root.mainloop()
 

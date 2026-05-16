@@ -1137,7 +1137,7 @@ class ToolDispatcher:
                     from core.hive_dna import evolve_skill, get_dna
                     action = args.get("action", "report")
                     if action == "report":
-                        return get_dna(BASE_DIR).get_report()
+                        return get_dna(BASE_DIR).get_dna_report()
                     return await evolve_skill(args, jarvis=self, player=self.ui)
 
                 elif name == "audio_master":
@@ -1441,6 +1441,10 @@ class ToolDispatcher:
                     from actions.ghost_browser import ghost_browser
                     return await asyncio.get_event_loop().run_in_executor(None, lambda: ghost_browser(parameters=args, player=self.ui)) or "Done."
 
+                elif name == "weather_report":
+                    from actions.weather_report import weather_action
+                    return weather_action(parameters=args, player=self.ui)
+
                 elif name == "system_reboot":
                     from actions.computer_settings import restart_computer
                     return restart_computer() or "Rebooting system, Sir."
@@ -1458,7 +1462,22 @@ class ToolDispatcher:
                     # Update the live session tools if possible
                     if hasattr(self.orch, "update_tools"):
                         self.orch.update_tools()
-                    
+
+                    # Dashboard Telemetry
+                    try:
+                        from pathlib import Path
+                        import json
+                        from datetime import datetime
+                        base_dir = Path(__file__).resolve().parent.parent
+                        log_file = base_dir / "memory" / "hot_reload_logs.json"
+                        logs = []
+                        if log_file.exists():
+                            logs = json.loads(log_file.read_text(encoding="utf-8"))
+                        logs.append({"timestamp": datetime.now().isoformat(), "message": "Neural synchronization successful."})
+                        log_file.write_text(json.dumps(logs[-50:], indent=2), encoding="utf-8")
+                    except:
+                        pass
+                        
                     return "Neural synchronization complete, sir. My new skills are now active without a reboot."
 
                 else:

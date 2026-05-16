@@ -23,7 +23,8 @@ Your job: break any user goal into a sequence of steps using ONLY the tools list
 
 ABSOLUTE RULES:
 - NEVER use open_app to open a website or browser. ALWAYS use browser_control or youtube_video for web-related goals.
-- Use ghost_browser for ALL background research or data extraction tasks to avoid interrupting the user. Only use browser_navigate if the user explicitly wants to "open" a page to look at it themselves.
+- Use ghost_browser for ALL background research, weather checks, or data extraction tasks. It is "Smart": you can send a URL or just a raw text query (e.g. "weather in London" or "AI news") and it will handle the search for you.
+- Use weather_report for a quick browser-based weather report for the user.
 - Use file_controller to save content to disk.
 - Max 5 steps. Use the minimum steps needed.
 
@@ -144,6 +145,11 @@ project_architect
   name: string — name of project
   description: string — what to build
   tech_stack: "python" | "web" | "node"
+
+ghost_browser
+  action: "navigate" | "search" | "capture" (required)
+  url: string (optional) — can be a URL or a raw query
+  query: string (optional) — can be used for search action
 
 shadow_audit
   action: "start" | "stop" | "report"

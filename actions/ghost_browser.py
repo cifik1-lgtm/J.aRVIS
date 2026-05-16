@@ -32,14 +32,23 @@ class GhostBrowser:
         await self.page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         return self
 
-    async def navigate(self, url):
-        """Navigate to a specific URL."""
+    async def navigate(self, url_or_query):
+        """Navigate to a specific URL or perform a search if it's a query."""
         if not self.page: await self.start()
-        if not url.startswith("http"): url = f"https://{url}"
         
-        await self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        # Smart-Routing: Detect if it's a query or a URL
+        is_url = "." in url_or_query and " " not in url_or_query.strip()
+        
+        if not is_url:
+            # It's a query! Reroute to Google
+            target_url = f"https://www.google.com/search?q={url_or_query.replace(' ', '+')}"
+        else:
+            target_url = url_or_query
+            if not target_url.startswith("http"): target_url = f"https://{target_url}"
+        
+        await self.page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
         title = await self.page.title()
-        return f"Successfully navigated to '{title}' at {url}"
+        return f"Successfully navigated to '{title}' at {target_url}"
 
     async def search_and_extract(self, query):
         """Perform a search and extract the main content."""
@@ -85,6 +94,12 @@ class GhostBrowser:
                 return results.slice(0, 15); // Limit to top 15 findings
             }''')
         
+        if not content:
+            # Neural Sweep Fallback: Extract all relevant text snippets
+            text_content = await self.page.inner_text("body")
+            # Return a cleaned up preview of the page text
+            return [{"title": "Page Text Sweep", "link": self.page.url, "snippet": text_content[:1000]}]
+            
         return content
 
     async def take_screenshot(self, name="ghost_capture"):
@@ -115,7 +130,9 @@ async def ghost_browser_action(parameters: dict = None, player=None):
     try:
         await gb.start(headless=True)
         if action == "navigate":
-            result = await gb.navigate(url)
+            target = url or query # Use whichever was provided
+            if not target: return "I need a URL or query to navigate, sir."
+            result = await gb.navigate(target)
         elif action == "search":
             results = await gb.search_and_extract(query)
             if not results:

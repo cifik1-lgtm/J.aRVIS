@@ -19,24 +19,45 @@ class SelfHealingProtocol:
         self.base_dir = Path(__file__).resolve().parent.parent
         self.backups_dir = self.base_dir / "memory" / "backups"
         self.backups_dir.mkdir(exist_ok=True)
-        # Files the self-healer must NEVER overwrite (manually verified fixes)
+        # Files the self-healer must NEVER overwrite (manually verified fixes or too large for LLM)
         self.EXEMPT_FILES = {
             "audio_master.py",  # Uses EndpointVolume - LLM keeps breaking with Activate()
+            "main.py",          # Too large (1800+ lines) - LLM will timeout or corrupt it
+            "tools.py",         # Critical routing file - too large for safe LLM repair
+            "brain_router.py",  # Core routing logic - manual fixes only
         }
 
     def log(self, message):
         print(f"[SelfHealing] {message}")
         if self.ui:
             self.ui.write_log(f"🛠️ {message}")
+        
+        # Dashboard Telemetry
+        try:
+            log_file = self.base_dir / "memory" / "self_healing_logs.json"
+            logs = []
+            if log_file.exists():
+                logs = json.loads(log_file.read_text(encoding="utf-8"))
+            logs.append({"timestamp": datetime.now().isoformat(), "message": message})
+            log_file.write_text(json.dumps(logs[-100:], indent=2), encoding="utf-8")
+        except:
+            pass
 
     def create_backup(self, file_path: Path):
-        """Create a safety backup before editing"""
+        """
+        Create a safety backup before editing.
+        Uses a sanitized relative path in the backup name to avoid collisions
+        if files with the same name exist in different subdirectories.
+        """
         try:
             rel_path = file_path.relative_to(self.base_dir)
-            backup_path = self.backups_dir / f"{rel_path.name}.{datetime.now().strftime('%Y%m%d_%H%M%S')}.bak"
+            # e.g., 'core/llm_provider.py' -> 'core__llm_provider.py'
+            sanitized_name = str(rel_path).replace(os.sep, '__')
+            backup_path = self.backups_dir / f"{sanitized_name}.{datetime.now().strftime('%Y%m%d_%H%M%S')}.bak"
             shutil.copy2(file_path, backup_path)
             return backup_path
-        except:
+        except Exception as e:
+            self.log(f"Error creating backup for {file_path}: {e}")
             return None
 
     def _find_file(self, filename: str) -> Path:
@@ -89,9 +110,17 @@ class SelfHealingProtocol:
             # Use a powerful model for coding
             fixed_code = call_llm(prompt, system_prompt="You are an expert Python developer and system architect.")
             
-            # Clean output
-            if "```" in fixed_code:
-                fixed_code = re.sub(r"```[a-zA-Z]*\n?", "", fixed_code).replace("```", "").strip()
+            # Refined LLM output cleaning to reliably extract code block
+            if "" in fixed_code:
+                # This regex captures content between the first and last , optionally skipping a language specifier
+                match = re.search(r"(?:[a-zA-Z]+\n)?(.*)", fixed_code, re.DOTALL)
+                if match:
+                    fixed_code = match.group(1).strip()
+                else:
+                    # Fallback for cases where the regex might not perfectly match (e.g., only one )
+                    # or if it's a non-standard markdown block.
+                    # This will strip common variations like "", "", and extra whitespace.
+                    fixed_code = fixed_code.replace("", "").replace("", "").strip()
             
             if not fixed_code or len(fixed_code) < 10:
                 return False, "AI returned empty or invalid code."

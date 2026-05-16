@@ -19,18 +19,27 @@ def weather_action(
     when = (when or "today").strip()
 
     search_query  = f"weather in {city} {when}"
-    url           = f"https://www.google.com/search?q={quote_plus(search_query)}"
-
+    
     try:
-        opened = webbrowser.open(url)
-        if not opened:
-            raise RuntimeError("webbrowser.open returned False")
+        from .ghost_browser import GhostBrowser
+        import asyncio
+        
+        async def _run_ghost():
+            gb = GhostBrowser(player)
+            # Launch HEADFUL (headless=False) so the user can see it
+            await gb.start(headless=False)
+            await gb.navigate(search_query)
+            # We DON'T close it immediately so the user can look at the weather
+            return gb
+
+        # Start it in the background
+        asyncio.run_coroutine_threadsafe(_run_ghost(), asyncio.get_event_loop())
     except Exception as e:
-        msg = f"Sir, I couldn't open the browser for the weather report: {e}"
+        msg = f"Sir, I couldn't launch the Ghost Browser for the weather report: {e}"
         _log(msg, player)
         return msg
 
-    msg = f"Showing the weather for {city}, {when}, sir."
+    msg = f"Opening the weather for {city} in the Ghost Browser, sir."
     _log(msg, player)
 
     if session_memory:
