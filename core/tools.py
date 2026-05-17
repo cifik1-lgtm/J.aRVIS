@@ -57,7 +57,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "camera_viewer",
-        "description": "Open or close a dedicated, standalone window for a camera feed. Set action to 'stop' to close the window.",
+        "description": "Open or close a dedicated, standalone external camera window. WARNING: Only use this tool for specialized tasks like hand gesture control setup, face recognition training, or when the user explicitly requests an 'external window' or 'standalone window'. For regular requests to show or see the camera feed, always use 'camera_feed' instead to display it on the holographic HUD.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -406,7 +406,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "camera_feed",
-        "description": "Control built-in camera feed on the main HUD.",
+        "description": "The PRIMARY and DEFAULT tool to control and show the webcam feed to the user inside the main holographic HUD/dashboard. Use this when the user asks to 'show camera feed', 'start webcam', 'open camera', or 'see camera feed' inside the HUD dashboard.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -418,7 +418,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "camera_viewer",
-        "description": "Open or close a dedicated, standalone window for a camera feed. Set action to 'stop' to close the window.",
+        "description": "Open or close a dedicated, standalone external camera window. WARNING: Only use this tool for specialized tasks like hand gesture control setup, face recognition training, or when the user explicitly requests an 'external window' or 'standalone window'. For regular requests to show or see the camera feed, always use 'camera_feed' instead to display it on the holographic HUD.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
