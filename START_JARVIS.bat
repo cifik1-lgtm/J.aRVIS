@@ -23,8 +23,12 @@ call .venv\Scripts\activate
 
 :: Check if requirements need installing
 if exist "requirements.txt" (
-    echo [JARVIS] Checking dependencies...
-    pip install -r requirements.txt >nul 2>&1
+    echo [JARVIS] Checking and installing system dependencies...
+    pip install -r requirements.txt
+    if %errorlevel% neq 0 (
+        echo [WARNING] Some non-critical dependencies failed to install.
+        echo JARVIS will attempt to run anyway...
+    )
 )
 
 :: Run JARVIS

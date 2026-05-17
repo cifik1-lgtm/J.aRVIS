@@ -27,8 +27,8 @@ pyinstaller
 python-dotenv
 websockets
 tenacity
-webrtcvad
-tensorflow==2.15.0
+webrtcvad-wheels
+# tensorflow (Optional skill dependency)
 protobuf>=4.21.0,<6.0.0
 pyTelegramBotAPI
 paho-mqtt
@@ -38,4 +38,11 @@ scipy
 pandas
 matplotlib
 pyyaml
+mediapipe
+browser-cookie3
+screeninfo
+gradio
+chromadb
+transformers
+sentence-transformers
  # Project: Cifik Intelegents

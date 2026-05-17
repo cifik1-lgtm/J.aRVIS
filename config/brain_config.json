@@ -1,0 +1,35 @@
+{
+    "deployment_mode": "local",
+    "brains": {
+        "gemini": {
+            "enabled": false
+        },
+        "openrouter": {
+            "enabled": false
+        },
+        "groq": {
+            "enabled": false
+        },
+        "gemma": {
+            "enabled": true
+        },
+        "qwen": {
+            "enabled": true
+        },
+        "hermes": {
+            "enabled": true
+        },
+        "mellum": {
+            "enabled": true
+        },
+        "poe": {
+            "enabled": false
+        },
+        "minimax": {
+            "enabled": false
+        },
+        "pollinations": {
+            "enabled": true
+        }
+    }
+}

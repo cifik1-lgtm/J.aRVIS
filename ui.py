@@ -1377,6 +1377,187 @@ class SetupOverlay(QWidget):
         self.done.emit(key, self._sel_os)
 
 
+class SettingsOverlay(QWidget):
+    saved = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet(f"""
+            SettingsOverlay {{
+                background: rgba(0, 6, 10, 248);
+                border: 2px solid {C.BORDER_B};
+                border-radius: 8px;
+            }}
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(8)
+
+        def _lbl(txt, font_size=9, bold=False, color=C.PRI, align=Qt.AlignmentFlag.AlignCenter):
+            w = QLabel(txt)
+            w.setAlignment(align)
+            w.setFont(QFont("Courier New", font_size, QFont.Weight.Bold if bold else QFont.Weight.Normal))
+            w.setStyleSheet(f"color: {color}; background: transparent; border: none;")
+            return w
+
+        # Header
+        layout.addWidget(_lbl("⚙️  SYSTEM SETTINGS & COGNITIVE PATHS", 12, True))
+        layout.addWidget(_lbl("Adjust neural network credentials and integrations.", 8, color=C.PRI_DIM))
+        layout.addSpacing(6)
+
+        sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet(f"border: none; background-color: {C.BORDER}; height: 1px;")
+        layout.addWidget(sep)
+        
+        # Scroll Area for all the keys
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet(f"""
+            QScrollArea {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: {C.BG};
+                width: 6px;
+                border: none;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {C.BORDER_B};
+                border-radius: 3px;
+            }}
+        """)
+        
+        scroll_content = QWidget()
+        scroll_content.setStyleSheet("background: transparent; border: none;")
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(0, 0, 8, 0)
+        scroll_layout.setSpacing(6)
+        
+        # Helper to create styled label + line edit
+        self._inputs = {}
+        
+        def _add_section(title):
+            lbl = _lbl(f"▪ {title}", 9, True, C.ACC2, Qt.AlignmentFlag.AlignLeft)
+            lbl.setStyleSheet(f"color: {C.ACC2}; margin-top: 8px; border: none;")
+            scroll_layout.addWidget(lbl)
+            
+        def _add_field(key, label_text, placeholder=""):
+            lbl = _lbl(label_text, 7, False, C.TEXT_DIM, Qt.AlignmentFlag.AlignLeft)
+            lbl.setStyleSheet(f"color: {C.TEXT_DIM}; border: none;")
+            scroll_layout.addWidget(lbl)
+            
+            inp = QLineEdit()
+            inp.setFont(QFont("Courier New", 9))
+            inp.setFixedHeight(28)
+            inp.setEchoMode(QLineEdit.EchoMode.Password)
+            inp.setPlaceholderText(placeholder)
+            inp.setStyleSheet(f"""
+                QLineEdit {{
+                    background: #000c12; color: {C.TEXT};
+                    border: 1px solid {C.BORDER}; border-radius: 3px; padding: 2px 6px;
+                }}
+                QLineEdit:focus {{ border: 1px solid {C.PRI}; }}
+            """)
+            scroll_layout.addWidget(inp)
+            self._inputs[key] = inp
+
+        # CORE COGNITIVE LLM KEYS
+        _add_section("CORE COGNITIVE CORES")
+        _add_field("gemini_api_key", "GEMINI API KEY (LIVE AUDIO & CHAT)")
+        _add_field("openrouter_api_key", "OPENROUTER API KEY (DEEP REASONING)")
+        _add_field("groq_api_key", "GROQ API KEY (FAST BACKUP)")
+
+        # ALTERNATIVE BRAIN KEYS
+        _add_section("INTEGRATION CORES")
+        _add_field("poe_api_key", "POE API KEY")
+        _add_field("minimax_api_key", "MINIMAX API KEY")
+        _add_field("pollinations_api_key", "POLLINATIONS API KEY")
+        _add_field("codewords_api_key", "CODEWORDS RUNTIME KEY")
+
+        # INTEGRATIONS & COMMUNICATIONS
+        _add_section("COMMUNICATIONS & TELEMETRY")
+        _add_field("telegram_bot_token", "TELEGRAM BOT TOKEN")
+        _add_field("telegram_chat_id", "TELEGRAM CHAT ID")
+        _add_field("smsmobileapi_key", "SMS MOBILE API KEY")
+
+        scroll.setWidget(scroll_content)
+        layout.addWidget(scroll)
+        
+        # Load Current Config Values
+        self._load_current_values()
+
+        # Action Buttons Row
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(10)
+
+        save_btn = QPushButton("▸  SAVE & SYNCHRONIZE")
+        save_btn.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        save_btn.setFixedHeight(34)
+        save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        save_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {C.GREEN};
+                border: 1px solid {C.GREEN_D}; border-radius: 3px;
+            }}
+            QPushButton:hover {{
+                background: rgba(0, 255, 136, 20); border: 1px solid {C.GREEN};
+            }}
+        """)
+        save_btn.clicked.connect(self._save_values)
+        btn_row.addWidget(save_btn)
+
+        close_btn = QPushButton("✕  CLOSE")
+        close_btn.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        close_btn.setFixedHeight(34)
+        close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        close_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {C.TEXT_DIM};
+                border: 1px solid {C.BORDER}; border-radius: 3px;
+            }}
+            QPushButton:hover {{
+                color: {C.WHITE}; border: 1px solid {C.BORDER_B};
+            }}
+        """)
+        close_btn.clicked.connect(self.close)
+        btn_row.addWidget(close_btn)
+
+        layout.addLayout(btn_row)
+
+    def _load_current_values(self):
+        if API_FILE.exists():
+            try:
+                data = json.loads(API_FILE.read_text(encoding="utf-8"))
+                for key, inp in self._inputs.items():
+                    val = data.get(key, "")
+                    inp.setText(str(val))
+            except Exception as e:
+                print(f"[HUD] Error loading config into settings UI: {e}")
+
+    def _save_values(self):
+        data = {}
+        if API_FILE.exists():
+            try:
+                data = json.loads(API_FILE.read_text(encoding="utf-8"))
+            except:
+                pass
+        
+        # Merge updated input values
+        for key, inp in self._inputs.items():
+            data[key] = inp.text().strip()
+
+        try:
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            API_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
+            self.saved.emit()
+            self.close()
+        except Exception as e:
+            print(f"[HUD] Failed to write updated settings: {e}")
+
+
 class MainWindow(QMainWindow):
     _log_sig   = pyqtSignal(str)
     _state_sig = pyqtSignal(str)
@@ -1492,7 +1673,7 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if self._overlay and self._overlay.isVisible():
-            ow, oh = 460, 390
+            ow, oh = self._overlay.width(), self._overlay.height()
             cw = self.centralWidget()
             self._overlay.setGeometry(
                 (cw.width()  - ow) // 2,
@@ -1776,6 +1957,22 @@ class MainWindow(QMainWindow):
         reboot_btn.clicked.connect(lambda: self.on_text_command("reboot jarvis") if self.on_text_command else None)
         sys_row.addWidget(reboot_btn)
         
+        settings_btn = QPushButton("⚙️  SETTINGS")
+        settings_btn.setFixedHeight(26)
+        settings_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        settings_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {C.PRI};
+                border: 1px solid {C.BORDER}; border-radius: 3px;
+            }}
+            QPushButton:hover {{
+                color: {C.BG}; background: {C.PRI};
+            }}
+        """)
+        settings_btn.clicked.connect(self._show_settings)
+        sys_row.addWidget(settings_btn)
+        
         shutdown_btn = QPushButton("🔴  SHUTDOWN")
         shutdown_btn.setFixedHeight(26)
         shutdown_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
@@ -1958,6 +2155,28 @@ class MainWindow(QMainWindow):
             self._overlay = None
         self._apply_state("LISTENING")
         self._log.append_log(f"SYS: Initialised. OS={os_name.upper()}. JARVIS online.")
+
+    def _show_settings(self):
+        if self._overlay:
+            self._overlay.close()
+            self._overlay = None
+            
+        ov = SettingsOverlay(self.centralWidget())
+        cw = self.centralWidget()
+        ow, oh = 540, 520
+        ov.setGeometry(
+            (cw.width()  - ow) // 2,
+            (cw.height() - oh) // 2,
+            ow, oh,
+        )
+        ov.saved.connect(self._on_settings_saved)
+        ov.show()
+        self._overlay = ov
+
+    def _on_settings_saved(self):
+        self._log.append_log("SYS: Settings updated and synchronized.")
+        if hasattr(self, "jarvis_live") and self.jarvis_live:
+            self.jarvis_live.reload_config()
 
 class _RootShim:
     def __init__(self, app: QApplication):

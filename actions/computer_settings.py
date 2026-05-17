@@ -441,6 +441,41 @@ def open_run():
     if _OS == "Windows":
         pyautogui.hotkey("win", "r")
 
+
+def open_app_by_name(app_name: str) -> str:
+    """Launch any application silently in the background (no popup window)."""
+    if not app_name:
+        return "No app name provided."
+    app = app_name.strip()
+    try:
+        if _OS == "Windows":
+            si = subprocess.STARTUPINFO()
+            si.dwFlags = subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = 2  # SW_SHOWMINIMIZED — goes straight to taskbar, no popup
+            subprocess.Popen(
+                app,
+                shell=True,
+                startupinfo=si,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        elif _OS == "Darwin":
+            # -g = background, don't bring to foreground
+            result = subprocess.run(["open", "-g", "-a", app], capture_output=True, text=True)
+            if result.returncode != 0:
+                subprocess.Popen([app], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.Popen(
+                [app],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+        return f"Launched (background): {app}"
+    except Exception as e:
+        return f"Could not launch '{app}': {e}"
+
+
 def dark_mode():
     if _OS == "Darwin":
         subprocess.run(["osascript", "-e",
@@ -644,6 +679,10 @@ ACTION_MAP: dict[str, callable] = {
     "monitor_performance":   open_resource_monitor,
     "performance_monitor":   open_resource_monitor,
     "resource_monitor":      open_resource_monitor,
+    # App launching — delegates to open_app_by_name(), handled specially in computer_settings()
+    "open_app":            None,
+    "launch_app":          None,
+    "start_app":           None,
 }
 
 _DANGEROUS_ACTIONS = {"restart", "shutdown"}
@@ -753,6 +792,26 @@ def computer_settings(
                 f"Please confirm by calling again with confirmed=yes."
             )
 
+    # --- open_app: launch any named application ---
+    if action in ("open_app", "launch_app", "start_app"):
+        app_name = str(
+            params.get("app_name") or params.get("name") or value or ""
+        ).strip()
+        return open_app_by_name(app_name)
+
+    # --- create_directory: redirect to file_controller ---
+    if action in ("create_directory", "mkdir", "make_directory"):
+        path  = params.get("path", "")
+        name  = params.get("name", "")
+        target = f"{path}/{name}" if name else path
+        try:
+            import os
+            full = Path(target.replace("desktop", str(Path.home() / "Desktop")))
+            full.mkdir(parents=True, exist_ok=True)
+            return f"Directory created: {full}"
+        except Exception as e:
+            return f"Could not create directory '{target}': {e}. Use file_controller instead."
+
     if action == "volume_set":
         try:
             volume_set(int(value or 50))
@@ -803,6 +862,13 @@ def computer_settings(
         "reload_n",
         "reload_page_n",
         "refresh_n",
+        # Directly handled above — no need for intent remap
+        "open_app",
+        "launch_app",
+        "start_app",
+        "create_directory",
+        "mkdir",
+        "make_directory",
     }
     func = ACTION_MAP.get(action)
     if (

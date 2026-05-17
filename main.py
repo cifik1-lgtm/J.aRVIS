@@ -579,6 +579,8 @@ class JarvisLive:
                 warm_up_all_local_brains()
         except: pass
 
+        self.ui.jarvis_live = self
+
     def _detect_engines(self):
         """Check which AI engines are available and update UI/Logs."""
         engines = self.brain_router.detect_engines()
@@ -734,6 +736,39 @@ class JarvisLive:
                 if auto_confirm is not None:
                     self.auto_confirm_destructive = auto_confirm
         except: pass
+
+    def reload_config(self):
+        """Reload configurations from api_keys.json and update brain engines/live session."""
+        print("[JARVIS] ⚙️ Reloading configuration from api_keys.json...")
+        try:
+            with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                self.autonomous_enabled = config.get("autonomous_mode", True)
+                self.auto_confirm_destructive = config.get("auto_confirm_destructive", False)
+                self.learning_enabled = config.get("learning_enabled", True)
+                
+                brain = config.get("force_brain", "gemini").lower()
+                if brain == "local":
+                    self.force_local = True
+                    self.force_openrouter = False
+                elif brain == "openrouter":
+                    self.force_local = True
+                    self.force_openrouter = True
+                else:
+                    self.force_local = False
+                    self.force_openrouter = False
+        except Exception as e:
+            print(f"[JARVIS] ⚠️ Failed to load updated config: {e}")
+
+        # Re-detect active brain engines
+        if hasattr(self, "brain_router") and self.brain_router:
+            self._detect_engines()
+
+        # Reconnect live audio session to pick up new key
+        if self.session:
+            print("[JARVIS] 🔄 Reconnecting cloud live audio session...")
+            if self._loop and self._loop.is_running():
+                asyncio.run_coroutine_threadsafe(self.session.close(), self._loop)
 
     def _handle_voice_commands(self, text: str) -> bool:
         """Handle specific voice-triggered commands locally"""
@@ -1191,7 +1226,7 @@ class JarvisLive:
         # Gemini Live gets conversation tools + youtube_manager for direct media control.
         # Heavy tools (Browser, Code, etc.) are only used by Expert Brains (delegated).
         live_tools = [
-            "delegate_task",      # FIX: The primary tool for delegating to other brains
+            "delegate_task",      # The primary tool for delegating to other brains
             "save_memory",        # Core memory for conversation
             "retrieve_memory",    # Core memory for conversation
             "preference_manager", # Manage user preferences
@@ -1205,7 +1240,9 @@ class JarvisLive:
             "camera_feed",        # Show/hide camera window
             "camera_viewer",      # Open local camera viewer
             "vision_inspector",   # Analyze webcam/screen (conversational vision)
-            "open_app",           # Open simple desktop applications
+            "open_app",           # Open simple desktop applications (background)
+            "shell_runner",       # PRIMARY: Execute shell/terminal commands silently (mkdir, pip, git, scripts)
+            "file_controller",    # File read/write/move/copy/delete via Python (no shell needed)
             "web_search",         # Quick info lookup for conversation
             "weather_report",     # Common utility
             "ip_checker",         # Common utility
@@ -1215,7 +1252,7 @@ class JarvisLive:
             "hive_status",        # Check status of other networked PCs (informational)
             "camera_scanner",     # Hardware discovery for camera
             "detect_monitors",    # Hardware discovery for displays
-        ] # FIX: Reduced tool set for Gemini Live to adhere to "Voice Front-End" role, emphasizing delegation.
+        ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
 
@@ -1550,16 +1587,15 @@ class JarvisLive:
                 print(f"[JARVIS] Proactive checker error: {e}")
 
     async def run(self):
-        client = genai.Client(
-            api_key=_get_api_key(),
-            http_options={"api_version": "v1beta"}
-        )
-        
         reconnect_delay = 1
         max_reconnect_delay = 30
         
         while True:
             try:
+                client = genai.Client(
+                    api_key=_get_api_key(),
+                    http_options={"api_version": "v1beta"}
+                )
                 import socket
                 try:
                     socket.create_connection(("8.8.8.8", 53), timeout=2)
@@ -1695,6 +1731,15 @@ class JarvisLive:
 
 
 def main():
+    # Post-Install, First-Run API Setup Wizard
+    try:
+        import api_setup_wizard
+        if api_setup_wizard.needs_setup():
+            print("[JARVIS] ⚙️ Incomplete configuration detected. Launching Post-Install Setup Wizard...")
+            api_setup_wizard.run_setup_wizard()
+    except Exception as e:
+        print(f"[JARVIS] ⚠️ Setup Wizard failed: {e}")
+
     try:
         from memory.memory_manager import get_memory_stats, forget_weak_memories, get_memory_manager
         

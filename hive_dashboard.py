@@ -11,6 +11,35 @@ MEMORY_DIR = BASE_DIR / "memory"
 TASK_FILE = MEMORY_DIR / "task_queue_telemetry.json"
 HEALING_FILE = MEMORY_DIR / "self_healing_logs.json"
 RELOAD_FILE = MEMORY_DIR / "hot_reload_logs.json"
+API_FILE = BASE_DIR / "config" / "api_keys.json"
+
+def load_settings():
+    if API_FILE.exists():
+        try:
+            return json.loads(API_FILE.read_text(encoding="utf-8"))
+        except: pass
+    return {}
+
+def save_settings(gemini, openrouter, groq, telegram_token, telegram_chat, sms_key):
+    data = {}
+    if API_FILE.exists():
+        try:
+            data = json.loads(API_FILE.read_text(encoding="utf-8"))
+        except: pass
+    
+    data["gemini_api_key"] = gemini
+    data["openrouter_api_key"] = openrouter
+    data["groq_api_key"] = groq
+    data["telegram_bot_token"] = telegram_token
+    data["telegram_chat_id"] = telegram_chat
+    data["smsmobileapi_key"] = sms_key
+
+    try:
+        API_FILE.parent.mkdir(exist_ok=True)
+        API_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
+        return "🟢 Settings saved successfully! The HUD will synchronize in real-time."
+    except Exception as e:
+        return f"🔴 Failed to save settings: {e}"
 
 def get_tasks():
     try:
@@ -77,6 +106,31 @@ with gr.Blocks(fill_height=True, title="JARVIS HIVE COMMAND") as demo:
                 datatype=["str", "str"],
                 value=get_reloads(),
                 interactive=False
+            )
+            
+        with gr.Tab("⚙️ System Cores"):
+            gr.Markdown("### ⚙️ **J.A.R.V.I.S Neural Settings**")
+            cfg = load_settings()
+            
+            with gr.Group():
+                gr.Markdown("#### **Primary AI Cognitive Cores**")
+                gemini_input = gr.Textbox(label="Gemini API Key", value=cfg.get("gemini_api_key", ""), type="password")
+                or_input = gr.Textbox(label="OpenRouter API Key", value=cfg.get("openrouter_api_key", ""), type="password")
+                groq_input = gr.Textbox(label="Groq API Key", value=cfg.get("groq_api_key", ""), type="password")
+                
+            with gr.Group():
+                gr.Markdown("#### **Communications & Telemetry**")
+                tg_token_input = gr.Textbox(label="Telegram Bot Token", value=cfg.get("telegram_bot_token", ""), type="password")
+                tg_chat_input = gr.Textbox(label="Telegram Chat ID", value=cfg.get("telegram_chat_id", ""))
+                sms_input = gr.Textbox(label="SMS Mobile API Key", value=cfg.get("smsmobileapi_key", ""), type="password")
+                
+            save_status = gr.Markdown()
+            save_settings_btn = gr.Button("💾 Save and Synchronize Settings", variant="primary")
+            
+            save_settings_btn.click(
+                save_settings, 
+                inputs=[gemini_input, or_input, groq_input, tg_token_input, tg_chat_input, sms_input], 
+                outputs=[save_status]
             )
 
     def update_all():

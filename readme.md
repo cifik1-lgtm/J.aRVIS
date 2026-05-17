@@ -88,16 +88,39 @@ graph TD
 
 ## 🛠️ **Installation & Deployment**
 
-### Prerequisites
-- **OS:** Windows 10/11 (Optimized for Multi-Monitor & AMD GPU)
-- **Hardware:** AMD RX 580 (Vulcan/DirectML) or NVIDIA equivalent.
-- **Python:** 3.10+
+JARVIS supports simple and streamlined deployment options for all environments:
 
-### Setup
-1. Clone the repository: `git clone https://github.com/cifik1-lgtm/J.aRVIS.git`
-2. Install dependencies: `pip install -r requirements.txt`
-3. Configure API keys in `config/api_keys.json`.
-4. Run the Core: `python main.py`
+### 💿 **Option 1: Complete Setup Wizard (Recommended)**
+Perfect for standard Windows environments. Package installer is fully compiled:
+1. Run **[JARVIS_Setup.exe](file:///c:/Users/eva/Desktop/JARVIS_SHARE/CifikAI/JARVIS_Setup.exe)**.
+2. Select your custom installation folder and configure whether to launch JARVIS on system boot.
+3. The setup tool automatically provisions your virtual environment, registers libraries, and installs dependency wheels.
+
+### 🐍 **Option 2: Command Line Setup**
+For developers and advanced command line environments:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/cifik1-lgtm/J.aRVIS.git
+   cd J.aRVIS
+   ```
+2. **Execute Launcher:** Run `START_JARVIS.bat`. The bootloader automatically creates a local virtual environment (`.venv`), resolves all native precompiled binary requirements, and boots the system.
+
+---
+
+## 🦾 **The Cybernetic Brain Setup Wizard**
+
+On first launch, JARVIS initiates a beautiful, high-tech holographic **PyQt6 Configuration Wizard** to coordinate your 10-Brain architecture.
+
+### 🌐 **Deployment Modes**
+*   🟢 **Local Only:** Forces completely offline operation. All cloud APIs are shut off, and tasks are routed entirely to local Ollama specialists (Gemma 4, Qwen 3.5, etc.). No keys needed!
+*   ☁️ **Cloud Only:** Shuts down local pipelines and routes prompts to high-performance remote APIs.
+*   ⚡ **Hybrid (Recommended):** The cognitive router automatically falls back to local neural networks if your internet is down or cloud keys are missing.
+*   🎛️ **Manual Select:** Advanced mode to explicitly enable or disable each of the 10 brains individually.
+
+### 🚦 **Real-Time Validation & Diagnostics**
+*   **Ollama Connectivity:** The wizard automatically pings your local Ollama server, checking downloaded packages and showing real-time status flags (`🟢 RUNNING`, `⚠️ MODEL MISSING`, `⚠️ OLLAMA OFFLINE`).
+*   **API Key Masking:** Masked key inputs with visual toggles (`👁️`) to verify tokens securely.
+*   **Persistent Config Syncing:** Synchronizes choices across `config/brain_config.json` and updates the active routing matrix immediately without restarts.
 
 ---
 

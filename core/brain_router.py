@@ -79,6 +79,34 @@ class BrainRouter:
             print(f"[BrainRouter] [WARN] Ollama detection failed: {e}")
             self.engines['ollama'] = False
         
+        # Apply granular brain config permissions if brain_config.json exists
+        try:
+            brain_cfg_path = self.config_path.parent / "brain_config.json"
+            if brain_cfg_path.exists():
+                with open(brain_cfg_path, "r", encoding="utf-8") as f:
+                    b_cfg = json.load(f)
+                
+                mode = b_cfg.get("deployment_mode", "hybrid")
+                brains_perm = b_cfg.get("brains", {})
+                
+                for bid, value in brains_perm.items():
+                    enabled = value.get("enabled", True)
+                    if not enabled:
+                        if bid in self.engines:
+                            self.engines[bid] = False
+                            
+                # If Local Only mode, force disable all cloud engines explicitly
+                if mode == "local":
+                    for cloud_bid in ['gemini', 'openrouter', 'groq', 'poe', 'minimax', 'codewords', 'llm7', 'pollinations']:
+                        if cloud_bid in self.engines:
+                            self.engines[cloud_bid] = False
+                elif mode == "cloud":
+                    for local_bid in ['gemma', 'qwen', 'mellum', 'hermes', 'ollama']:
+                        if local_bid in self.engines:
+                            self.engines[local_bid] = False
+        except Exception as e:
+            print(f"[BrainRouter] [WARN] Failed to apply brain_config masking: {e}")
+            
         return self.engines
 
     def set_forced_brain(self, brain_name: str):
