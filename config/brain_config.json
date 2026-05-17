@@ -1,14 +1,14 @@
 {
-    "deployment_mode": "local",
+    "deployment_mode": "hybrid",
     "brains": {
         "gemini": {
-            "enabled": false
+            "enabled": true
         },
         "openrouter": {
-            "enabled": false
+            "enabled": true
         },
         "groq": {
-            "enabled": false
+            "enabled": true
         },
         "gemma": {
             "enabled": true
@@ -23,10 +23,10 @@
             "enabled": true
         },
         "poe": {
-            "enabled": false
+            "enabled": true
         },
         "minimax": {
-            "enabled": false
+            "enabled": true
         },
         "pollinations": {
             "enabled": true

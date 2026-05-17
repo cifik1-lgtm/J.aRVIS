@@ -171,15 +171,17 @@ def warm_up_all_local_brains():
         return
         
     def warm_up_task():
-        # Cloud-proxied models
+        # Cloud-proxied models (Lightweight wrappers - safe to warmup)
         warm_up_gemma_cloud()
         warm_up_nemotron_cloud()
         warm_up_glm_cloud()
-        # Local fallback models
-        warm_up_hermes()
-        warm_up_gemma()
-        warm_up_qwen()
-        warm_up_mellum()
-        print("[Ollama] ✅ All local and cloud brains warmed up.")
+        
+        # Local fallback models (Heavy VRAM usage)
+        # Skip aggressive warmup to prevent VRAM OOM crashes!
+        # warm_up_hermes()
+        # warm_up_gemma()
+        # warm_up_qwen()
+        # warm_up_mellum()
+        print("[Ollama] ✅ All cloud brains warmed up. Local brains will load on-demand.")
 
     threading.Thread(target=warm_up_task, daemon=True).start()
