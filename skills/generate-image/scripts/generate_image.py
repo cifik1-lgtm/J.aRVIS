@@ -35,6 +35,18 @@ def check_env_file() -> Optional[str]:
     return None
 
 
+def check_pollinations_api_key() -> Optional[str]:
+    """Check if config/api_keys.json exists and contains pollinations_api_key."""
+    try:
+        config_path = Path(__file__).resolve().parent.parent.parent.parent / "config" / "api_keys.json"
+        if config_path.exists():
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f).get("pollinations_api_key", None)
+    except Exception:
+        pass
+    return None
+
+
 def load_image_as_base64(image_path: str) -> str:
     """Load an image file and return it as a base64 data URL."""
     path = Path(image_path)
@@ -97,6 +109,54 @@ def generate_image(
     except ImportError:
         print("Error: 'requests' library not found. Install with: pip install requests")
         sys.exit(1)
+
+    pollinations_key = check_pollinations_api_key()
+    
+    # Intercept Pollinations.ai routing
+    is_pollinations = (
+        model.startswith("pollinations") or 
+        model == "flux" or 
+        (not api_key and pollinations_key and not check_env_file())
+    )
+    
+    if is_pollinations:
+        p_key = api_key or pollinations_key
+        headers = {}
+        if p_key:
+            headers["Authorization"] = f"Bearer {p_key}"
+            
+        from urllib.parse import quote
+        # Determine model to use
+        p_model = "flux"
+        if model.startswith("pollinations/"):
+            p_model = model.replace("pollinations/", "")
+        elif model != "pollinations" and model != "flux":
+            p_model = model
+            
+        print(f"🎨 Generating image using Pollinations.ai with model: {p_model}")
+        print(f"📝 Prompt: {prompt}")
+        
+        url = f"https://image.pollinations.ai/prompt/{quote(prompt)}"
+        params = {
+            "model": p_model,
+            "width": 1024,
+            "height": 1024,
+            "seed": 42
+        }
+        
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=120)
+            if response.status_code != 200:
+                print(f"❌ Pollinations Error ({response.status_code}): {response.text}")
+                sys.exit(1)
+                
+            with open(output_path, "wb") as f:
+                f.write(response.content)
+            print(f"✅ Image saved to: {output_path}")
+            return {"status": "success", "provider": "pollinations"}
+        except Exception as e:
+            print(f"❌ Error during Pollinations generation: {e}")
+            sys.exit(1)
 
     # Check for API key
     if not api_key:

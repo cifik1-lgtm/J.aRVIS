@@ -8,14 +8,35 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 LMSTUDIO_URL = "http://localhost:1234/v1/chat/completions"
 DEFAULT_MODEL = "hermes3:8b"
 
+# Per-model timeouts (seconds). Bigger models on GPU need more time.
+_MODEL_TIMEOUTS = {
+    "qwen3.5-9b:latest":                     600,  # 10 min — 9B is slow on AMD GPU
+    "gemma-4:latest":                         600,  # 10 min — reasoning model
+    "hermes3:8b":                             300,  # 5 min
+    "jetbrains/mellum-4b-sft-kotlin:latest": 300,  # 5 min
+    "nemotron-3-super:cloud":                 300,  # 5 min — cloud model
+    "gemma4:31b-cloud":                       300,  # 5 min — cloud model
+    "glm-4.7:cloud":                          180,  # 3 min — super-fast general chat cloud model
+}
+_DEFAULT_TIMEOUT = 600  # fallback for unknown models
+
+
+def _model_timeout(model: str) -> int:
+    for key, val in _MODEL_TIMEOUTS.items():
+        if key in (model or ""):
+            return val
+    return _DEFAULT_TIMEOUT
+
+
 def call_ollama(prompt: str, system_prompt: str = "", model: str = None) -> Optional[str]:
     """
     Calls local Ollama API with specified model.
     
     Models available in your setup:
     - hermes3:8b (agentic tasks, roleplay, function calling)
-    - mistral:7b (general reasoning, math)
-    - qwen2.5-coder:7b (code generation)
+    - gemma-4:latest (reasoning, analysis)
+    - qwen3.5-9b:latest (code generation — needs up to 10min on GPU)
+    - jetbrains/mellum-4b-sft-kotlin:latest (Kotlin specialist)
     """
     
     # Load model from config if not provided
@@ -26,6 +47,8 @@ def call_ollama(prompt: str, system_prompt: str = "", model: str = None) -> Opti
             model = config.get("local_model", DEFAULT_MODEL)
         except:
             model = DEFAULT_MODEL
+
+    timeout = _model_timeout(model)
 
     payload = {
         "model": model,
@@ -39,7 +62,8 @@ def call_ollama(prompt: str, system_prompt: str = "", model: str = None) -> Opti
     }
     
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=180) # Increased timeout for slow GPUs (RX 580)
+        print(f"[Ollama] ⏱️ Calling {model} (timeout={timeout}s)...")
+        response = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
         response.raise_for_status()
         data = response.json()
         return data.get("response", "").strip()
@@ -76,6 +100,8 @@ def call_lmstudio(prompt: str, system_prompt: str = "", model: str = None) -> Op
         except:
             model = "local-model"
 
+    timeout = _model_timeout(model)
+
     payload = {
         "model": model,
         "messages": [
@@ -87,7 +113,7 @@ def call_lmstudio(prompt: str, system_prompt: str = "", model: str = None) -> Op
     }
     
     try:
-        response = requests.post(LMSTUDIO_URL, json=payload, timeout=180)
+        response = requests.post(LMSTUDIO_URL, json=payload, timeout=timeout)
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]["content"].strip()
@@ -124,16 +150,36 @@ def warm_up_mellum():
     print("[Ollama] 🧪 Warming up Mellum Kotlin...")
     call_ollama("Respond with 'ready'", model="jetbrains/mellum-4b-sft-kotlin:latest")
 
+def warm_up_nemotron_cloud():
+    """Send a test prompt to wake up Nemotron Cloud"""
+    print("[Ollama] ☁️ Warming up Nemotron 3 Super Cloud...")
+    call_ollama("Respond with 'ready'", model="nemotron-3-super:cloud")
+
+def warm_up_gemma_cloud():
+    """Send a test prompt to wake up Gemma 4 31B Cloud"""
+    print("[Ollama] ☁️ Warming up Gemma 4 31B Cloud...")
+    call_ollama("Respond with 'ready'", model="gemma4:31b-cloud")
+
+def warm_up_glm_cloud():
+    """Send a test prompt to wake up GLM Cloud"""
+    print("[Ollama] ☁️ Warming up GLM Cloud...")
+    call_ollama("Respond with 'ready'", model="glm-4.7:cloud")
+
 def warm_up_all_local_brains():
-    """Pre-load all local models for faster first response"""
+    """Pre-load all local and cloud-proxied models for faster first response"""
     if not is_ollama_online():
         return
         
     def warm_up_task():
+        # Cloud-proxied models
+        warm_up_gemma_cloud()
+        warm_up_nemotron_cloud()
+        warm_up_glm_cloud()
+        # Local fallback models
         warm_up_hermes()
         warm_up_gemma()
         warm_up_qwen()
         warm_up_mellum()
-        print("[Ollama] ✅ All local brains warmed up.")
+        print("[Ollama] ✅ All local and cloud brains warmed up.")
 
     threading.Thread(target=warm_up_task, daemon=True).start()

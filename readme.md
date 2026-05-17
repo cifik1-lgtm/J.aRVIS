@@ -1,6 +1,8 @@
 # JARVIS: Cifik Intelegents 🤖🦾
 **The World's First Self-Evolving, Distributed Autonomous AI Orchestrator**
 
+[![Built with pollinations.ai](https://pollinations.ai/assets/badge.svg)](https://pollinations.ai)
+
 > [!IMPORTANT]
 > JARVIS (Just A Rather Very Intelligent System) is an elite **9-Brain Autonomous Hive Mind** designed for professional software development, real-time computer control, and recursive self-evolution. It is the first system capable of independently learning new skills, repairing its own source code, and commanding a distributed network of machines (PC1 & PC2).
 
@@ -55,6 +57,7 @@ JARVIS utilizes a **Dynamic Multi-Brain Router** to select the most efficient mo
 8.  **Poe (Cloud):** Multi-modal fallback and creative generation.
 9.  **Minimax:** Fast creative content processing.
 10. **Codewords:** Automation and API workflow specialist.
+11. **Pollinations.ai:** Unified cloud fallback for high-speed text generation, reasoning, and dynamic multi-modal assets.
 
 ---
 
@@ -101,4 +104,9 @@ graph TD
 ## ⚖️ **Legal & Ethical**
 Designed for personal productivity and professional development. Use the **Bug Hunter** and **Ghost Browser** responsibly.
 
-**Cifik Intelegents, the Hive is Online.** 🦾🚀
+---
+
+## 🤝 **Credits & Acknowledgements**
+*   Powered by [Pollinations.ai](https://pollinations.ai) for high-speed cloud reasoning and multi-modal generation.
+
+**Cifik Intelegents, the Hive is Online. 🦾🚀**

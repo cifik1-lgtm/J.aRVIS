@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "name": "php-llm-ecosystem",
+  "displayName": "PHP LLM Ecosystem & Agentic Web Engineering",
+  "description": "Expert practices for integrating LLMs, building autonomous AI agents, multi-agent orchestrations, RAG pipelines, and structured outputs within PHP and Laravel systems.",
+  "author": "Antigravity",
+  "license": "MIT",
+  "date": "May 2026",
+  "compatibility": "claude, copilot, cursor",
+  "references": [
+    {
+      "title": "LLPhant - The PHP Generative AI Framework",
+      "url": "https://github.com/thesocialprovidr/LLPhant"
+    },
+    {
+      "title": "Neuron AI Framework",
+      "url": "https://github.com/neuron-ai/neuron"
+    },
+    {
+      "title": "Prism for Laravel",
+      "url": "https://prism.echo-labs.dev/"
+    },
+    {
+      "title": "Instructor PHP",
+      "url": "https://github.com/cognesy/instructor-php"
+    }
+  ]
+}

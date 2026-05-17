@@ -27,7 +27,7 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
         attempts = [brain]
     else:
         attempts = [forced]
-        for b in ["gemini", "groq", "openrouter", "minimax"]:
+        for b in ["gemini", "groq", "openrouter", "minimax", "llm7", "pollinations"]:
             if b not in attempts:
                 attempts.append(b)
 
@@ -118,6 +118,58 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                 data = resp.json()
                 if "choices" not in data:
                     raise ValueError(f"MiniMax Error: {data.get('base_resp', {}).get('status_msg', 'Unknown')}")
+                return data["choices"][0]["message"]["content"]
+
+            elif brain == "llm7":
+                import requests
+                api_key = config.get("llm7_api_key", "")
+                actual_model = model if model else "default"
+                headers = {"Content-Type": "application/json"}
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+                
+                resp = requests.post(
+                    url="https://api.llm7.io/v1/chat/completions",
+                    headers=headers,
+                    data=json.dumps({
+                        "model": actual_model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "stream": False
+                    }),
+                    timeout=180
+                )
+                data = resp.json()
+                if "choices" not in data:
+                    raise ValueError(f"LLM7.io Error: {data}")
+                return data["choices"][0]["message"]["content"]
+
+            elif brain == "pollinations":
+                import requests
+                api_key = config.get("pollinations_api_key", "")
+                actual_model = model if model else "openai"
+                headers = {"Content-Type": "application/json"}
+                if api_key:
+                    headers["Authorization"] = f"Bearer {api_key}"
+                
+                resp = requests.post(
+                    url="https://gen.pollinations.ai/v1/chat/completions",
+                    headers=headers,
+                    data=json.dumps({
+                        "model": actual_model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "stream": False
+                    }),
+                    timeout=180
+                )
+                data = resp.json()
+                if "choices" not in data:
+                    raise ValueError(f"Pollinations Chat Error: {data}")
                 return data["choices"][0]["message"]["content"]
 
             elif brain == "local":

@@ -28,6 +28,7 @@ ABSOLUTE RULES:
 - EXPERT SKILLS: You have access to an "Expert Skills" library via RAG (Retrieval-Augmented Generation). For any task involving coding, architecture, security, or professional standards, prioritize retrieving and following these skills.
 - Use file_controller to save content to disk.
 - Max 5 steps. Use the minimum steps needed.
+- CRITICAL COMMAND RATE LIMIT AVOIDANCE: When generating steps involving file operations or terminal commands (e.g., shell_runner, file_controller), NEVER generate multiple small, separate sequential command steps if they can be combined. Combine directories and commands into a single command (e.g., use 'mkdir assets/img assets/icons' in one command, or chain commands with '&&' or ';'). Add a short delay (e.g. 'Start-Sleep -Seconds 1') in PowerShell between actions to avoid rate limits.
 
 AVAILABLE TOOLS AND THEIR PARAMETERS:
 
@@ -158,6 +159,12 @@ shadow_audit
 hot_reload
   (no parameters) — Refresh skills without reboot
 
+reboot_jarvis
+  (no parameters) — Restarts the JARVIS application and all core processes.
+
+shutdown_jarvis
+  (no parameters) — Closes and shuts down JARVIS entirely.
+
 audio_master
   action: "set_volume" | "mute" | "unmute" | "app_volume"
   level: number (0-100)
@@ -261,8 +268,10 @@ Convert the user's request into a JSON plan using ONLY these tools:
 12. project_architect: { "name": "string", "description": "string", "tech_stack": "python|web" }
 13. shadow_audit: { "action": "start|report" }
 14. hot_reload: {}
-15. audio_master: { "action": "set_volume|mute|app_volume", "level": 0-100, "app_name": "string" }
-16. hive_dna: { "action": "report|evolve", "target_tool": "string" }
+15. reboot_jarvis: {} -- Restarts JARVIS.
+16. shutdown_jarvis: {} -- Shuts down JARVIS.
+17. audio_master: { "action": "set_volume|mute|app_volume", "level": 0-100, "app_name": "string" }
+18. hive_dna: { "action": "report|evolve", "target_tool": "string" }
 17. update_sentinel: { "action": "check|upgrade" }
 18. neural_fusion: { "action": "analyze|extract", "repo_url": "string", "target_file": "string" }
 19. self_fix: { "file_name": "string", "error_message": "string" }
@@ -273,6 +282,11 @@ When navigating to a URL in a browser manually via computer_control:
 2. ALWAYS press Enter using computer_control(action='press', key='enter')
 Never skip the Enter key press - it's required for navigation. Prefer 'browser_navigate' for this.
 However, ALWAYS use 'ghost_browser' for background research tasks unless the user explicitly wants to "open" the browser window on their screen.
+
+CRITICAL SHELL EXECUTION RULES:
+1. Combine multiple terminal actions into a single command (using '&&', ';', or chaining) rather than making separate steps.
+2. In PowerShell commands, inject a short sleep (e.g. 'Start-Sleep -Seconds 1') between separate sequential actions to prevent shell_runner rate-limiting.
+3. Combine folder creations (e.g., 'mkdir folder1, folder2' or 'mkdir -p folder/subfolder') to avoid executing multiple steps.
 
 OUTPUT ONLY VALID JSON:
 {
@@ -454,12 +468,27 @@ def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = N
     """Create a plan using available brains - Local brains have highest priority."""
     goal_lower = goal.lower()
     
-    # ===== PRIORITY 1: LOCAL QWEN (Code tasks) =====
-    if any(word in goal_lower for word in ["python", "code", "script", "function", "javascript", "html", "css", "c#", "java"]):
+    # Load config for dynamic model choices
+    try:
+        with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+            config = json.load(f)
+            local_brains = config.get("local_brains", {})
+    except:
+        local_brains = {}
+        
+    reasoning_model = local_brains.get("reasoning", "gemma-4:latest")
+    agent_model = local_brains.get("agent", "hermes3:8b")
+    
+    # ===== PRIORITY 1: LOCAL GEMMA (Reasoning + Planning) =====
+    # Gemma 4 is better at structured JSON planning than Qwen (which is a pure code model)
+    if any(word in goal_lower for word in ["explain", "why", "how", "calculate", "analyze", "reason", "plan"]):
         from core.local_llm import call_ollama, is_ollama_online
         if is_ollama_online():
-            print("[Planner] 🐍 PRIORITY 1: Qwen 3.5 9B (local)")
-            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="qwen3.5-9b:latest")
+            print(f"[Planner] 🧠 PRIORITY 1: {reasoning_model} (local reasoning)")
+            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model=reasoning_model)
+            if not response and reasoning_model != "gemma-4:latest":
+                print(f"[Planner] Cloud reasoning model {reasoning_model} failed. Falling back to local offline gemma-4:latest...")
+                response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="gemma-4:latest")
             if response:
                 plan = _parse_and_validate_plan(response)
                 if plan: return plan
@@ -468,8 +497,11 @@ def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = N
     if any(word in goal_lower for word in ["explain", "why", "how", "calculate", "analyze", "reason"]):
         from core.local_llm import call_ollama, is_ollama_online
         if is_ollama_online():
-            print("[Planner] 🧠 PRIORITY 2: Gemma 4 (local)")
-            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="gemma-4:latest")
+            print(f"[Planner] 🧠 PRIORITY 2: {reasoning_model} (local)")
+            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model=reasoning_model)
+            if not response and reasoning_model != "gemma-4:latest":
+                print(f"[Planner] Cloud reasoning model {reasoning_model} failed. Falling back to local offline gemma-4:latest...")
+                response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="gemma-4:latest")
             if response:
                 plan = _parse_and_validate_plan(response)
                 if plan: return plan
@@ -477,8 +509,11 @@ def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = N
     # ===== PRIORITY 3: LOCAL HERMES (General Agentic) =====
     from core.local_llm import call_ollama, is_ollama_online
     if is_ollama_online():
-        print("[Planner] 🎭 PRIORITY 3: Hermes 3 (local)")
-        response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="hermes3:8b")
+        print(f"[Planner] 🎭 PRIORITY 3: {agent_model} (local)")
+        response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model=agent_model)
+        if not response and agent_model != "hermes3:8b":
+            print(f"[Planner] Cloud agent model {agent_model} failed. Falling back to local offline hermes3:8b...")
+            response = call_ollama(goal, system_prompt=LOCAL_PLANNER_PROMPT, model="hermes3:8b")
         if response:
             plan = _parse_and_validate_plan(response)
             if plan: return plan
@@ -621,6 +656,8 @@ def create_plan(goal: str, context: str = "", preferred_brain: Optional[str] = N
     print("[Planner] ❌ All AI engines failed! Using regex fallback.")
     # FAST-BRAIN: Handle simple commands without LLM
     goal_lower = goal.lower()
+    if "reload" in goal_lower or "restart" in goal_lower:
+        return {"goal": goal, "steps": [{"step": 1, "tool": "reboot_jarvis", "description": "Restart JARVIS", "parameters": {"confirmed": True}}]}
     if "open" in goal_lower:
         app = goal_lower.replace("open", "").strip()
         return {"goal": goal, "steps": [{"step": 1, "tool": "open_app", "description": f"Open {app}", "parameters": {"app_name": app}}]}

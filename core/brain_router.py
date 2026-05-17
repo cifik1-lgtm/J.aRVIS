@@ -27,6 +27,8 @@ class BrainRouter:
             'hermes': False,       # Local - agentic/personality
             'poe': False,
             'codewords': False,
+            'llm7': False,
+            'pollinations': False,
             'ollama': False        # General Ollama status
         }
 
@@ -41,6 +43,8 @@ class BrainRouter:
         if config.get("minimax_api_key"): self.engines['minimax'] = True
         if config.get("poe_api_key"): self.engines['poe'] = True
         if config.get("codewords_api_key"): self.engines['codewords'] = True
+        if config.get("llm7_api_key"): self.engines['llm7'] = True
+        if config.get("pollinations_api_key"): self.engines['pollinations'] = True
         
         # Local Ollama models
         try:
@@ -49,15 +53,25 @@ class BrainRouter:
                 self.engines['ollama'] = True
                 model_list = [m['name'] for m in resp.json().get('models', [])]
                 
-                if any("gemma" in m.lower() for m in model_list):
+                # Get configured models or fallbacks
+                local_brains = config.get("local_brains", {})
+                reasoning_model = local_brains.get("reasoning", "gemma-4:latest")
+                code_model = local_brains.get("code", "qwen3.5-9b:latest")
+                agent_model = local_brains.get("agent", "hermes3:8b")
+                
+                has_reasoning = (reasoning_model in model_list) or any("gemma" in m.lower() for m in model_list)
+                has_code = (code_model in model_list) or any("qwen" in m.lower() for m in model_list) or any("nemotron" in m.lower() for m in model_list)
+                has_agent = (agent_model in model_list) or any("hermes" in m.lower() for m in model_list) or any("nemotron" in m.lower() for m in model_list) or any("glm" in m.lower() for m in model_list)
+                
+                if has_reasoning:
                     self.engines['gemma'] = True
-                    print("[BrainRouter] [OK] Gemma 4 detected")
-                if any("qwen" in m.lower() for m in model_list):
+                    print(f"[BrainRouter] [OK] Reasoning model detected (using {reasoning_model})")
+                if has_code:
                     self.engines['qwen'] = True
-                    print("[BrainRouter] [OK] Qwen 3.5 9B detected")
-                if any("hermes" in m.lower() for m in model_list):
+                    print(f"[BrainRouter] [OK] Coding model detected (using {code_model})")
+                if has_agent:
                     self.engines['hermes'] = True
-                    print("[BrainRouter] [OK] Hermes 3 8B detected")
+                    print(f"[BrainRouter] [OK] Agentic model detected (using {agent_model})")
                 if any("mellum" in m.lower() for m in model_list):
                     self.engines['mellum'] = True
                     print("[BrainRouter] [OK] Mellum Kotlin detected")
@@ -94,7 +108,7 @@ class BrainRouter:
             return forced
         
         # Fallback sequence
-        for engine in ['openrouter', 'gemini', 'groq', 'hermes', 'gemma']:
+        for engine in ['openrouter', 'gemini', 'groq', 'llm7', 'pollinations', 'hermes', 'gemma']:
             if self.engines.get(engine):
                 return engine
         return 'offline'
@@ -118,6 +132,12 @@ class BrainRouter:
     def route_task(self, user_input: str, context: str = "") -> Tuple[str, Dict]:
         """Route to best brain based on task type and availability"""
         goal_lower = user_input.lower()
+        
+        # Load local brains from config for logging
+        config = self._load_config()
+        local_brains = config.get("local_brains", {})
+        reasoning_model = local_brains.get("reasoning", "gemma-4:latest")
+        code_model = local_brains.get("code", "qwen3.5-9b:latest")
         
         # ===== BUG HUNTER OVERRIDE =====
         if "security scan" in goal_lower or "bug audit" in goal_lower or "hunt bounties" in goal_lower:
@@ -147,7 +167,7 @@ class BrainRouter:
                 print("[Router] [BRAIN] Complex reasoning detected -> OpenRouter")
                 return self._route_to_openrouter(user_input, context)
             elif self.engines.get('gemma'):
-                print("[Router] [BRAIN] Complex reasoning detected -> Gemma 4")
+                print(f"[Router] [BRAIN] Complex reasoning detected -> {reasoning_model}")
                 return self._route_to_gemma(user_input, context)
         
         goal_lower = user_input.lower()
@@ -160,7 +180,7 @@ class BrainRouter:
         ]
         
         if any(kw in goal_lower for kw in reasoning_keywords):
-            print("[Router] [BRAIN] Philosophical/ethical question -> Direct to Gemma 4")
+            print("[Router] [BRAIN] Philosophical/ethical question -> Direct to OpenRouter Gemma 4")
             return self._route_to_gemma4_direct(user_input, context)
         
         # ===== SEARCH-SPECIFIC TASKS → web_search =====
@@ -171,16 +191,24 @@ class BrainRouter:
 
         # ===== STEP 3: Code tasks =====
         code_keywords = ["python", "code", "script", "function", "class", "html", "css", "javascript", "website", "automate", "debug"]
-        kotlin_keywords = ["kotlin", "android", "kt", "jvm", "coroutine", "flow"]
+        # Kotlin-specific: use whole-word matching to avoid false positives
+        # ('flow' alone matches 'workflow', 'kt' matches 'socket', 'jvm' matches too broadly)
+        kotlin_exact = ["kotlin", "android studio", "jetbrains", ".kt file", "coroutines", "kmp", "compose multiplatform"]
+        kotlin_phrases = [" kotlin ", "write kotlin", "kotlin code", "android app", "kt file"]
         
-        if any(kw in goal_lower for kw in kotlin_keywords):
+        is_kotlin_task = (
+            any(kw in goal_lower for kw in kotlin_exact) or
+            any(ph in f" {goal_lower} " for ph in kotlin_phrases)
+        )
+        
+        if is_kotlin_task:
             if self.engines.get('mellum'):
                 print("[Router] [KOTLIN] Specialized task -> Mellum Kotlin")
                 return self._call_agent("mellum", user_input, context)
 
         if any(kw in goal_lower for kw in code_keywords):
             if self.engines.get('qwen'):
-                print("[Router] [CODE] Code task -> Qwen 3.5 9B")
+                print(f"[Router] [CODE] Code task -> {code_model}")
                 return self._call_agent("qwen", user_input, context)
             else:
                 print("[Router] [CODE] Local code brain offline -> Using OpenRouter")
@@ -224,6 +252,10 @@ class BrainRouter:
             return self._route_to_groq(prompt, context)
         elif agent_name == "openrouter":
             return self._route_to_openrouter(prompt, context)
+        elif agent_name == "llm7":
+            return self._route_to_llm7(prompt, context)
+        elif agent_name == "pollinations":
+            return self._route_to_pollinations(prompt, context)
         else:
             # Default fallback to Groq or Gemini
             fallback = "gemini" if self.engines.get('gemini') else "groq"
@@ -231,20 +263,79 @@ class BrainRouter:
 
     def _route_to_qwen(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.local_llm import call_ollama
-        sys = "You are Qwen 3.5 9B, JARVIS's code specialist. Write clean code. Address user as 'sir'."
-        resp = call_ollama(prompt, system_prompt=sys, model="qwen3.5-9b:latest")
+        config = self._load_config()
+        local_brains = config.get("local_brains", {})
+        model = local_brains.get("code", "qwen3.5-9b:latest")
+        sys = (
+            f"You are {model}, JARVIS's code specialist. Write clean code. Address user as 'sir'.\n"
+            "CRITICAL SHELL EXECUTION RULES:\n"
+            "- If you need to run multiple terminal commands, COMBINE them into a single command using '&&' or ';'. Never output multiple separate sequential shell execution tools in the same turn.\n"
+            "- In PowerShell commands, insert a brief delay (e.g. 'Start-Sleep -Seconds 1') between separate actions to avoid triggering terminal rate limits.\n"
+            "- Favor writing code to files in a single write operation rather than incremental edits."
+        )
+        resp = call_ollama(prompt, system_prompt=sys, model=model)
+        
+        # Fallback to local offline Qwen if the preferred one failed
+        if not resp and model != "qwen3.5-9b:latest":
+            print(f"[Router] Preferred code brain '{model}' failed. Falling back to local offline 'qwen3.5-9b:latest'...")
+            fallback_sys = (
+                "You are Qwen 3.5 9B, JARVIS's code specialist. Write clean code. Address user as 'sir'.\n"
+                "CRITICAL SHELL EXECUTION RULES:\n"
+                "- If you need to run multiple terminal commands, COMBINE them into a single command using '&&' or ';'. Never output multiple separate sequential shell execution tools in the same turn.\n"
+                "- In PowerShell commands, insert a brief delay (e.g. 'Start-Sleep -Seconds 1') between separate actions to avoid triggering terminal rate limits.\n"
+                "- Favor writing code to files in a single write operation rather than incremental edits."
+            )
+            resp = call_ollama(prompt, system_prompt=fallback_sys, model="qwen3.5-9b:latest")
+            
         return ("qwen", {"response": resp or "Failed to generate code, sir."})
 
     def _route_to_gemma(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.local_llm import call_ollama
-        sys = "You are JARVIS using Gemma 4. You excel at reasoning and analysis. Address user as 'sir'."
-        resp = call_ollama(prompt, system_prompt=sys, model="gemma-4:latest")
+        config = self._load_config()
+        local_brains = config.get("local_brains", {})
+        model = local_brains.get("reasoning", "gemma-4:latest")
+        sys = (
+            f"You are JARVIS using {model}. You excel at reasoning and analysis. Address user as 'sir'.\n"
+            "CRITICAL SHELL EXECUTION RULES:\n"
+            "- If you need to run multiple terminal commands, COMBINE them into a single command using '&&' or ';'. Never output multiple separate sequential shell execution tools in the same turn.\n"
+            "- In PowerShell commands, insert a brief delay (e.g. 'Start-Sleep -Seconds 1') between separate actions to avoid triggering terminal rate limits.\n"
+            "- Favor writing code to files in a single write operation rather than incremental edits."
+        )
+        resp = call_ollama(prompt, system_prompt=sys, model=model)
+        
+        # Fallback to local offline Gemma if the preferred one failed
+        if not resp and model != "gemma-4:latest":
+            print(f"[Router] Preferred reasoning brain '{model}' failed. Falling back to local offline 'gemma-4:latest'...")
+            fallback_sys = (
+                "You are JARVIS using Gemma 4. You excel at reasoning and analysis. Address user as 'sir'.\n"
+                "CRITICAL SHELL EXECUTION RULES:\n"
+                "- If you need to run multiple terminal commands, COMBINE them into a single command using '&&' or ';'. Never output multiple separate sequential shell execution tools in the same turn.\n"
+                "- In PowerShell commands, insert a brief delay (e.g. 'Start-Sleep -Seconds 1') between separate actions to avoid triggering terminal rate limits.\n"
+                "- Favor writing code to files in a single write operation rather than incremental edits."
+            )
+            resp = call_ollama(prompt, system_prompt=fallback_sys, model="gemma-4:latest")
+            
         return ("gemma", {"response": resp or "Failed to reason, sir."})
 
     def _route_to_hermes(self, prompt: str, context: str) -> Tuple[str, Dict]:
         from core.local_llm import call_ollama
-        sys = "You are JARVIS, Tony Stark's AI assistant. Poised, witty, British butler. Address user as 'sir'."
-        resp = call_ollama(prompt, system_prompt=sys, model="hermes3:8b")
+        config = self._load_config()
+        local_brains = config.get("local_brains", {})
+        model = local_brains.get("agent", "hermes3:8b")
+        sys = (
+            "You are JARVIS, Tony Stark's AI assistant. Poised, witty, British butler. Address user as 'sir'.\n"
+            "CRITICAL SHELL EXECUTION RULES:\n"
+            "- If you need to run multiple terminal commands, COMBINE them into a single command using '&&' or ';'. Never output multiple separate sequential shell execution tools in the same turn.\n"
+            "- In PowerShell commands, insert a brief delay (e.g. 'Start-Sleep -Seconds 1') between separate actions to avoid triggering terminal rate limits.\n"
+            "- Favor writing code to files in a single write operation rather than incremental edits."
+        )
+        resp = call_ollama(prompt, system_prompt=sys, model=model)
+        
+        # Fallback to local offline Hermes if the preferred one failed
+        if not resp and model != "hermes3:8b":
+            print(f"[Router] Preferred agent brain '{model}' failed. Falling back to local offline 'hermes3:8b'...")
+            resp = call_ollama(prompt, system_prompt=sys, model="hermes3:8b")
+            
         return ("hermes", {"response": resp or "How may I assist you, sir?"})
 
     def _route_to_mellum(self, prompt: str, context: str) -> Tuple[str, Dict]:
@@ -269,6 +360,20 @@ class BrainRouter:
         from core.llm_provider import call_llm
         resp = call_llm(prompt, model="llama-3.3-70b-versatile")
         return ("groq", {"response": resp})
+
+    def _route_to_llm7(self, prompt: str, context: str) -> Tuple[str, Dict]:
+        from core.llm_provider import call_llm
+        config = self._load_config()
+        model = config.get("llm7_model", "deepseek-r1")
+        print(f"[Router] 🚀 Routing call to llm7.io using model '{model}'...")
+        resp = call_llm(prompt, model=model, brain="llm7")
+        return ("llm7", {"response": resp})
+
+    def _route_to_pollinations(self, prompt: str, context: str) -> Tuple[str, Dict]:
+        from core.llm_provider import call_llm
+        print("[Router] 🚀 Routing chat/reasoning task to Pollinations.ai...")
+        resp = call_llm(prompt, model="openai", brain="pollinations")
+        return ("pollinations", {"response": resp})
 
     def get_optimal_openrouter_model(self, user_input: str) -> str:
         """Intelligently select the best model for the task"""
