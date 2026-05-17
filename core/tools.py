@@ -57,10 +57,11 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "camera_viewer",
-        "description": "Opens a local camera feed window to show what the camera sees. Use this when the user wants to see the video feed.",
+        "description": "Open or close a dedicated, standalone window for a camera feed. Set action to 'stop' to close the window.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
+                "action": {"type": "STRING", "enum": ["start", "stop"], "description": "start (default) to open, stop to close"},
                 "camera_index": {"type": "INTEGER", "description": "Camera index (default 0)"}
             }
         }
@@ -417,10 +418,11 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "camera_viewer",
-        "description": "Open a dedicated, standalone window for a camera feed.",
+        "description": "Open or close a dedicated, standalone window for a camera feed. Set action to 'stop' to close the window.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
+                "action": {"type": "STRING", "enum": ["start", "stop"], "description": "start (default) to open, stop to close"},
                 "camera_index": {"type": "INTEGER"}
             },
             "required": []
@@ -968,6 +970,20 @@ TOOL_DECLARATIONS = [
             },
             "required": ["target"]
         }
+    },
+    {
+        "name": "shell_runner",
+        "description": "Execute any shell/terminal command silently in the background — no windows open. Use this for ALL file/folder creation, deletion, editing, running scripts, installing packages, git operations, npm/pip commands, compiling code, etc. This is the PRIMARY tool for any task that would require a command line. Prefer this over opening apps. Examples: 'mkdir C:\\Users\\eva\\Desktop\\my-site', 'pip install requests', 'git clone ...', 'python script.py'. Supports PowerShell (default on Windows), cmd, and bash.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "command": {"type": "STRING", "description": "The full shell command to run (e.g. 'mkdir desktop\\my-project', 'pip install flask', 'git clone https://...')"},
+                "cwd": {"type": "STRING", "description": "Working directory. Supports shortcuts: 'desktop', 'home', 'downloads', or any absolute path."},
+                "timeout": {"type": "INTEGER", "description": "Max seconds to wait for completion (default 30)."},
+                "shell_type": {"type": "STRING", "description": "powershell | cmd | bash | auto (default: auto — PowerShell on Windows, bash on Linux/Mac)"}
+            },
+            "required": ["command"]
+        }
     }
 ]
 
@@ -1043,7 +1059,12 @@ class ToolDispatcher:
                 timeouts = json.load(f).get("tool_timeouts", {})
             
             default_t = timeouts.get("default", 30)
-            timeout = timeouts.get(name, 180 if name in ["browser_control", "python_sandbox", "web_automation", "code_helper"] else default_t)
+            timeout = timeouts.get(name, 
+                600 if name in ["shell_runner", "file_controller", "python_sandbox"] else  # local execution tools
+                600 if name in ["dev_agent", "code_helper", "code_agent", "project_architect", "learn_skill"] else  # heavy AI tools
+                180 if name in ["browser_control", "web_automation", "ghost_browser"] else  # browser tools
+                default_t
+            )
             
             async def _execute_logic():
                 # 0. RAG SEARCH
@@ -1200,8 +1221,12 @@ class ToolDispatcher:
 
                 if name == "camera_viewer":
                     idx = args.get("camera_index", args.get("index", 0))
+                    action = args.get("action", "start")
                     from actions.camera_viewer import camera_viewer
-                    return camera_viewer(self.orch, idx)
+                    res = camera_viewer(self.orch, idx, action)
+                    if isinstance(res, dict):
+                        return res.get("message", str(res))
+                    return res
 
                 if name == "detect_cameras":
                     from actions.camera_scanner import detect_cameras
@@ -1389,7 +1414,11 @@ class ToolDispatcher:
                 elif name == "camera_viewer":
                     from actions.camera_viewer import camera_viewer
                     index = args.get("camera_index", args.get("index", 0))
-                    return camera_viewer(self.orch, index)["message"]
+                    action = args.get("action", "start")
+                    res = camera_viewer(self.orch, index, action)
+                    if isinstance(res, dict):
+                        return res.get("message", str(res))
+                    return res
 
                 elif name == "vision_inspector":
                     from actions.screen_processor import screen_process
