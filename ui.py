@@ -30,7 +30,7 @@ from PyQt6.QtGui import (
 from PyQt6.QtWidgets import (
     QApplication, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
     QMainWindow, QPushButton, QScrollArea, QSizePolicy, QTextEdit,
-    QVBoxLayout, QWidget, QProgressBar,
+    QVBoxLayout, QWidget, QProgressBar, QComboBox
 )
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 
@@ -1467,15 +1467,12 @@ class SettingsOverlay(QWidget):
         # CORE COGNITIVE LLM KEYS
         _add_section("CORE COGNITIVE CORES")
         _add_field("gemini_api_key", "GEMINI API KEY (LIVE AUDIO & CHAT)")
-        _add_field("openrouter_api_key", "OPENROUTER API KEY (DEEP REASONING)")
-        _add_field("groq_api_key", "GROQ API KEY (FAST BACKUP)")
+
 
         # ALTERNATIVE BRAIN KEYS
         _add_section("INTEGRATION CORES")
         _add_field("poe_api_key", "POE API KEY")
-        _add_field("minimax_api_key", "MINIMAX API KEY")
         _add_field("pollinations_api_key", "POLLINATIONS API KEY")
-        _add_field("codewords_api_key", "CODEWORDS RUNTIME KEY")
 
         # INTEGRATIONS & COMMUNICATIONS
         _add_section("COMMUNICATIONS & TELEMETRY")
@@ -1995,6 +1992,21 @@ class MainWindow(QMainWindow):
 
     def _build_input_row(self) -> QHBoxLayout:
         row = QHBoxLayout(); row.setSpacing(5)
+
+        reconnect_btn = QPushButton("🔄")
+        reconnect_btn.setFixedSize(30, 30)
+        reconnect_btn.setToolTip("Reconnect Gemini")
+        reconnect_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        reconnect_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {C.PANEL}; color: {C.GREEN};
+                border: 1px solid {C.GREEN}; border-radius: 3px;
+            }}
+            QPushButton:hover {{ background: rgba(0, 255, 136, 20); border: 1px solid {C.GREEN_D}; }}
+        """)
+        reconnect_btn.clicked.connect(self._reconnect_gemini)
+        row.addWidget(reconnect_btn)
+
         self._input = QLineEdit()
         self._input.setPlaceholderText("Type a command or question…")
         self._input.setFont(QFont("Courier New", 9))
@@ -2107,6 +2119,22 @@ class MainWindow(QMainWindow):
         self._log.append_log(f"You: {txt}")
         if self.on_text_command:
             threading.Thread(target=self.on_text_command, args=(txt,), daemon=True).start()
+
+    def _on_gemini_model_changed(self, text: str):
+        if API_FILE.exists():
+            try:
+                import json
+                data = json.loads(API_FILE.read_text(encoding="utf-8"))
+                data["gemini_model"] = text
+                API_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
+                self._log.append_log(f"SYS: Gemini model changed to {text}. Click Reconnect to apply.")
+            except Exception as e:
+                print(f"[HUD] Failed to update gemini model: {e}")
+
+    def _reconnect_gemini(self):
+        if hasattr(self, "jarvis_live") and self.jarvis_live:
+            self._log.append_log("SYS: 🔄 Reconnecting Gemini...")
+            self.jarvis_live.reload_config()
 
     def _apply_state(self, state: str):
         self.hud.state    = state

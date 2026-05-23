@@ -28,15 +28,12 @@ class C:
 
 BRAIN_DEFINITIONS = [
     {"id": "gemini", "name": "Brain 1: Gemini 2.0 Live", "type": "cloud", "key_name": "gemini_api_key", "desc": "Live Voice & Orchestration Core"},
-    {"id": "openrouter", "name": "Brain 2: OpenRouter", "type": "cloud", "key_name": "openrouter_api_key", "desc": "Cognitive Specialist (Maverick/Maestro)"},
-    {"id": "groq", "name": "Brain 3: Groq (LPU)", "type": "cloud", "key_name": "groq_api_key", "desc": "Ultra-Fast Backup Brain"},
-    {"id": "gemma", "name": "Brain 4: Gemma 4 (Local)", "type": "local", "key_name": None, "model_tag": "gemma", "desc": "Local Deep Reasoning Specialist"},
-    {"id": "qwen", "name": "Brain 5: Qwen 3.5 9B (Local)", "type": "local", "key_name": None, "model_tag": "qwen", "desc": "Local Expert Code Generator"},
-    {"id": "hermes", "name": "Brain 6: Hermes 3 (Local)", "type": "local", "key_name": None, "model_tag": "hermes", "desc": "Local Roleplay/Agentic Specialized Core"},
-    {"id": "mellum", "name": "Brain 7: Mellum Kotlin (Local)", "type": "local", "key_name": None, "model_tag": "mellum", "desc": "Local Kotlin Syntactic Expert"},
-    {"id": "poe", "name": "Brain 8: Poe (Cloud)", "type": "cloud", "key_name": "poe_api_key", "desc": "Alternative Multi-Model Router"},
-    {"id": "minimax", "name": "Brain 9: Minimax", "type": "cloud", "key_name": "minimax_api_key", "desc": "Dynamic Conversational Agent"},
-    {"id": "pollinations", "name": "Brain 10: Pollinations.ai", "type": "free", "key_name": None, "desc": "Free cloud reasoning - No API key"},
+    {"id": "gemma", "name": "Brain 2: Gemma 4 (Local)", "type": "local", "key_name": None, "model_tag": "gemma", "desc": "Local Deep Reasoning Specialist"},
+    {"id": "qwen", "name": "Brain 3: Qwen 3.5 9B (Local)", "type": "local", "key_name": None, "model_tag": "qwen", "desc": "Local Expert Code Generator"},
+    {"id": "hermes", "name": "Brain 4: Hermes 3 (Local)", "type": "local", "key_name": None, "model_tag": "hermes", "desc": "Local Roleplay/Agentic Specialized Core"},
+    {"id": "mellum", "name": "Brain 5: Mellum Kotlin (Local)", "type": "local", "key_name": None, "model_tag": "mellum", "desc": "Local Kotlin Syntactic Expert"},
+    {"id": "poe", "name": "Brain 6: Poe (Cloud)", "type": "cloud", "key_name": "poe_api_key", "desc": "Alternative Multi-Model Router (Claude-Sonnet-4.6)"},
+    {"id": "pollinations", "name": "Brain 7: Pollinations.ai", "type": "free", "key_name": None, "desc": "Free cloud reasoning - No API key"},
 ]
 
 def get_config_paths():
@@ -455,8 +452,7 @@ class BrainConfigWizard(QWidget):
         if not api_cfg.exists():
             data = {
                 "gemini_api_key": "",
-                "openrouter_api_key": "",
-                "groq_api_key": "",
+                "poe_api_key": "",
                 "os_system": "windows" if os.name == "nt" else "linux",
                 "force_brain": "local"
             }

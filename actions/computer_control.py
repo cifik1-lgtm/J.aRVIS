@@ -133,9 +133,29 @@ def _safe_screenshot_path(requested: str | None) -> Path:
         pass
     return fallback
 
+def _avoid_failsafe():
+    if not _PYAUTOGUI:
+        return
+    try:
+        pos = pyautogui.position()
+        w, h = pyautogui.size()
+        corners = [(0, 0), (0, h - 1), (w - 1, 0), (w - 1, h - 1)]
+        if pos in corners:
+            if _SYSTEM == "Windows":
+                import ctypes
+                ctypes.windll.user32.SetCursorPos(10, 10)
+            else:
+                old_failsafe = pyautogui.FAILSAFE
+                pyautogui.FAILSAFE = False
+                pyautogui.moveTo(10, 10)
+                pyautogui.FAILSAFE = old_failsafe
+    except Exception:
+        pass
+
 def _require_pyautogui():
     if not _PYAUTOGUI:
         raise RuntimeError("PyAutoGUI not installed. Run: pip install pyautogui")
+    _avoid_failsafe()
 
 _FIRST_NAMES = [
     "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn",
@@ -316,6 +336,48 @@ def _clear_field() -> str:
     pyautogui.press("delete")
     return "Field cleared"
 
+def _minimize_window(title: str | None = None) -> str:
+    os_name = _get_os()
+    if os_name != "windows":
+        return f"minimize_window is only supported on Windows, current: {os_name}"
+    
+    try:
+        import win32gui
+        import win32con
+        
+        if title:
+            # Find the window by title substring
+            hwnd = 0
+            title_lower = title.lower()
+            
+            def enum_win(h, extra):
+                nonlocal hwnd
+                if win32gui.IsWindowVisible(h):
+                    t = win32gui.GetWindowText(h)
+                    if title_lower in t.lower():
+                        hwnd = h
+                        return False
+                return True
+            
+            try:
+                win32gui.EnumWindows(enum_win, None)
+            except Exception:
+                pass
+            
+            if hwnd == 0:
+                return f"No window found matching title: {title}"
+        else:
+            # Minimize active foreground window
+            hwnd = win32gui.GetForegroundWindow()
+            if hwnd == 0:
+                return "No active foreground window found."
+            title = win32gui.GetWindowText(hwnd)
+            
+        win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+        return f"Minimized window: {title or hwnd}"
+    except Exception as e:
+        return f"minimize_window failed: {e}"
+
 def _focus_window(title: str) -> str:
     os_name = _get_os()
 
@@ -386,11 +448,31 @@ def _move_window(title: str | None = None, target: str | None = "other_monitor",
         if not win:
             return "No active window found to move."
 
-    # Ensure window is not minimized/maximized in a way that prevents moving
-    if win.isMinimized:
-        win.restore()
+    was_maximized = False
+    try:
+        was_maximized = win.isMaximized
+    except Exception:
+        pass
+
+    if was_maximized:
+        try:
+            win.restore()
+        except Exception:
+            pass
+    elif win.isMinimized:
+        try:
+            win.restore()
+        except Exception:
+            pass
     
-    if target == "other_monitor":
+    target_str = str(target or "").lower()
+    is_other_monitor = (
+        target_str == "other_monitor" or 
+        "monitor" in target_str or 
+        "screen" in target_str or 
+        (target is None and x is None and y is None)
+    )
+    if is_other_monitor:
         if not _PYMONCTL:
             return "pymonctl not installed. Cannot detect monitors."
         
@@ -404,8 +486,8 @@ def _move_window(title: str | None = None, target: str | None = "other_monitor",
         
         current_mon = None
         for mon in monitors:
-            m_pos = mon.getPosition()
-            m_size = mon.getSize()
+            m_pos = mon.position
+            m_size = mon.size
             if m_pos.x <= cx <= m_pos.x + m_size.width and m_pos.y <= cy <= m_pos.y + m_size.height:
                 current_mon = mon
                 break
@@ -414,18 +496,35 @@ def _move_window(title: str | None = None, target: str | None = "other_monitor",
             current_mon = monitors[0]
             
         target_mon = None
-        for mon in monitors:
-            if mon != current_mon:
-                target_mon = mon
-                break
+        
+        # Try explicit monitor indexing/labeling (e.g. "Monitor 1" -> index 0)
+        number_match = re.search(r'\d+', target_str)
+        if number_match:
+            idx = int(number_match.group(0)) - 1
+            if 0 <= idx < len(monitors):
+                target_mon = monitors[idx]
+        
+        # Try monitor name matching (e.g. DISPLAY1)
+        if not target_mon:
+            for mon in monitors:
+                if mon.name and mon.name.lower() in target_str:
+                    target_mon = mon
+                    break
+        
+        # Fallback to general "other monitor" logic (first monitor that is not the current one)
+        if not target_mon:
+            for mon in monitors:
+                if mon != current_mon:
+                    target_mon = mon
+                    break
         
         if not target_mon:
             return "Could not identify target monitor."
             
-        t_pos = target_mon.getPosition()
-        t_size = target_mon.getSize()
-        c_pos = current_mon.getPosition()
-        c_size = current_mon.getSize()
+        t_pos = target_mon.position
+        t_size = target_mon.size
+        c_pos = current_mon.position
+        c_size = current_mon.size
 
         # Calculate relative position on current monitor to preserve it on the target
         rel_x = (win.left - c_pos.x) / max(1, c_size.width)
@@ -440,20 +539,34 @@ def _move_window(title: str | None = None, target: str | None = "other_monitor",
         
         if _SYSTEM == "Windows" and _WIN32:
             try:
-                # pygetwindow uses ._hWnd internally on Windows
                 hwnd = getattr(win, "_hWnd", None)
                 if hwnd:
                     win32gui.SetWindowPos(hwnd, win32con.HWND_TOP, new_x, new_y, 0, 0, 
                                           win32con.SWP_NOSIZE | win32con.SWP_NOZORDER)
+                    if was_maximized:
+                        try:
+                            win.maximize()
+                        except Exception:
+                            pass
                     return f"Moved window '{win.title}' to {target_mon.name} at ({new_x}, {new_y}) (win32)"
             except Exception:
                 pass
 
         win.moveTo(new_x, new_y)
+        if was_maximized:
+            try:
+                win.maximize()
+            except Exception:
+                pass
         return f"Moved window '{win.title}' to {target_mon.name} at ({new_x}, {new_y})"
 
     if x is not None and y is not None:
         win.moveTo(x, y)
+        if was_maximized:
+            try:
+                win.maximize()
+            except Exception:
+                pass
         return f"Moved window '{win.title}' to ({x}, {y})"
         
     return "move_window requires target='other_monitor' or explicit x, y coordinates."
@@ -608,6 +721,7 @@ _VALID_CONTROL_ACTIONS = frozenset(
         "list_processes",
         "get_active_window",
         "smart_close",
+        "minimize_window",
     }
 )
 
@@ -891,21 +1005,30 @@ def computer_control(
             return _click(params.get("x"), params.get("y"), "right", 1)
 
         if action == "move":
-            target = params.get("target") or params.get("dx")
-            title  = params.get("title")
-            if target == "other_monitor" or title:
+            target = params.get("target") or params.get("dx") or params.get("target_monitor") or params.get("monitor")
+            title  = params.get("title") or params.get("target_window") or params.get("window") or params.get("window_title")
+            target_str = str(target or "").lower()
+            is_window_op = (
+                target_str == "other_monitor" or 
+                "monitor" in target_str or 
+                "screen" in target_str or 
+                bool(title)
+            )
+            if is_window_op:
                 return _move_window(
                     title=title,
-                    target=target if target == "other_monitor" else None,
+                    target=target,
                     x=params.get("x"),
                     y=params.get("y")
                 )
             return _move(int(params.get("x", 0)), int(params.get("y", 0)))
 
         if action == "move_window":
+            target = params.get("target") or params.get("dx") or params.get("target_monitor") or params.get("monitor")
+            title  = params.get("title") or params.get("target_window") or params.get("window") or params.get("window_title")
             return _move_window(
-                title=params.get("title"),
-                target=params.get("target") or params.get("dx"),
+                title=title,
+                target=target,
                 x=params.get("x"),
                 y=params.get("y")
             )
@@ -1018,6 +1141,9 @@ def computer_control(
 
         if action == "smart_close":
             return _smart_close(params.get("target") or params.get("title") or params.get("text", ""))
+
+        if action == "minimize_window":
+            return _minimize_window(params.get("title") or params.get("target") or params.get("window"))
 
         if action in ("mouse_position", "get_position", "cursor_position"):
             _require_pyautogui()

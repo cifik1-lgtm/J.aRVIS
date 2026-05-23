@@ -200,8 +200,12 @@ except ImportError as e:
 try:
     from transformers import pipeline
     HAS_TRANSFORMERS = True
-except ImportError:
+except Exception as e:
+    # ImportError: missing package; ValueError: known torch/transformers ABI mismatches on import
     HAS_TRANSFORMERS = False
+    print(f"[JARVIS] ⚠️ transformers not usable ({type(e).__name__}: {e})")
+    print("[JARVIS]    Fix: use project venv pip — .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt")
+    pipeline = None  # type: ignore
 
 # The legacy EmotionAnalyzer is replaced by the new EmotionEngine for native performance.
 
@@ -273,10 +277,12 @@ def _load_system_prompt() -> str:
     return personality + "\n\n" + main_prompt + (
         "\n\n[TRIPLE-BRAIN ARCHITECTURE]\n"
         "You are the Voice Front-End (Brain 1). You handle natural conversation, personality, and memory.\n"
-        "For COMPLEX tasks (Web searches, browser control, coding, file operations, complex automation), "
+        "For COMPLEX tasks (coding, complex automation, multi-step research), "
         "you MUST use the 'delegate_task' tool. Do not try to solve them yourself. "
-        "Once you delegate, tell the user you are putting the 'Expert Brains' on the job. "
-        "You will be notified once the task is complete."
+        "However, for DIRECT actions (like moving/focusing windows, system volume, opening apps), "
+        "use your Live tools (like 'computer_control') directly and instantly in one step without delegating.\n"
+        "CRITICAL VOICE RULE: Be extremely brief and direct. Keep spoken replies to 1 short sentence. "
+        "Never explain your reasoning or speak defensive/long justifications unless asked."
     )
 
 # ============================================================================
@@ -436,6 +442,7 @@ class JarvisLive:
         self.force_openrouter = False
         self._turn_done_event = None
         self._last_user_text = ""
+        self._is_first_connect = True  # Track if this is the first boot to avoid re-greetings
         
         # NEW: Separate voice from reasoning
         self.voice_brain = "gemini"      # Always Gemini for voice
@@ -1026,6 +1033,18 @@ class JarvisLive:
             self.ui.write_log(f"SYS: ⏸️ Silent mode active - Command ignored: {text[:50]}")
             return
         
+        # Route through active Gemini Live session to act exactly as voice input
+        if self.session and self._loop and self._loop.is_running():
+            print(f"[JARVIS] Sending text command to Gemini Live session: {text}")
+            asyncio.run_coroutine_threadsafe(
+                self.session.send_client_content(
+                    turns=[{"role": "user", "parts": [{"text": text}]}],
+                    turn_complete=True
+                ),
+                self._loop
+            )
+            return
+
         # Use auto-routing for everything else (Hive Mind Logic)
         # All functional commands (e.g. YouTube, Browser, etc.) should reach here
         # and be routed by the brain_router, which may lead to Gemini calling a tool.
@@ -1210,7 +1229,7 @@ class JarvisLive:
                 "tool to record them immediately. Be a ghost assistant—watch and learn "
                 "everything so you can be more helpful when you are woken up.\n"
                 "IMPORTANT: You cannot deactivate silent mode yourself. Only the user can wake you up "
-                "by saying 'wake up'. Do not use system_control to try and unmute yourself.\n"
+                "by saying 'wake up'.\n"
             )
         
         parts = [forced_instruction, autonomous_instruction, time_ctx]
@@ -1233,12 +1252,13 @@ class JarvisLive:
             "get_memory_stats",   # Informational, for conversational responses
             "forget_weak_memories", # Maintenance, for conversational responses
             "youtube_manager",    # Direct user interaction for media
+            "netflix_manager",    # Netflix app on chosen monitor; hands-off automation
             "generate_image",     # Creative output for conversation
             "codewords_agent",    # Trigger predefined agents/workflows (conversational)
             "system_control",     # UI/state manipulation (e.g. mute, set state, not reboot/shutdown)
             "gesture_control",    # Start/stop gesture control
             "camera_feed",        # Show/hide camera window
-            "camera_viewer",      # Open local camera viewer
+            "external_camera_window",  # Standalone pop-up webcam (renamed from camera_viewer — avoids Live API name glitches)
             "vision_inspector",   # Analyze webcam/screen (conversational vision)
             "open_app",           # Open simple desktop applications (background)
             "shell_runner",       # PRIMARY: Execute shell/terminal commands silently (mkdir, pip, git, scripts)
@@ -1252,6 +1272,8 @@ class JarvisLive:
             "hive_status",        # Check status of other networked PCs (informational)
             "camera_scanner",     # Hardware discovery for camera
             "detect_monitors",    # Hardware discovery for displays
+            "computer_control",   # Direct mouse/keyboard control, focus/move windows natively
+            "email_manager",      # Native email checking and sending
         ]
         filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
@@ -1401,6 +1423,7 @@ class JarvisLive:
     async def _receive_audio(self):
         print("[JARVIS] 👂 Recv started")
         out_buf, in_buf = [], []
+        silent_audio_buffer = []
         
         # Track repeated tool calls to prevent AI loops
         last_tool_name = None
@@ -1425,6 +1448,8 @@ class JarvisLive:
                         if not self.silent_mode:
                             # response.data is already raw PCM bytes - no decode needed
                             await self.audio_in_queue.put(response.data)
+                        else:
+                            silent_audio_buffer.append(response.data)
 
                     if response.server_content:
                         sc = response.server_content
@@ -1437,6 +1462,15 @@ class JarvisLive:
                             if txt:
                                 in_buf.append(txt)
                                 self._last_user_text = " ".join(in_buf)
+                                
+                                _lower_text = self._last_user_text.lower()
+                                if self.silent_mode and any(word in _lower_text for word in ["wake up", "jarvis wake up", "come back", "unmute"]):
+                                    self.silent_mode = False
+                                    self.voice_enabled = True
+                                    self.ui.write_log("SYS: 🔊 Voice enabled - Woke up from silent mode")
+                                    for audio_chunk in silent_audio_buffer:
+                                        await self.audio_in_queue.put(audio_chunk)
+                                    silent_audio_buffer.clear()
 
                         if sc.turn_complete:
                             if self._turn_done_event:
@@ -1456,6 +1490,7 @@ class JarvisLive:
                                 if any(s in full_in.lower() for s in shortcuts):
                                     self._on_text_command(full_in)
                             in_buf = []
+                            silent_audio_buffer.clear()
                             full_out = " ".join(out_buf).strip()
                             if full_out and not self.silent_mode:
                                 # Native Emotion Analysis
@@ -1695,12 +1730,16 @@ class JarvisLive:
                         
                         try:
                             await asyncio.sleep(0.5)
-                            greeting = self._get_contextual_greeting()
-                            # Send as a natural user prompt to trigger an audio greeting
-                            await session.send_client_content(
-                                turns=[{"role": "user", "parts": [{"text": f"GREETING_PROTOCOL_START: {greeting}\n\n[USER_EMOTION_UPDATE: {self.emotion_engine.get_emotion()}]"}]}],
-                                turn_complete=True
-                            )
+                            if getattr(self, '_is_first_connect', True):
+                                greeting = self._get_contextual_greeting()
+                                # Send as a natural user prompt to trigger an audio greeting
+                                await session.send_client_content(
+                                    turns=[{"role": "user", "parts": [{"text": f"GREETING_PROTOCOL_START: {greeting}\n\n[USER_EMOTION_UPDATE: {self.emotion_engine.get_emotion()}]"}]}],
+                                    turn_complete=True
+                                )
+                                self._is_first_connect = False
+                            else:
+                                print("[JARVIS] 🤫 Reconnected silently (skipping greeting).")
                         except Exception as ge:
                             print(f"[JARVIS] ⚠️ Startup greeting failed: {ge}")
             
@@ -1716,7 +1755,7 @@ class JarvisLive:
                     self.force_openrouter = False
                     self._update_config_brain("local")
                     await asyncio.sleep(2)
-                elif any(x in err_str for x in ["11001", "connection", "1011", "internal error", "endpoint"]):
+                elif any(x in err_str for x in ["11001", "connection", "1011", "1006", "abnormal closure", "closed", "internal error", "endpoint"]):
                     print(f"[JARVIS] 🔌 Connection issue: {actual_e}")
                     print(f"[JARVIS] 🔄 Reconnecting in {reconnect_delay}s...")
                     await asyncio.sleep(reconnect_delay)
@@ -1766,11 +1805,15 @@ def main():
             from actions.telegram_bot import start_telegram_bot
             from actions.ghost_relay import start_ghost_relay
             from actions.skill_cockpit import start_skill_cockpit
+            from actions.auto_fetcher import start_auto_fetcher
+            from actions.chronos_engine import start_chronos_engine
             
             start_routines(get_queue())
             start_telegram_bot(get_queue(), ui.write_log)
             start_ghost_relay(get_queue(), ui.write_log)
             start_skill_cockpit(ui.write_log)
+            start_auto_fetcher(interval_minutes=15)
+            start_chronos_engine(get_queue(), ui.write_log)
         except Exception as e:
             print(f"Background services could not start: {e}")
             import traceback

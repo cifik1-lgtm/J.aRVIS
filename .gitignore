@@ -35,11 +35,30 @@ MASTER_CONFIG_BACKUP.json
 
 # Memory & Data
 memory/conversation_history.json
-memory/long_term.json
 memory/faces/
 camera_state.txt
 recordings/
 scratch/
+
+# Runtime-generated memory files (volatile state, not for versioning)
+memory/hot_reload_logs.json
+memory/self_audit_state.json
+memory/tool_performance.json
+memory/action_ledger.json
+memory/chronos_execution_log.json
+memory/self_healing_logs.json
+memory/self_healing_report.json
+memory/self_improvement_log.json
+memory/task_queue_telemetry.json
+memory/generated_images/
+memory/wiki/
+memory/backups/
+
+# ChromaDB runtime data
+memory/chroma_db/
+
+# Scratch / debug scripts (one-off, not for versioning)
+scratch_*.py
 
 # OS
 .DS_Store

@@ -20,7 +20,7 @@ def load_settings():
         except: pass
     return {}
 
-def save_settings(gemini, openrouter, groq, telegram_token, telegram_chat, sms_key):
+def save_settings(gemini, poe, telegram_token, telegram_chat, sms_key):
     data = {}
     if API_FILE.exists():
         try:
@@ -28,8 +28,7 @@ def save_settings(gemini, openrouter, groq, telegram_token, telegram_chat, sms_k
         except: pass
     
     data["gemini_api_key"] = gemini
-    data["openrouter_api_key"] = openrouter
-    data["groq_api_key"] = groq
+    data["poe_api_key"] = poe
     data["telegram_bot_token"] = telegram_token
     data["telegram_chat_id"] = telegram_chat
     data["smsmobileapi_key"] = sms_key
@@ -115,8 +114,7 @@ with gr.Blocks(fill_height=True, title="JARVIS HIVE COMMAND") as demo:
             with gr.Group():
                 gr.Markdown("#### **Primary AI Cognitive Cores**")
                 gemini_input = gr.Textbox(label="Gemini API Key", value=cfg.get("gemini_api_key", ""), type="password")
-                or_input = gr.Textbox(label="OpenRouter API Key", value=cfg.get("openrouter_api_key", ""), type="password")
-                groq_input = gr.Textbox(label="Groq API Key", value=cfg.get("groq_api_key", ""), type="password")
+                poe_input = gr.Textbox(label="Poe API Key", value=cfg.get("poe_api_key", ""), type="password")
                 
             with gr.Group():
                 gr.Markdown("#### **Communications & Telemetry**")
@@ -129,7 +127,7 @@ with gr.Blocks(fill_height=True, title="JARVIS HIVE COMMAND") as demo:
             
             save_settings_btn.click(
                 save_settings, 
-                inputs=[gemini_input, or_input, groq_input, tg_token_input, tg_chat_input, sms_input], 
+                inputs=[gemini_input, poe_input, tg_token_input, tg_chat_input, sms_input], 
                 outputs=[save_status]
             )
 

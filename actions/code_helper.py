@@ -4,6 +4,14 @@ import json
 import re
 import time
 from pathlib import Path
+
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try: sys.stdout.reconfigure(encoding="utf-8")
+    except Exception: pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try: sys.stderr.reconfigure(encoding="utf-8")
+    except Exception: pass
+
 from core.llm_provider import call_llm
 
 def get_base_dir():
@@ -17,6 +25,8 @@ DESKTOP            = Path.home() / "Desktop"
 MAX_BUILD_ATTEMPTS = 3
 
 def _clean_code(text: str) -> str:
+    if text is None:
+        return ""
     text = text.strip()
     text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
     text = re.sub(r"\n?```$", "", text)
@@ -29,10 +39,16 @@ def _resolve_save_path(output_path: str, language: str) -> Path:
         "typescript": ".ts", "ts": ".ts",
         "html": ".html", "css": ".css",
     }
+    ext = ext_map.get((language or "python").lower(), ".py")
+    
     if output_path:
         p = Path(output_path)
-        return p if p.is_absolute() else DESKTOP / p
-    ext = ext_map.get((language or "python").lower(), ".py")
+        if not p.is_absolute():
+            p = DESKTOP / p
+        if not p.suffix:
+            p = p.with_suffix(ext)
+        return p
+        
     return DESKTOP / f"jarvis_code{ext}"
 
 def _read_file(file_path: str) -> tuple[str, str]:
@@ -52,20 +68,51 @@ def _save_file(path: Path, content: str) -> str:
 def _has_error(output: str) -> bool:
     return any(s in output.lower() for s in ["error", "exception", "traceback", "syntaxerror", "stderr"])
 
+def _get_system_prompt() -> str:
+    system_prompt = (
+        "You are an Elite AI Developer. Write breathtaking, complete, production-ready code. "
+        "If asked for HTML/Websites, ALWAYS include modern, premium CSS (dark modes, glassmorphism, neon accents, animations) "
+        "inside <style> tags and interactive JS inside <script> tags so it works beautifully as a single file. "
+        "NEVER use placeholders. Provide the complete implementation."
+    )
+    try:
+        from memory.memory_manager import get_memory_manager
+        mm = get_memory_manager()
+        memory_str = mm.format_for_prompt()
+        if memory_str:
+            system_prompt += f"\n\n[USER CONTEXT & MEMORIES]\nUse the following user identity, family, and preference information to customize the code, layout, and content specifically for the user:\n{memory_str}"
+    except Exception:
+        pass
+    return system_prompt
+
 def _write(description: str, language: str, output_path: str) -> tuple[str, Path]:
-    prompt = f"Write complete {language} code for: {description}\nRules: Output ONLY raw code, no backticks."
-    code = _clean_code(call_llm(prompt))
+    system_prompt = _get_system_prompt()
+    prompt = f"Write complete {language} code for: {description}\nRules: Output ONLY raw code, no markdown backticks, no explanations."
+    
+    # We must pass system_prompt to call_llm. Since call_llm allows system_prompt, we use it.
+    code = _clean_code(call_llm(prompt, system_prompt=system_prompt))
     path = _resolve_save_path(output_path, language)
     _save_file(path, code)
+    
+    try:
+        from memory.memory_manager import remember
+        project_name = path.parent.name
+        remember(f"project_{project_name}", f"Created files at: {path}", "projects")
+        remember("last_project_location", str(path.parent), "notes")
+    except Exception:
+        pass
+        
     return code, path
 
 def _fix_code(code: str, error_output: str, description: str) -> str:
+    system_prompt = _get_system_prompt()
     prompt = f"Fix this code:\n{code}\n\nError:\n{error_output}\n\nGoal: {description}\nRules: Output ONLY fixed code."
-    return _clean_code(call_llm(prompt))
+    return _clean_code(call_llm(prompt, system_prompt=system_prompt))
 
 def _edit_code(code: str, change_description: str, language: str) -> str:
+    system_prompt = _get_system_prompt()
     prompt = f"Edit this {language} code:\n{code}\n\nChange required: {change_description}\nRules: Output ONLY the complete updated code."
-    return _clean_code(call_llm(prompt))
+    return _clean_code(call_llm(prompt, system_prompt=system_prompt))
 
 def _run_file(path: Path, args: list, timeout: int) -> str:
     interpreters = {".py": [sys.executable], ".js": ["node"], ".sh": ["bash"]}
@@ -93,6 +140,8 @@ def code_helper(parameters: dict, response=None, player=None, session_memory=Non
     action = p.get("action", "write").lower().strip()
     desc = p.get("description", "").strip()
     file_path = p.get("file_path", "").strip()
+    if not file_path:
+        file_path = p.get("output_path", "").strip()
     code_input = p.get("code", "").strip()
     lang = p.get("language", "python")
 

@@ -13,7 +13,7 @@ try:
     from playwright.async_api import async_playwright
     HAS_PLAYWRIGHT = True
 except ImportError:
-    print("[WebAutomation] ⚠️ Playwright not available. Using simple browser automation.")
+    print("[WebAutomation] [WARN] Playwright not available. Using simple browser automation.")
 
 
 async def web_automation_async(parameters: dict, player=None) -> str:

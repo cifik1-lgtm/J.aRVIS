@@ -17,27 +17,47 @@ def get_config():
     except:
         return {}
 
+def call_local_llm(prompt: str, system_prompt: str = "", model: str = None) -> str:
+    """Call a local Ollama model."""
+    import requests
+    config = get_config()
+    l_model = config.get("local_model", "hermes3:8b")
+    if model:
+        l_model = model
+    resp = requests.post(
+        "http://localhost:11434/api/generate",
+        json={"model": l_model, "prompt": f"{system_prompt}\n\n{prompt}" if system_prompt else prompt, "stream": False},
+        timeout=180
+    )
+    data = resp.json()
+    if "response" not in data:
+        raise ValueError(f"Local LLM error: {data}")
+    return data["response"]
+
 def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", brain: str = None) -> str:
     """Central router for all LLM calls in the JARVIS system with automatic fallback."""
     config = get_config()
-    forced = config.get("force_brain", "gemini")
+    forced = config.get("force_brain", "hive")
     
-    # Order of attempt based on choice
+    # Order of attempt: Pollinations first (primary), Gemini as last-resort fallback
     if brain:
         attempts = [brain]
-    else:
-        attempts = [forced]
-        for b in ["gemini", "groq", "openrouter", "minimax", "llm7", "pollinations"]:
+        # Add fallbacks if specific brain was requested but fails
+        for b in ["pollinations", "gemini", "local"]:
             if b not in attempts:
                 attempts.append(b)
+    else:
+        # Default chain: pollinations -> gemini -> local
+        attempts = ["pollinations", "gemini", "local"]
+        if forced not in ("hive", "pollinations", "gemini", "local"):
+            attempts.insert(0, forced)
 
     last_error = None
-    for brain in attempts:
+    for brain_type in attempts:
         try:
-            if brain == "gemini":
+            if brain_type == "gemini":
                 from google import genai
                 g_model = config.get("gemini_model", "gemini-2.0-flash-exp")
-                # If explicit model passed starts with gemini, use it
                 actual_model = model if model.startswith("gemini") else g_model
                 
                 client = genai.Client(api_key=config.get("gemini_api_key", ""))
@@ -47,109 +67,18 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                 )
                 return response.text
 
-            elif brain == "groq":
-                from groq import Groq
-                api_key = config.get("groq_api_key", "")
-                if not api_key: continue
-                
-                g_model = config.get("groq_model", "llama-3.3-70b-versatile")
-                actual_model = model if "llama" in model or "mixtral" in model else g_model
-                
-                client = Groq(api_key=api_key)
-                response = client.chat.completions.create(
-                    model=actual_model,
-                    messages=[
-                        {"role": "system", "content": system_prompt or "You are a helpful assistant."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=2048
-                )
-                return response.choices[0].message.content
-
-            elif brain == "openrouter":
-                import requests
-                api_key = config.get("openrouter_api_key", "")
-                if not api_key: continue
-                
-                or_model = "google/gemma-4-26b-a4b-it:free"
-                # If a specific OpenRouter model is passed (contains slash), use it.
-                # Otherwise, intelligently select the best model based on the prompt.
-                if model and "/" in model:
-                    actual_model = model
-                else:
-                    try:
-                        from core.brain_router import BrainRouter
-                        br = BrainRouter(API_CONFIG_PATH)
-                        actual_model = br.get_optimal_openrouter_model(prompt)
-                    except Exception:
-                        actual_model = or_model
-                
-                resp = requests.post(
-                    url="https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {api_key}"},
-                    data=json.dumps({
-                        "model": actual_model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
-                            {"role": "user", "content": prompt}
-                        ]
-                    }),
-                    timeout=180
-                )
-                return resp.json()["choices"][0]["message"]["content"]
-
-            elif brain == "minimax":
-                import requests
-                api_key = config.get("minimax_api_key", "")
-                if not api_key: continue
-                resp = requests.post(
-                    url="https://api.minimax.chat/v1/text/chatcompletion_v2",
-                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                    data=json.dumps({
-                        "model": "abab6.5s-chat",
-                        "messages": [
-                            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
-                            {"role": "user", "content": prompt}
-                        ]
-                    }),
-                    timeout=180
-                )
-                data = resp.json()
-                if "choices" not in data:
-                    raise ValueError(f"MiniMax Error: {data.get('base_resp', {}).get('status_msg', 'Unknown')}")
-                return data["choices"][0]["message"]["content"]
-
-            elif brain == "llm7":
-                import requests
-                api_key = config.get("llm7_api_key", "")
-                actual_model = model if model else "default"
-                headers = {"Content-Type": "application/json"}
-                if api_key:
-                    headers["Authorization"] = f"Bearer {api_key}"
-                
-                resp = requests.post(
-                    url="https://api.llm7.io/v1/chat/completions",
-                    headers=headers,
-                    data=json.dumps({
-                        "model": actual_model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        "stream": False
-                    }),
-                    timeout=180
-                )
-                data = resp.json()
-                if "choices" not in data:
-                    raise ValueError(f"LLM7.io Error: {data}")
-                return data["choices"][0]["message"]["content"]
-
-            elif brain == "pollinations":
+            elif brain_type == "pollinations":
                 import requests
                 api_key = config.get("pollinations_api_key", "")
-                actual_model = model if model else "openai"
+                
+                p_models = config.get("pollinations_models", {})
+                # Always use Pollinations-native models — NEVER pass Gemini model names
+                # Use deepseek for code/complex tasks, gpt-5.4-mini for everything else
+                if model and not model.startswith("gemini"):
+                    actual_model = model  # Only use if it's already a Pollinations model
+                else:
+                    actual_model = p_models.get("code", "deepseek")
+                
                 headers = {"Content-Type": "application/json"}
                 if api_key:
                     headers["Authorization"] = f"Bearer {api_key}"
@@ -165,28 +94,19 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                         ],
                         "stream": False
                     }),
-                    timeout=180
+                    timeout=550
                 )
                 data = resp.json()
                 if "choices" not in data:
                     raise ValueError(f"Pollinations Chat Error: {data}")
                 return data["choices"][0]["message"]["content"]
 
-            elif brain == "local":
-                import requests
-                l_model = config.get("local_model", "hermes3:8b")
-                resp = requests.post(
-                    "http://localhost:11434/api/generate",
-                    json={"model": l_model, "prompt": f"{system_prompt}\n\n{prompt}", "stream": False},
-                    timeout=180
-                )
-                return resp.json()["response"]
-
+            elif brain_type == "local":
+                return call_local_llm(prompt, system_prompt, model)
 
         except Exception as e:
-            print(f"[LLM] Brain '{brain}' failed: {e}. Trying next fallback...")
+            print(f"[LLM] Brain '{brain_type}' failed: {e}. Trying next fallback...")
             last_error = e
             continue
 
     raise last_error or ValueError("All AI engines failed to respond.")
-

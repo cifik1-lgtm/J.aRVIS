@@ -52,7 +52,7 @@ class RAGMemoryEngine:
             from chromadb.config import Settings
             from sentence_transformers import SentenceTransformer
 
-            print("[RAG] 🧠 Initializing Neural Core...")
+            print("[RAG] [INFO] Initializing Neural Core...")
             self._client = chromadb.PersistentClient(path=str(CHROMA_DIR))
             self._collection = self._client.get_or_create_collection(
                 name="jarvis_memory",
@@ -67,11 +67,14 @@ class RAGMemoryEngine:
             # Index Expert Skills from the /skills folder
             self.ingest_skills()
 
+            # Index Local Wiki from the memory/wiki folder
+            self.ingest_wiki()
+
             self._ready = True
-            print(f"[RAG] ✅ Neural Link Active — {self._collection.count()} neurons indexed.")
+            print(f"[RAG] [SUCCESS] Neural Link Active — {self._collection.count()} neurons indexed.")
 
         except Exception as e:
-            print(f"[RAG] ⚠️ Initialization error: {e}")
+            print(f"[RAG] [WARN] Initialization error: {e}")
 
     def _sync_from_json(self):
         """Load all memories from long_term.json into ChromaDB."""
@@ -91,6 +94,43 @@ class RAGMemoryEngine:
                 if not isinstance(entry, dict) or "value" not in entry:
                     continue
                 self.index_memory(category, key, entry["value"])
+
+    def ingest_wiki(self):
+        """Index local wiki markdown files incrementally in batches."""
+        wiki_dir = BASE_DIR / "memory" / "wiki"
+        if not wiki_dir.exists():
+            wiki_dir.mkdir(parents=True, exist_ok=True)
+            return
+
+        # Get existing IDs to avoid re-indexing
+        try:
+            existing_ids = set(self._collection.get(include=[])["ids"])
+        except Exception:
+            existing_ids = set()
+        
+        new_docs = []
+        for doc_file in wiki_dir.rglob("*.md"):
+            doc_rel_path = str(doc_file.relative_to(wiki_dir)).replace("\\", "/")
+            doc_id = f"wiki::{doc_rel_path}"
+            if doc_id not in existing_ids:
+                new_docs.append(doc_file)
+
+        if not new_docs:
+            return
+
+        # Batch ingestion to save RAM
+        batch_size = 50
+        for i in range(0, len(new_docs), batch_size):
+            batch = new_docs[i:i + batch_size]
+            for doc_file in batch:
+                try:
+                    content = doc_file.read_text(encoding="utf-8")
+                    doc_rel_path = str(doc_file.relative_to(wiki_dir)).replace("\\", "/")
+                    # Use "wiki" category, key as rel path, value as content
+                    self.index_memory("wiki", doc_rel_path, content[:2000])
+                except Exception:
+                    pass
+            gc.collect()
 
     def ingest_skills(self):
         """Index skills incrementally in batches."""

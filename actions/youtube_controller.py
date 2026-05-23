@@ -26,10 +26,53 @@ YOUTUBE_SHORTCUTS = {
     "captions": "c",
 }
 
+def focus_youtube_window() -> bool:
+    """Find and focus the YouTube window (or Brave browser)"""
+    try:
+        import pygetwindow
+        import sys
+        
+        windows = pygetwindow.getWindowsWithTitle("YouTube")
+        if not windows:
+            windows = pygetwindow.getWindowsWithTitle("Brave")
+        
+        if windows:
+            win = windows[0]
+            if win.isMinimized:
+                try:
+                    win.restore()
+                except Exception:
+                    pass
+            
+            if sys.platform == "win32":
+                try:
+                    import win32com.client
+                    shell = win32com.client.Dispatch("WScript.Shell")
+                    if shell.AppActivate("YouTube"):
+                        time.sleep(0.2)
+                        return True
+                    if shell.AppActivate("Brave"):
+                        time.sleep(0.2)
+                        return True
+                except Exception:
+                    pass
+            
+            try:
+                win.activate()
+                time.sleep(0.2)
+                return True
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[YouTube] Focus window failed: {e}")
+    return False
+
 def send_shortcut(shortcut: str):
     """Send keyboard shortcut to active window"""
     try:
-        # We assume the window is already focused by youtube_player's activate()
+        # Focus the YouTube window first to ensure it receives the shortcut
+        focus_youtube_window()
+        
         time.sleep(0.1)
         
         keys = shortcut.split('+')

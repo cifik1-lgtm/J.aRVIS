@@ -72,19 +72,19 @@ def execute_monitor_detection(jarvis):
         
         # Get detailed info
         for monitor in mm.get_monitors():
-            name = monitor.getName()
-            resolution = monitor.getSize()
-            position = monitor.getPosition()
+            name = monitor.name
+            resolution = monitor.size
+            position = monitor.position
             is_primary = monitor.isPrimary
             primary_str = " (Primary)" if is_primary else ""
             report.append(f"Monitor: {name}{primary_str}, Resolution: {resolution.width}x{resolution.height}, Position: {position}")
             if jarvis.ui:
-                jarvis.ui.write_log(f"SYS: \ud83d\udda5\ufe0f {name}{primary_str} | {resolution.width}x{resolution.height} @ {position}")
+                jarvis.ui.write_log(f"SYS: 🖥️ {name}{primary_str} | {resolution.width}x{resolution.height} @ {position}")
     else:
         jarvis.speak("Single monitor setup detected, sir.")
         primary = mm.get_primary_monitor()
         if primary:
-            res = primary.getSize()
-            report.append(f"Single Monitor: {primary.getName()}, Resolution: {res.width}x{res.height}")
+            res = primary.size
+            report.append(f"Single Monitor: {primary.name}, Resolution: {res.width}x{res.height}")
     
     return {"status": "success", "monitor_count": count, "details": report}

@@ -17,6 +17,29 @@ API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
 
 TOOL_DECLARATIONS = [
     {
+        "name": "swarm_coordinator",
+        "description": "Multi-Agent Swarm Mode: Delegate a complex task to multiple local Ollama sub-agents running in parallel to save API costs.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "task": {"type": "STRING", "description": "The complex task to delegate"},
+                "agents": {"type": "ARRAY", "items": {"type": "STRING"}, "description": "List of agent roles, e.g. ['coder', 'researcher', 'tester']"}
+            },
+            "required": ["task"]
+        }
+    },
+    {
+        "name": "deep_research",
+        "description": "Deep Research Mode: Scrape web pages or read PDF files and save their text into the Vector RAG memory.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "url": {"type": "STRING", "description": "URL to scrape"},
+                "file_path": {"type": "STRING", "description": "Path to PDF or text file to parse"}
+            }
+        }
+    },
+    {
         "name": "delegate_task",
         "description": "DELEGATE complex tasks (web searching, coding, file operations, browser control, detailed research) to the Expert Brains. Use this for ANY task that requires more than simple conversation.",
         "parameters": {
@@ -56,8 +79,8 @@ TOOL_DECLARATIONS = [
         }
     },
     {
-        "name": "camera_viewer",
-        "description": "Open or close a dedicated, standalone external camera window. WARNING: Only use this tool for specialized tasks like hand gesture control setup, face recognition training, or when the user explicitly requests an 'external window' or 'standalone window'. For regular requests to show or see the camera feed, always use 'camera_feed' instead to display it on the holographic HUD.",
+        "name": "external_camera_window",
+        "description": "Open or close a separate pop-up webcam window (not the main HUD). Use only when the user asks for an external/standalone camera window, gesture setup, or face-training UI. For normal 'show my camera' on the dashboard, use the HUD webcam tool instead.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -219,11 +242,11 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "system_control",
-        "description": "Controls JARVIS system states like silencing, autonomous mode, and brain switching. WARNING: DO NOT use this to switch to 'local' or 'openrouter' for tasks; use 'delegate_task' instead to keep your voice active.",
+        "description": "Controls JARVIS system states like autonomous mode and brain switching. WARNING: DO NOT use this to switch to 'local' or 'openrouter' for tasks; use 'delegate_task' instead to keep your voice active.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "action": {"type": "STRING", "enum": ["toggle_silence", "set_autonomous_mode", "switch_brain", "system_diagnostic"]},
+                "action": {"type": "STRING", "enum": ["set_autonomous_mode", "switch_brain", "system_diagnostic"]},
                 "state": {"type": "BOOLEAN"},
                 "autonomous": {"type": "BOOLEAN"},
                 "brain": {"type": "STRING", "description": "gemini | hive. (DO NOT switch to local/qwen here)"},
@@ -309,32 +332,37 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "file_controller",
-        "description": "File and folder operations.",
+        "description": "CRITICAL TOOL for reading and writing files. Actions: 'read' (read a file), 'write' (create/overwrite a file with content), 'list', 'create_folder', 'delete', 'move', 'copy'. DO NOT use shell_runner to echo or cat files; use file_controller instead.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "action": {"type": "STRING"},
-                "path": {"type": "STRING"},
-                "name": {"type": "STRING"},
-                "content": {"type": "STRING"},
+                "action": {"type": "STRING", "description": "read | write | list | create_folder | delete | move | copy"},
+                "path": {"type": "STRING", "description": "The path to the file or directory. Can be absolute or relative."},
+                "name": {"type": "STRING", "description": "The file name if path is just a directory."},
+                "content": {"type": "STRING", "description": "The exact code or text to write to the file (only for 'write' action)."},
                 "destination": {"type": "STRING"},
                 "target": {"type": "STRING"},
                 "auto": {"type": "BOOLEAN"}
             },
-            "required": ["action"]
+            "required": ["action", "path"]
         }
     },
     {
         "name": "computer_control",
-        "description": "Direct mouse/keyboard control and OS tasks. Actions: type, click, scroll, move, drag, hotkey, screenshot, smart_close, list_processes, get_active_window, focus_window, open_folder. Use smart_close for apps/browsers.",
+        "description": "Direct mouse/keyboard control and OS tasks. Actions: type, click, scroll, move, drag, hotkey, screenshot, smart_close, list_processes, get_active_window, focus_window, open_folder, move_window. To move any window programmatically to another monitor or position without using hotkeys or mouse actions, use the 'move_window' action with 'title' (window title to target, e.g. 'YouTube' or 'Brave') and 'target' (e.g. 'other_monitor' or 'Monitor 1').",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "action": {"type": "STRING"},
-                "text": {"type": "STRING"},
-                "target": {"type": "STRING", "description": "App name for smart_close (e.g. brave, chrome)"},
-                "keys": {"type": "STRING"},
-                "x": {"type": "NUMBER"}, "y": {"type": "NUMBER"},
+                "action": {
+                    "type": "STRING",
+                    "description": "type | click | scroll | move | drag | hotkey | screenshot | smart_close | list_processes | get_active_window | focus_window | open_folder | move_window"
+                },
+                "text": {"type": "STRING", "description": "Text to type or command parameters"},
+                "target": {"type": "STRING", "description": "Target monitor/destination (e.g. 'other_monitor' or monitor name) or app name for smart_close."},
+                "title": {"type": "STRING", "description": "Title of target window for focus_window or move_window (e.g. 'YouTube', 'Brave')."},
+                "keys": {"type": "STRING", "description": "Keys or shortcut sequence to simulate (only for hotkey action)"},
+                "x": {"type": "NUMBER", "description": "Target X coordinate"},
+                "y": {"type": "NUMBER", "description": "Target Y coordinate"},
                 "amount": {"type": "INTEGER", "description": "Scroll amount"},
                 "auto": {"type": "BOOLEAN"}
             },
@@ -361,21 +389,6 @@ TOOL_DECLARATIONS = [
                 "confirmed": {"type": "BOOLEAN"}
             },
             "required": []
-        }
-    },
-    {
-        "name": "code_helper",
-        "description": "Coding assistance.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "action": {"type": "STRING"},
-                "description": {"type": "STRING"},
-                "language": {"type": "STRING"},
-                "file_path": {"type": "STRING"},
-                "auto": {"type": "BOOLEAN"}
-            },
-            "required": ["action"]
         }
     },
     {
@@ -417,18 +430,6 @@ TOOL_DECLARATIONS = [
         }
     },
     {
-        "name": "camera_viewer",
-        "description": "Open or close a dedicated, standalone external camera window. WARNING: Only use this tool for specialized tasks like hand gesture control setup, face recognition training, or when the user explicitly requests an 'external window' or 'standalone window'. For regular requests to show or see the camera feed, always use 'camera_feed' instead to display it on the holographic HUD.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "action": {"type": "STRING", "enum": ["start", "stop"], "description": "start (default) to open, stop to close"},
-                "camera_index": {"type": "INTEGER"}
-            },
-            "required": []
-        }
-    },
-    {
         "name": "youtube_video",
         "description": "Advanced YouTube actions.",
         "parameters": {
@@ -443,14 +444,42 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "self_fix",
-        "description": "Uses AI to diagnose and repair a specific file in the JARVIS system if an error occurs.",
+        "description": "JARVIS internal self-healing and self-learning system. Use this ONLY to repair and fix crashes in JARVIS's own source code files (under actions/ or core/ or agent/). Do NOT use this to fix external files, websites, or user documents — for those, use code_helper instead. Modes: 'heal_file' fixes a specific crashed file; 'audit' scans the error ledger for recurring bugs and auto-patches source files; 'report' shows a summary of all logged errors; 'clear' resets the error ledger.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "file_name": {"type": "STRING", "description": "The name of the file to fix (e.g. 'ui.py' or 'tools.py')."},
-                "error_message": {"type": "STRING", "description": "The specific error message or traceback observed."}
+                "mode": {"type": "STRING", "enum": ["heal_file", "audit", "report", "clear"], "description": "heal_file=fix one file, audit=scan+auto-patch recurring errors, report=show error stats, clear=reset ledger."},
+                "file_name": {"type": "STRING", "description": "The file to fix (e.g. 'file_controller.py'). Required for heal_file mode."},
+                "error_message": {"type": "STRING", "description": "The specific error message observed. Required for heal_file mode."}
             },
-            "required": ["file_name"]
+            "required": ["mode"]
+        }
+    },
+    {
+        "name": "netflix_manager",
+        "description": (
+            "Control the installed Netflix Windows app on a chosen monitor using UI Automation only (Invoke/SetValue) — NO keyboard, NO paste, NO Enter/F11. "
+            "play_title: open app, move to monitor, search title, invoke Play, then in-player fullscreen (not just resizing the app window). "
+            "Example: action=play_title, title=SWAT, monitor=1, fullscreen=true. Steps are paced (step_delay_sec) to avoid rate limits."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {
+                    "type": "STRING",
+                    "enum": [
+                        "launch", "play_title", "search", "pause", "resume", "play",
+                        "fullscreen", "move_monitor", "place"
+                    ],
+                    "description": "launch=open app; play_title=search+play+video fullscreen via UIA; search=UIA search only; pause/resume/play/fullscreen=UIA player buttons; move_monitor=position on monitor N"
+                },
+                "title": {"type": "STRING", "description": "Movie or show name (e.g. SWAT)"},
+                "query": {"type": "STRING", "description": "Alias for title"},
+                "monitor": {"type": "INTEGER", "description": "Monitor number (1 = first monitor, 2 = second, etc.)"},
+                "monitor_index": {"type": "INTEGER", "description": "Same as monitor"},
+                "fullscreen": {"type": "BOOLEAN", "description": "Fill target monitor (default true)"}
+            },
+            "required": ["action"]
         }
     },
     {
@@ -688,6 +717,18 @@ TOOL_DECLARATIONS = [
         }
     },
     {
+        "name": "self_improvement",
+        "description": "AI self-improvement and auto-optimization loop.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "description": "run_audit | status | optimize_tool"},
+                "tool_name": {"type": "STRING", "description": "File name or tool name to optimize (for optimize_tool)"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
         "name": "admin_controller",
         "description": "Admin level system controls.",
         "parameters": {
@@ -701,12 +742,32 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "code_agent",
-        "description": "Advanced code file operations.",
+        "description": "Advanced AI code editor and problem solver. Actions: 'read_file', 'write_file', 'edit_file' (find and replace), 'find_files', 'analyze_error'. This is the BEST tool for coding tasks.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "action": {"type": "STRING"},
-                "file_path": {"type": "STRING"}
+                "action": {"type": "STRING", "description": "read_file | write_file | edit_file | find_files | analyze_error | search_code"},
+                "file_path": {"type": "STRING", "description": "Path to the file being edited or read"},
+                "content": {"type": "STRING", "description": "The full code to write (for 'write_file')"},
+                "old_text": {"type": "STRING", "description": "Text to find (for 'edit_file')"},
+                "new_text": {"type": "STRING", "description": "Replacement text (for 'edit_file')"},
+                "pattern": {"type": "STRING", "description": "Search pattern (for 'find_files' or 'search_code')"},
+                "error_text": {"type": "STRING", "description": "Error trace (for 'analyze_error')"}
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "name": "code_helper",
+        "description": "Delegates a large coding task to a specialized coding LLM. This is the BEST tool to use when you need to write a full file, app, or website from scratch, edit existing code, or run/optimize/fix code. Provide a description and output_path or file_path.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "action": {"type": "STRING", "enum": ["write", "edit", "build", "run", "explain", "optimize", "fix"], "description": "write=new code; edit/fix=change/repair existing file; build=write and test; run=execute; explain=analyze; optimize=make faster."},
+                "description": {"type": "STRING", "description": "What to build, write, edit, or fix."},
+                "language": {"type": "STRING", "description": "e.g. 'html', 'python', 'javascript'"},
+                "output_path": {"type": "STRING", "description": "Absolute path to save the generated code (for 'write' or 'build')"},
+                "file_path": {"type": "STRING", "description": "Absolute path to the file to edit, run, explain, optimize, or fix (for 'edit', 'run', 'explain', 'optimize', 'fix')"}
             },
             "required": ["action"]
         }
@@ -973,7 +1034,7 @@ TOOL_DECLARATIONS = [
     },
     {
         "name": "shell_runner",
-        "description": "Execute any shell/terminal command silently in the background — no windows open. Use this for ALL file/folder creation, deletion, editing, running scripts, installing packages, git operations, npm/pip commands, compiling code, etc. This is the PRIMARY tool for any task that would require a command line. Prefer this over opening apps. Examples: 'mkdir C:\\Users\\eva\\Desktop\\my-site', 'pip install requests', 'git clone ...', 'python script.py'. Supports PowerShell (default on Windows), cmd, and bash.",
+        "description": "Execute any shell/terminal command silently in the background — no windows open. Use this for running scripts, installing packages, git operations, npm/pip commands, compiling code, etc. DO NOT use this tool to write code or text to files (e.g. do not use echo > file), and do not use it to read files. For reading/writing files, use 'file_controller' or 'code_agent' instead. Supports PowerShell (default on Windows), cmd, and bash.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
@@ -1002,8 +1063,8 @@ class ToolDispatcher:
         # Classify tool risk level
         self._Tiers = {
             "harmless": ["web_search", "weather_report", "ip_checker", "save_memory", "vision_inspector", "preference_manager", "monitor_detection"],
-            "state_changing": ["file_controller", "open_app", "browser_control", "browser_navigate", "face_manager", "desktop_control", "youtube_control", "sms_tool"],
-            "privileged": ["admin_controller", "reboot_jarvis", "shutdown_jarvis", "python_sandbox", "relay_command"]
+            "state_changing": ["file_controller", "open_app", "browser_control", "browser_navigate", "face_manager", "desktop_control", "youtube_control", "netflix_manager", "sms_tool"],
+            "privileged": ["admin_controller", "reboot_jarvis", "shutdown_jarvis", "python_sandbox", "relay_command", "self_improvement"]
         }
 
     def _get_tool(self, module_name, func_name=None):
@@ -1061,14 +1122,22 @@ class ToolDispatcher:
             default_t = timeouts.get("default", 30)
             timeout = timeouts.get(name, 
                 600 if name in ["shell_runner", "file_controller", "python_sandbox"] else  # local execution tools
-                600 if name in ["dev_agent", "code_helper", "code_agent", "project_architect", "learn_skill"] else  # heavy AI tools
+                600 if name in ["dev_agent", "code_helper", "code_agent", "project_architect", "learn_skill", "generate_image", "netflix_manager"] else  # heavy AI tools
                 180 if name in ["browser_control", "web_automation", "ghost_browser"] else  # browser tools
                 default_t
             )
             
             async def _execute_logic():
                 # 0. RAG SEARCH
-                if name == "rag_search":
+                if name == "swarm_coordinator":
+                    from actions.swarm_coordinator import swarm_coordinator
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: swarm_coordinator(args, player=self.ui))
+
+                elif name == "deep_research":
+                    from actions.deep_research import deep_research
+                    return await asyncio.get_event_loop().run_in_executor(None, lambda: deep_research(args, player=self.ui))
+
+                elif name == "rag_search":
                     query = args.get("query", "")
                     top_k = int(args.get("top_k", 5))
                     try:
@@ -1090,18 +1159,7 @@ class ToolDispatcher:
                 if name == "system_control":
                     action = args.get("action", "")
                     if action == "toggle_silence":
-                        target_state = args.get("state")
-                        if target_state is None:
-                            target_state = not self.orch.silent_mode
-                        
-                        # AI PROTECT: Prevent the AI from deactivating its own silent mode.
-                        # Only activation is allowed via tool. Deactivation must happen via 'wake up' voice command.
-                        if not target_state and self.orch.silent_mode:
-                            return "I cannot deactivate silent mode myself, sir. You must say 'wake up' to restore my voice."
-                        
-                        self.orch.voice_enabled = not target_state
-                        self.orch.silent_mode = target_state
-                        return f"Silence mode {'activated' if target_state else 'deactivated'}, sir."
+                        return "Silence mode is handled locally by the system. Do not use this tool to control it."
                     elif action == "set_autonomous_mode":
                         auto = args.get("autonomous", True)
                         self.orch._update_config_autonomous(auto)
@@ -1219,7 +1277,7 @@ class ToolDispatcher:
                     except Exception as e:
                         return f"Monitor detection failed: {e}, sir."
 
-                if name == "camera_viewer":
+                if name in ("camera_viewer", "external_camera_window"):
                     idx = args.get("camera_index", args.get("index", 0))
                     action = args.get("action", "start")
                     from actions.camera_viewer import camera_viewer
@@ -1260,12 +1318,21 @@ class ToolDispatcher:
                     priority = args.get("priority", "NORMAL")
                     context = args.get("context", "")
                     
+                    try:
+                        from actions.action_ledger import get_recent_actions
+                        recent_ctx = get_recent_actions()
+                        if recent_ctx != "No recent background actions.":
+                            context = f"{context}\n\n{recent_ctx}".strip()
+                    except Exception:
+                        pass
+                    
+                    
                     # Smart Brain Routing
                     goal_l = goal.lower()
                     if any(x in goal_l for x in ["code", "python", "script", "develop", "debug"]):
-                        brain_hint = "ollama"
+                        brain_hint = "pollinations"
                     elif any(x in goal_l for x in ["search", "web", "find", "google", "browse", "research"]):
-                        brain_hint = "openrouter"
+                        brain_hint = "gemini"
                     else:
                         brain_hint = self.orch.brain_router.get_active_brain()
 
@@ -1274,7 +1341,7 @@ class ToolDispatcher:
                     
                     # Submit to the Hive Mind Task Queue with brain hint
                     get_queue().submit(
-                        goal=goal, 
+                        goal=f"{goal}\n\nContext:\n{context}" if context else goal, 
                         priority=prio_map.get(priority, TaskPriority.NORMAL),
                         preferred_brain=brain_hint,
                         speak=lambda m: self.orch.speak(f"Sir, regarding your request for {goal[:30]}... {m}")
@@ -1411,7 +1478,7 @@ class ToolDispatcher:
                         return f"{msg} in the HUD, sir."
                     return "HUD not available."
 
-                elif name == "camera_viewer":
+                elif name in ("camera_viewer", "external_camera_window"):
                     from actions.camera_viewer import camera_viewer
                     index = args.get("camera_index", args.get("index", 0))
                     action = args.get("action", "start")
@@ -1449,14 +1516,15 @@ class ToolDispatcher:
                         return "I couldn't recognize anyone in that image, sir."
 
                 elif name == "self_fix":
-                    target = args.get("file_name", "")
-                    error = args.get("error_message", "Unknown error")
-                    if not target: return "Please specify which file to fix, sir."
-                    if hasattr(self.orch, "healer") and self.orch.healer:
-                        self.ui.write_log(f"🛠️ Manual Self-Fix triggered for {target}...")
-                        success, msg = self.orch.healer.attempt_repair(target, error)
-                        return f"Self-fix result for {target}: {msg}"
-                    return "Self-healing system not initialized."
+                    from actions.self_healing import self_healing
+                    mode   = args.get("mode", "heal_file")
+                    target = args.get("file_name", args.get("target_file", ""))
+                    error  = args.get("error_message", "")
+                    # Build params compatible with new self_healing
+                    heal_params = {"mode": mode, "target_file": target, "error_message": error}
+                    return await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: self_healing(heal_params, player=self.ui)
+                    ) or "Self-healing complete."
 
                 elif name == "project_architect":
                     from actions.project_architect import project_architect
@@ -1469,6 +1537,34 @@ class ToolDispatcher:
                 elif name == "ghost_browser":
                     from actions.ghost_browser import ghost_browser
                     return await asyncio.get_event_loop().run_in_executor(None, lambda: ghost_browser(parameters=args, player=self.ui)) or "Done."
+
+                elif name == "ip_checker":
+                    from actions.ip_checker import check_ip
+                    return check_ip(parameters=args, player=self.ui)
+
+                elif name == "screen_process":
+                    from actions.screen_processor import screen_process
+                    return screen_process(parameters=args, player=self.ui)
+
+                elif name == "desktop_control":
+                    from actions.desktop import desktop_control
+                    return desktop_control(parameters=args, player=self.ui)
+
+                elif name == "telegram_manager":
+                    from actions.telegram_bot import telegram_manager
+                    return telegram_manager(parameters=args, player=self.ui)
+
+                elif name == "routine_manager":
+                    from actions.routines import routine_manager
+                    return routine_manager(parameters=args, player=self.ui)
+
+                elif name == "youtube_control":
+                    from actions.youtube_controller import youtube_control
+                    return youtube_control(parameters=args, player=self.ui)
+
+                elif name == "netflix_manager":
+                    from actions.netflix_manager import netflix_manager
+                    return netflix_manager(parameters=args, player=self.ui)
 
                 elif name == "weather_report":
                     from actions.weather_report import weather_action
@@ -1487,6 +1583,9 @@ class ToolDispatcher:
                     import importlib
                     import core.tools
                     importlib.reload(core.tools)
+                    
+                    # Clear lazy loading tool cache to force re-importing changed actions
+                    self._tool_cache.clear()
                     
                     # Update the live session tools if possible
                     if hasattr(self.orch, "update_tools"):

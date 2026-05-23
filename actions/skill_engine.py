@@ -27,10 +27,10 @@ def learn_new_skill(skill_name: str, objective: str, jarvis=None):
     Return ONLY the Python code block.
     """
     
-    from core.llm_provider import call_local_llm
+    from core.llm_provider import call_llm
     jarvis.ui.write_log(f"🧠 Skill Engine: Researching '{skill_name}'...")
     
-    code = call_local_llm(prompt, model="qwen2.5-coder:7b")
+    code = call_llm(prompt, model="qwen2.5-coder:7b", brain="local")
     if "```python" in code:
         code = re.search(r"```python\n(.*?)\n```", code, re.DOTALL).group(1)
     elif "```" in code:

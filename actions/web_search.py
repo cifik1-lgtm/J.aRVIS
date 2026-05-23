@@ -39,6 +39,34 @@ def _gemini_search(query: str) -> str:
     return text
 
 
+def _pollinations_search(query: str) -> str:
+    import requests
+    with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+        api_key = cfg.get("pollinations_api_key", "")
+        p_models = cfg.get("pollinations_models", {})
+        model = p_models.get("search", "perplexity-reasoning")
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    resp = requests.post(
+        "https://gen.pollinations.ai/v1/chat/completions",
+        headers=headers,
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": query}],
+            "stream": False
+        },
+        timeout=180
+    )
+    data = resp.json()
+    if "choices" not in data:
+        raise ValueError(f"Pollinations Search Error: {data}")
+    return data["choices"][0]["message"]["content"]
+
+
 def _ddg_search(query: str, max_results: int = 6) -> list[dict]:
     try:
         from ddgs import DDGS
@@ -74,9 +102,13 @@ def _compare(items: list[str], aspect: str) -> str:
         "Give specific facts and data."
     )
     try:
-        return _gemini_search(query)
+        return _pollinations_search(query)
     except Exception as e:
-        print(f"[WebSearch] !! Gemini compare failed: {e} ! falling back to DDG")
+        print(f"[WebSearch] !! Pollinations compare failed: {e} ! falling back to Gemini")
+        try:
+            return _gemini_search(query)
+        except Exception as e2:
+            print(f"[WebSearch] !! Gemini compare failed: {e2} ! falling back to DDG")
 
     # DDG fallback: fetch results per item and merge
     all_results: dict[str, list] = {}
@@ -124,13 +156,19 @@ def web_search(
             print("[WebSearch] ! Compare done.")
             return result
 
-        print("[WebSearch] ! Trying Gemini...")
+        print("[WebSearch] ! Trying Pollinations Perplexity...")
         try:
-            result = _gemini_search(query)
-            print("[WebSearch] ! Gemini OK.")
+            result = _pollinations_search(query)
+            print("[WebSearch] ! Pollinations OK.")
             return result
         except Exception as e:
-            print(f"[WebSearch] !! Gemini failed ({e}) ! trying DDG...")
+            print(f"[WebSearch] !! Pollinations failed ({e}) ! trying Gemini...")
+            try:
+                result = _gemini_search(query)
+                print("[WebSearch] ! Gemini OK.")
+                return result
+            except Exception as e2:
+                print(f"[WebSearch] !! Gemini failed ({e2}) ! trying DDG...")
             results = _ddg_search(query)
             result  = _format_ddg(query, results)
             print(f"[WebSearch] ! DDG: {len(results)} result(s).")

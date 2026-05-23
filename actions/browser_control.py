@@ -18,7 +18,7 @@ try:
     HAS_PLAYWRIGHT = True
 except ImportError:
     HAS_PLAYWRIGHT = False
-    print("[Browser] ⚠️ Playwright not installed. Install with: pip install playwright && playwright install")
+    print("[Browser] [WARN] Playwright not installed. Install with: pip install playwright && playwright install")
 
 def get_base_dir() -> Path:
     if getattr(sys, "frozen", False):
@@ -116,6 +116,7 @@ class BrowserSession:
         self.page = None
         self._playwright = None
         self._is_running = False
+        self.loop = None
     
     @classmethod
     def get_session(cls, browser_name: str):
@@ -147,6 +148,18 @@ class BrowserSession:
             return await self._launch_legacy()
         
         try:
+            current_loop = asyncio.get_running_loop()
+            if self._is_running and (self.loop is None or self.loop != current_loop or self.loop.is_closed()):
+                print("[Browser] ⚠️ Event loop mismatch or closed. Resetting session.")
+                self._is_running = False
+                self.browser = None
+                self.context = None
+                self.page = None
+                self._playwright = None
+        except Exception:
+            pass
+
+        try:
             # Create fresh profile for JARVIS
             profile_path = JARVIS_PROFILES / self.browser_name
             profile_path.mkdir(exist_ok=True)
@@ -159,6 +172,10 @@ class BrowserSession:
                     pass
             
             self._playwright = await async_playwright().start()
+            try:
+                self.loop = asyncio.get_running_loop()
+            except Exception:
+                self.loop = None
             
             launch_args = [
                 "--disable-blink-features=AutomationControlled",
@@ -326,10 +343,25 @@ class BrowserSession:
     
     async def close(self):
         """Close browser"""
+        try:
+            current_loop = asyncio.get_running_loop()
+            if self.loop and self.loop != current_loop:
+                BrowserSession._instances.pop(self.browser_name, None)
+                self._is_running = False
+                return
+        except Exception:
+            pass
+
         if self.context:
-            await self.context.close()
+            try:
+                await self.context.close()
+            except Exception:
+                pass
         if self._playwright:
-            await self._playwright.stop()
+            try:
+                await self._playwright.stop()
+            except Exception:
+                pass
         BrowserSession._instances.pop(self.browser_name, None)
         self._is_running = False
 

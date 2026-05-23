@@ -11,6 +11,7 @@ import platform
 import subprocess
 import threading
 from pathlib import Path
+from actions.action_ledger import log_action
 
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
 
@@ -175,6 +176,8 @@ def shell_runner(
     print(f"[Shell] 🖥️  Running: {command[:120]}  (cwd={cwd or 'default'})")
     if player:
         player.write_log(f"[Shell] {command[:80]}")
+
+    log_action("shell_runner", f"Executed: {command} (cwd: {cwd or 'default'})")
 
     result = run_shell(command, cwd=cwd, timeout=timeout, shell_type=stype)
 

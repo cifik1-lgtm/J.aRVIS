@@ -283,6 +283,11 @@ class AgentExecutor:
         plan            = create_plan(goal, preferred_brain=preferred_brain)
 
         while True:
+            if not plan:
+                msg = "I couldn't create a valid plan for this task, sir."
+                if speak: speak(msg)
+                return msg
+                
             steps = plan.get("steps", [])
 
             if not steps:
@@ -325,6 +330,11 @@ class AgentExecutor:
                     except Exception as e:
                         error_msg = str(e)
                         print(f"[Executor] ❌ Step {step_num} attempt {attempt} failed: {error_msg}")
+                        try:
+                            from core.error_ledger import log_error
+                            log_error(error_msg, action=tool, goal=goal)
+                        except Exception:
+                            pass
 
                         recovery = analyze_error(step, error_msg, attempt=attempt)
                         decision = recovery["decision"]

@@ -4,6 +4,7 @@ import shutil
 import platform
 from pathlib import Path
 from datetime import datetime
+from actions.action_ledger import log_action
 
 try:
     import send2trash
@@ -152,7 +153,7 @@ def list_files(path: str = "desktop", show_hidden: bool = False) -> str:
 def create_file(path: str, name: str = "", content: str = "") -> str:
     try:
         base   = _resolve_path(path)
-        target = (base / name) if name else base
+        target = (base / name) if name and base.name != name else base
         if not _is_safe_path(target):
             return f"Access denied: {target}"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -165,7 +166,7 @@ def create_file(path: str, name: str = "", content: str = "") -> str:
 def create_folder(path: str, name: str = "") -> str:
     try:
         base   = _resolve_path(path)
-        target = (base / name) if name else base
+        target = (base / name) if name and base.name != name else base
         if not _is_safe_path(target):
             return f"Access denied: {target}"
         target.mkdir(parents=True, exist_ok=True)
@@ -177,7 +178,7 @@ def create_folder(path: str, name: str = "") -> str:
 def delete_file(path: str, name: str = "") -> str:
     try:
         base   = _resolve_path(path)
-        target = (base / name) if name else base
+        target = (base / name) if name and base.name != name else base
         if not _is_safe_path(target):
             return f"Access denied: {target}"
         if not target.exists():
@@ -194,7 +195,7 @@ def delete_file(path: str, name: str = "") -> str:
 def move_file(path: str, name: str = "", destination: str = "") -> str:
     try:
         base   = _resolve_path(path)
-        src    = (base / name) if name else base
+        src    = (base / name) if name and base.name != name else base
         dst    = _resolve_path(destination) if destination else None
 
         if not src.exists():
@@ -220,7 +221,7 @@ def move_file(path: str, name: str = "", destination: str = "") -> str:
 def copy_file(path: str, name: str = "", destination: str = "") -> str:
     try:
         base = _resolve_path(path)
-        src  = (base / name) if name else base
+        src  = (base / name) if name and base.name != name else base
         dst  = _resolve_path(destination) if destination else None
 
         if not src.exists():
@@ -251,7 +252,7 @@ def copy_file(path: str, name: str = "", destination: str = "") -> str:
 def rename_file(path: str, name: str = "", new_name: str = "") -> str:
     try:
         base     = _resolve_path(path)
-        target   = (base / name) if name else base
+        target   = (base / name) if name and base.name != name else base
         if not _is_safe_path(target):
             return f"Access denied: {target}"
         if not target.exists():
@@ -273,7 +274,7 @@ def rename_file(path: str, name: str = "", new_name: str = "") -> str:
 def read_file(path: str, name: str = "", max_chars: int = 4000) -> str:
     try:
         base   = _resolve_path(path)
-        target = (base / name) if name else base
+        target = (base / name) if name and base.name != name else base
         if not _is_safe_path(target):
             return f"Access denied: {target}"
         if not target.exists():
@@ -294,7 +295,7 @@ def write_file(path: str, name: str = "", content: str = "",
                append: bool = False) -> str:
     try:
         base   = _resolve_path(path)
-        target = (base / name) if name else base
+        target = (base / name) if name and base.name != name else base
         if not _is_safe_path(target):
             return f"Access denied: {target}"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -452,7 +453,7 @@ def organize_desktop() -> str:
 def get_file_info(path: str, name: str = "") -> str:
     try:
         base   = _resolve_path(path)
-        target = (base / name) if name else base
+        target = (base / name) if name and base.name != name else base
         if not _is_safe_path(target):
             return f"Access denied: {target}"
         if not target.exists():
@@ -501,6 +502,30 @@ def set_working_directory(path: str) -> str:
     return head + body
 
 
+def _log_file_error(action: str, path: str, name: str, error: str):
+    """Persist errors to a learning ledger so JARVIS can self-diagnose later."""
+    try:
+        import json, datetime as _dt
+        ledger_path = Path(__file__).resolve().parent.parent / "memory" / "file_errors.json"
+        ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        ledger = []
+        if ledger_path.exists():
+            try:
+                ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            except Exception:
+                ledger = []
+        ledger.append({
+            "timestamp": _dt.datetime.now().isoformat(),
+            "action": action,
+            "path": str(path),
+            "name": str(name),
+            "error": error,
+        })
+        ledger_path.write_text(json.dumps(ledger[-200:], indent=2), encoding="utf-8")
+    except Exception:
+        pass  # never crash on logging
+
+
 def file_controller(
     parameters: dict = None,
     response=None,
@@ -512,6 +537,52 @@ def file_controller(
     path   = params.get("path", "desktop")
     name   = params.get("name", "")
 
+    # ── Smart Path/Name Deduplication ────────────────────────────────────────
+    # If the AI sends path="C:\folder\file.html" AND name="file.html",
+    # the filename is already in the path — strip the redundant name.
+    if name and path:
+        try:
+            resolved = _resolve_path(path)
+            # path already ends with the filename or path has a file extension
+            if resolved.name == name or (resolved.suffix and not resolved.is_dir()):
+                name = ""
+        except Exception:
+            pass
+
+    # ── Action Alias Map ─────────────────────────────────────────────────────
+    # Catches every synonym the AI might invent so "Unknown action" never fires.
+    _ALIASES = {
+        "create":        "create_file",
+        "make":          "create_file",
+        "new_file":      "create_file",
+        "save":          "write",
+        "overwrite":     "write",
+        "mkdir":         "create_folder",
+        "new_folder":    "create_folder",
+        "make_folder":   "create_folder",
+        "make_directory":"create_folder",
+        "open":          "read",
+        "get":           "read",
+        "cat":           "read",
+        "show":          "read",
+        "view":          "read",
+        "remove":        "delete",
+        "trash":         "delete",
+        "rm":            "delete",
+        "del":           "delete",
+        "mv":            "move",
+        "cp":            "copy",
+        "duplicate":     "copy",
+        "search":        "find",
+        "ls":            "list",
+        "dir":           "list",
+        "directory":     "list",
+        "upload":        "_upload_stub",
+        "deploy":        "_upload_stub",
+        "publish":       "_upload_stub",
+    }
+    action = _ALIASES.get(action, action)
+
     if player:
         player.write_log(f"[file] {action} {name or path}")
 
@@ -520,7 +591,10 @@ def file_controller(
             return list_files(path)
 
         elif action == "create_file":
-            return create_file(path, name=name, content=params.get("content", ""))
+            res = create_file(path, name=name, content=params.get("content", ""))
+            if "File created" in res:
+                log_action("file_controller", f"{res} (path: {path})")
+            return res
 
         elif action == "create_folder":
             return create_folder(path, name=name)
@@ -541,11 +615,14 @@ def file_controller(
             return read_file(path, name=name)
 
         elif action == "write":
-            return write_file(
+            res = write_file(
                 path, name=name,
                 content=params.get("content", ""),
                 append=params.get("append", False)
             )
+            if "Written to" in res or "Appended to" in res:
+                log_action("file_controller", f"{res} (path: {path})")
+            return res
 
         elif action == "find":
             return find_files(
@@ -574,8 +651,19 @@ def file_controller(
             p = params.get("path") or params.get("target") or ""
             return set_working_directory(str(p).strip())
 
+        elif action == "_upload_stub":
+            return (
+                "NOTE: Upload/deploy is not possible via file_controller — the file "
+                "was already saved locally. To publish it online, open a browser and "
+                "upload it manually to a hosting service (e.g. Netlify drop, GitHub Pages)."
+            )
+
         else:
-            return f"Unknown action: '{action}'"
+            msg = f"Unknown action: '{action}'"
+            _log_file_error(action, path, name, msg)
+            return msg
 
     except Exception as e:
-        return f"File controller error ({action}): {e}"
+        err_msg = str(e)
+        _log_file_error(action, path, name, err_msg)
+        return f"File controller error ({action}): {err_msg}"

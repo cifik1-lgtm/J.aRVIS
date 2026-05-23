@@ -49,9 +49,7 @@ def setup():
         print("⚠️ Config file not found. Creating template...")
         template = {
             "gemini_api_key": "",
-            "openrouter_api_key": "",
-            "openrouter_model": "deepseek/deepseek-chat",
-            "minimax_api_key": "",
+            "poe_api_key": "",
             "telegram_bot_token": "",
             "telegram_chat_id": "",
             "autonomous_mode": True,

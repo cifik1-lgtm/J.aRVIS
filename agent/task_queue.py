@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Any
+import json
 
 
 class TaskStatus(Enum):
@@ -92,11 +93,15 @@ class TaskQueue:
         preferred_brain: str | None = None,
     ) -> str:
 
-        # ===== AUTO-ROUTING: Code tasks to Qwen =====
+        # ===== AUTO-ROUTING: Code tasks to Pollinations =====
         goal_lower = goal.lower()
-        if any(word in goal_lower for word in ["code", "python", "script", "file", "write", "create", "debug", "develop"]):
-            preferred_brain = "ollama"  # Use Qwen for code
-            print(f"[TaskQueue] 🧠 Auto-routed code task to Qwen coder")
+        # Use whole-word matching to avoid false positives like "developments" -> "develop"
+        import re as _re
+        _CODE_WORDS = ["code", "python", "script", "debug", "write code", "write script",
+                       "create file", "create script", "develop app", "develop script"]
+        if any(_re.search(r"\b" + w.replace(" ", r"\s+") + r"\b", goal_lower) for w in _CODE_WORDS):
+            preferred_brain = "pollinations"
+            print(f"[TaskQueue] 🧠 Auto-routed code task to Pollinations coder")
 
         # ===== GATE KEEPER: Universal Cross-PC Routing =====
         # Check BEFORE queuing if this command is meant for another PC
@@ -255,6 +260,11 @@ class TaskQueue:
                 task.error  = str(e)
                 self._active_count -= 1
             print(f"[TaskQueue] ❌ Failed: [{task.task_id}] {e}")
+            try:
+                from core.error_ledger import log_error
+                log_error(str(e), action="delegate_task", goal=task.goal)
+            except Exception:
+                pass
 
         self._save_telemetry()
         with self._condition:

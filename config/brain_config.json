@@ -4,30 +4,6 @@
         "gemini": {
             "enabled": true
         },
-        "openrouter": {
-            "enabled": true
-        },
-        "groq": {
-            "enabled": true
-        },
-        "gemma": {
-            "enabled": true
-        },
-        "qwen": {
-            "enabled": true
-        },
-        "hermes": {
-            "enabled": true
-        },
-        "mellum": {
-            "enabled": true
-        },
-        "poe": {
-            "enabled": true
-        },
-        "minimax": {
-            "enabled": true
-        },
         "pollinations": {
             "enabled": true
         }

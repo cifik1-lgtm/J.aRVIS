@@ -11,6 +11,13 @@ from typing import Dict, List, Optional, Tuple, Any
 import sys
 import os
 
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try: sys.stdout.reconfigure(encoding="utf-8")
+    except Exception: pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try: sys.stderr.reconfigure(encoding="utf-8")
+    except Exception: pass
+
 os.environ["TORCH_USE_CUDA_DSA"] = "0"  # Disable CUDA DSA to avoid conflicts
 os.environ["TRANSFORMERS_OFFLINE"] = "0"
 
@@ -24,7 +31,7 @@ except ImportError:
 try:
     from sentence_transformers import SentenceTransformer
     HAS_SENTENCE_TRANSFORMERS = True
-except ImportError:
+except Exception:
     HAS_SENTENCE_TRANSFORMERS = False
 
 # RAG Engine — lazy import to avoid circular dependency
