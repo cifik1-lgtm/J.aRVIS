@@ -210,4 +210,55 @@ def code_helper(parameters: dict, response=None, player=None, session_memory=Non
         if file_path: _save_file(Path(file_path), opt)
         return f"Optimization complete. Preview:\n{opt[:500]}"
 
-    return f"Action '{action}' is not supported yet."
+    if action == "report" or action == "analyze" or action == "review" or action == "summarize":
+        # Generate a structured markdown report / analysis using the LLM
+        output_path = p.get("output_path", "").strip() or p.get("file_path", "").strip()
+        system_prompt = _get_system_prompt()
+        action_label = {"report": "report", "analyze": "analysis", "review": "review", "summarize": "summary"}.get(action, "report")
+        prompt = (
+            f"You are an expert analyst. Generate a detailed, structured {action_label} in Markdown format.\n"
+            f"Task: {desc}\n\n"
+            f"The {action_label} must include:\n"
+            f"- An executive summary\n"
+            f"- Detailed findings with headings and bullet points\n"
+            f"- Specific, actionable recommendations\n"
+            f"- A conclusion\n\n"
+            f"Write a complete, professional {action_label}. Do NOT truncate."
+        )
+        result = call_llm(prompt, system_prompt=system_prompt)
+        if output_path:
+            save_path = Path(output_path)
+            if not save_path.is_absolute():
+                save_path = DESKTOP / save_path
+            _save_file(save_path, result)
+            print(f"[CodeHelper] Report saved to: {save_path}")
+            return f"{action_label.capitalize()} complete. Saved to: {save_path}\n\nPreview:\n{result[:600]}..."
+        return f"{action_label.capitalize()} complete:\n\n{result}"
+
+    if action == "search" or action == "find":
+        # Search inside a file for a pattern
+        pattern = p.get("pattern", desc)
+        if not file_path: return "Please specify file_path to search in, sir."
+        content, err = _read_file(file_path)
+        if err: return err
+        lines = [f"L{i+1}: {l}" for i, l in enumerate(content.splitlines()) if pattern.lower() in l.lower()]
+        if not lines: return f"Pattern '{pattern}' not found in {file_path}."
+        return f"Found {len(lines)} match(es):\n" + "\n".join(lines[:50])
+
+    # --- Smart catch-all: unknown actions are handled by the LLM ---
+    system_prompt = _get_system_prompt()
+    prompt = (
+        f"You are JARVIS, an elite AI assistant. The user has requested a code/file action called '{action}'.\n"
+        f"Task description: {desc}\n"
+        f"{'File: ' + file_path if file_path else ''}\n"
+        f"{'Code snippet: ' + code_input[:500] if code_input else ''}\n\n"
+        f"Perform this task to the best of your ability and return the result."
+    )
+    result = call_llm(prompt, system_prompt=system_prompt)
+    if p.get("output_path"):
+        out = Path(p["output_path"])
+        if not out.is_absolute():
+            out = DESKTOP / out
+        _save_file(out, result)
+        return f"Task '{action}' complete. Result saved to: {out}"
+    return f"Task '{action}' complete:\n\n{result}"
