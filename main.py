@@ -578,13 +578,8 @@ class JarvisLive:
             self._audit_changes = {}
             self.healer = None
 
-        # Warm up all local brains for faster first response
-        try:
-            if not self._warmed_up:
-                self._warmed_up = True
-                from core.local_llm import warm_up_all_local_brains
-                warm_up_all_local_brains()
-        except: pass
+        # No local brains to warm up anymore
+        self._warmed_up = True
 
         self.ui.jarvis_live = self
 

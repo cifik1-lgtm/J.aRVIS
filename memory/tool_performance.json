@@ -1,7 +1,7 @@
 {
     "project_architect": {
-        "calls": 5,
-        "avg_time": 0.16170964241027833,
+        "calls": 17,
+        "avg_time": 0.1492291618795956,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -30,14 +30,14 @@
         "failures": 0
     },
     "computer_settings": {
-        "calls": 6,
-        "avg_time": 3.7087278763453164,
+        "calls": 13,
+        "avg_time": 2.3317640011127176,
         "success_rate": 100.0,
         "failures": 0
     },
     "hot_reload": {
-        "calls": 4,
-        "avg_time": 0.00868457555770874,
+        "calls": 6,
+        "avg_time": 0.012799938519795736,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -48,14 +48,14 @@
         "failures": 0
     },
     "open_app": {
-        "calls": 1,
-        "avg_time": 4.521204471588135,
+        "calls": 9,
+        "avg_time": 2.3975173897213407,
         "success_rate": 100.0,
         "failures": 0
     },
     "computer_control": {
-        "calls": 4,
-        "avg_time": 0.5028635859489441,
+        "calls": 45,
+        "avg_time": 0.4247701379987929,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -66,8 +66,8 @@
         "failures": 0
     },
     "file_controller": {
-        "calls": 3,
-        "avg_time": 0.029652754465738933,
+        "calls": 47,
+        "avg_time": 0.021707839154182593,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -78,8 +78,164 @@
         "failures": 0
     },
     "ghost_browser": {
+        "calls": 43,
+        "avg_time": 3.4199774043504583,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "code_helper": {
+        "calls": 65,
+        "avg_time": 43.71255648686335,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "browser_control": {
+        "calls": 50,
+        "avg_time": 1.7882718658447265,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "code_agent": {
+        "calls": 5,
+        "avg_time": 0.002599477767944336,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "self_fix": {
+        "calls": 192,
+        "avg_time": 3.5912303427855155,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "RAG": {
+        "calls": 1,
+        "avg_time": 0.0020008087158203125,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "web_search": {
+        "calls": 1,
+        "avg_time": 28.140952110290527,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "shell_runner": {
+        "calls": 1062,
+        "avg_time": 0.8369946006103198,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "youtube_video": {
+        "calls": 1,
+        "avg_time": 1.0686559677124023,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "detect_monitors": {
+        "calls": 9,
+        "avg_time": 0.0020019743177625868,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "screen_process": {
+        "calls": 6,
+        "avg_time": 0.7481198310852051,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "learn_skill": {
+        "calls": 2,
+        "avg_time": 21.095216751098633,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "send_message": {
+        "calls": 1,
+        "avg_time": 9.010125875473022,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "browser_navigate": {
+        "calls": 2,
+        "avg_time": 6.373296618461609,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "generated_code": {
+        "calls": 8,
+        "avg_time": 20.65033021569252,
+        "success_rate": 75.0,
+        "failures": 2
+    },
+    "expert_skills": {
+        "calls": 2,
+        "avg_time": 0.0004993677139282227,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "deep_reasoning": {
+        "calls": 1,
+        "avg_time": 0.005439043045043945,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "jarvis_system_control": {
+        "calls": 1,
+        "avg_time": 0.0023369789123535156,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "jarvis_self_improvement_engine": {
         "calls": 3,
-        "avg_time": 4.659497340520223,
+        "avg_time": 0.005332390467325847,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "python3": {
+        "calls": 3,
+        "avg_time": 0.001973231633504232,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "bash": {
+        "calls": 4,
+        "avg_time": 0.002188265323638916,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "JARVIS_CORE": {
+        "calls": 1,
+        "avg_time": 0.0025272369384765625,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "JARVIS_ANALYTICS": {
+        "calls": 1,
+        "avg_time": 0.00400090217590332,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "JARVIS_CODEGEN": {
+        "calls": 1,
+        "avg_time": 0.003999233245849609,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "JARVIS_VALIDATOR": {
+        "calls": 1,
+        "avg_time": 0.004003286361694336,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "JARVIS_DEPLOY": {
+        "calls": 1,
+        "avg_time": 0.001001119613647461,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "None": {
+        "calls": 1,
+        "avg_time": 0.003996610641479492,
         "success_rate": 100.0,
         "failures": 0
     }

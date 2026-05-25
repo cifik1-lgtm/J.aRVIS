@@ -4,11 +4,11 @@
 [![Built with pollinations.ai](https://pollinations.ai/assets/badge.svg)](https://pollinations.ai)
 
 > [!IMPORTANT]
-> JARVIS (Just A Rather Very Intelligent System) is an elite **9-Brain Autonomous Hive Mind** designed for professional software development, real-time computer control, and recursive self-evolution. It is the first system capable of independently learning new skills, repairing its own source code, and commanding a distributed network of machines (PC1 & PC2).
+> JARVIS (Just A Rather Very Intelligent System) is an elite **11-Brain Autonomous Hive Mind** designed for professional software development, real-time computer control, and recursive self-evolution. It is the first system capable of independently learning new skills, repairing its own source code, and commanding a distributed network of machines (PC1 & PC2).
 
 ---
 
-## 🏛️ **The Eight Pillars of Supremacy**
+## 🏛️ **The Eleven Pillars of Supremacy**
 
 ### 1. 🏗️ **The Architect (Project Scaffolding)**
 JARVIS is a Lead Software Engineer. He can autonomously scaffold entire professional projects (Python, Web, Node) with complete directory structures, professional boilerplate, `.gitignore`, and automatic Git initialization.
@@ -42,6 +42,21 @@ A specialized cyber-security suite. With over **5,300+ Pentest-specific skills**
 A massive library of **340+ modular AI skills** and 1,700+ reference files. JARVIS consults this professional DNA to act as a specialist in Science, Architecture, ML, Security, and more.
 *   **Memory:** RAG-indexed `/skills` directory.
 
+### 9. 🐳 **The Sandbox (Isolated Python Execution)**
+A hardened, fully-isolated code execution environment. When Docker Desktop is running, JARVIS executes untrusted Python code inside a **throwaway Docker container** — complete isolation with zero host risk. Falls back to a clean subprocess with a 30-second timeout when Docker is unavailable.
+*   **Tool:** `run_python_sandbox`
+*   **Docker Image:** `python:3.11-slim` (auto-pulled on first use)
+
+### 10. ⏰ **The Oracle (Chronos Proactive Engine)**
+A time-aware background daemon that runs scheduled autonomous tasks even when idle. Chronos consults `memory/proactive_goals.json` and dispatches recurring jobs — system health checks, self-audits, and any user-defined goals — into the Task Queue at configurable intervals.
+*   **Config:** `memory/proactive_goals.json`
+*   **Execution Log:** `memory/chronos_execution_log.json`
+
+### 11. 🔬 **The Evolutionist (Self-Improvement Loop)**
+JARVIS's most advanced capability: a recursive self-improvement cycle. The system scans its own error ledger (`memory/file_errors.json`), identifies the top recurring failure, requests an LLM-generated patch, applies it to the live source file, clears the tool cache, and **hot-reloads** the fix — all autonomously. Each iteration is logged for full auditability.
+*   **Tool:** `self_improvement_audit`
+*   **Improvement Log:** `memory/self_improvement_log.json`
+
 ---
 
 ## 🧠 **The 10-Brain Cognitive Architecture**
@@ -63,26 +78,42 @@ JARVIS utilizes a **Dynamic Multi-Brain Router** to select the most efficient mo
 
 ## 🔄 **Operational Workflow**
 
-The JARVIS life-cycle follows a strict **Plan-Execute-Audit-Heal** loop:
+The JARVIS life-cycle follows a strict **Plan-Execute-Audit-Heal-Evolve** loop:
 
 ```mermaid
 graph TD
-    A[User Input/Voice] --> B{Brain Router}
-    B --> C[Master Planner]
-    C --> D[Task Delegation]
-    D --> E[Action Execution]
-    E --> F{Self-Audit}
-    F -- SUCCESS --> G[Summarize & Speak]
-    F -- ERROR --> H[Self-Healing Engine]
-    H --> I[Patch Source Code]
-    I --> E
+    A[User Command / Scheduled Trigger] --> B{Task Interpreter}
+    B --> C[Decompose into Subtasks]
+    C --> D[Tool Availability Check]
+    D -->|Has Tools| E[Execute Subtask]
+    D -->|Missing Tools| F[Self-Install Tool]
+    F --> G[Verify Installation]
+    G --> E
+    E --> H{Success?}
+    H -->|Yes| I[Log & Report]
+    H -->|No| J[Self-Healing Loop]
+    J --> K[Diagnose Error]
+    K --> L{Can Fix?}
+    L -->|Yes| M[Auto-Fix & Retry]
+    M --> E
+    L -->|No| N[Escalate to User / Research]
+    N --> O[Update Knowledge Base]
+    O --> E
+    I --> P{More Subtasks?}
+    P -->|Yes| D
+    P -->|No| Q[Final Validation]
+    Q --> R[Deliver Result]
+    R --> S[Update Memory / Learn]
 ```
 
 1.  **Intent Classification:** Classifies input into Conversation, Action, or Research.
 2.  **Task Queue:** Breaks complex goals into a prioritized queue.
 3.  **Execution:** Invokes specialized tools (Python, Browser, Computer Control).
-4.  **Verification:** Validates the output. If it fails, the **Healer** triggers.
-5.  **Result Integration:** Injects tool outputs back into the memory context for a factual response.
+4.  **Sandboxed Code:** Python execution runs in an isolated Docker container or safe subprocess.
+5.  **Verification:** Validates the output. If it fails, the **Healer** triggers.
+6.  **Result Integration:** Injects tool outputs back into the memory context for a factual response.
+7.  **Chronos Tick:** Every N minutes, the Oracle dispatches proactive background goals.
+8.  **Evolution Cycle:** The Evolutionist patches top recurring errors and hot-reloads fixes autonomously.
 
 ---
 
@@ -103,7 +134,7 @@ For developers and advanced command line environments:
    git clone https://github.com/cifik1-lgtm/J.aRVIS.git
    cd J.aRVIS
    ```
-2. **Execute Launcher:** Run `START_JARVIS.bat`. The bootloader automatically creates a local virtual environment (`.venv`), resolves all native precompiled binary requirements, and boots the system.
+2. **Execute Launcher:** Run `run_jarvis_admin.bat` (as Administrator). The bootloader automatically creates a local virtual environment (`.venv`), resolves all native precompiled binary requirements, and boots the system with elevated privileges for full hardware access.
 
 ---
 

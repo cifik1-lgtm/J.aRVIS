@@ -893,18 +893,6 @@ TOOL_DECLARATIONS = [
         }
     },
     {
-        "name": "self_fix",
-        "description": "Uses AI to diagnose and repair a specific file in the JARVIS system if an error occurs.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "file_name": {"type": "STRING", "description": "The name of the file to fix (e.g. 'ui.py' or 'tools.py')."},
-                "error_message": {"type": "STRING", "description": "The specific error message or traceback observed."}
-            },
-            "required": ["file_name"]
-        }
-    },
-    {
         "name": "system_reboot",
         "description": "Restarts the computer immediately. Use with caution.",
         "parameters": {"type": "OBJECT", "properties": {}}

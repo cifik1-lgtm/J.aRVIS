@@ -136,16 +136,16 @@ Attempt number: {attempt}"""
 
     except Exception as e:
         if any(x in str(e).lower() for x in ["429", "quota", "connection", "timeout", "offline"]):
-            print("[ErrorHandler] ⚠️ Gemini unavailable. Using local GPU model for error analysis...")
-            from core.local_llm import call_ollama
-            res = call_ollama(prompt, system_prompt=ERROR_ANALYST_PROMPT)
-            if res:
-                try:
+            print("[ErrorHandler] ⚠️ Gemini unavailable. Using Pollinations for error analysis...")
+            from core.llm_provider import call_llm
+            try:
+                res = call_llm(prompt, system_prompt=ERROR_ANALYST_PROMPT, brain="pollinations")
+                if res:
                     result = json.loads(res)
                     decision_str = result.get("decision", "replan").lower()
                     result["decision"] = decision_map.get(decision_str, ErrorDecision.REPLAN)
                     return result
-                except: pass
+            except: pass
 
         print(f"[ErrorHandler] ⚠️ Analysis failed: {e} — defaulting to replan")
         return {
@@ -203,23 +203,25 @@ Return ONLY the Python code, no explanation."""
 
     except Exception as e:
         if any(x in str(e).lower() for x in ["429", "quota", "connection", "timeout", "offline"]):
-            print("[ErrorHandler] ⚠️ Gemini unavailable. Using local GPU model for fix generation...")
-            from core.local_llm import call_ollama
-            res = call_ollama(prompt)
-            if res:
-                return {
-                    "step":        step.get("step"),
-                    "tool":        "code_helper",
-                    "description": f"Auto-fix for: {step.get('description')}",
-                    "parameters": {
-                        "action":      "run",
-                        "description": fix_suggestion,
-                        "code":        res,
-                        "language":    "python"
-                    },
-                    "depends_on": step.get("depends_on", []),
-                    "critical":   step.get("critical", False)
-                }
+            print("[ErrorHandler] ⚠️ Gemini unavailable. Using Pollinations for fix generation...")
+            from core.llm_provider import call_llm
+            try:
+                res = call_llm(prompt, brain="pollinations")
+                if res:
+                    return {
+                        "step":        step.get("step"),
+                        "tool":        "code_helper",
+                        "description": f"Auto-fix for: {step.get('description')}",
+                        "parameters": {
+                            "action":      "run",
+                            "description": fix_suggestion,
+                            "code":        res,
+                            "language":    "python"
+                        },
+                        "depends_on": step.get("depends_on", []),
+                        "critical":   step.get("critical", False)
+                    }
+            except: pass
         print(f"[ErrorHandler] ⚠️ Fix generation failed: {e}")
         return {
             "step":        step.get("step"),

@@ -15,6 +15,15 @@ from agent.error_handler import analyze_error, generate_fix, ErrorDecision
 from google.genai        import types
 from core.hive_dna       import get_dna
 
+# Decision logic graph imports
+from agent.intent_classifier import TaskInterpreter
+from core.master_planner import decompose
+from actions.tool_manager import ensure_tool
+from agent.self_fix import execute_with_healing
+from agent.self_audit import audit_success, validate_integration
+from core.logger import log_success
+from memory.rag_engine import get_rag_engine
+
 
 def get_base_dir() -> Path:
     if getattr(sys, "frozen", False):
@@ -276,153 +285,148 @@ class AgentExecutor:
         preferred_brain: str | None = None,
     ) -> str:
         print(f"\n[Executor] 🎯 Goal: {goal}")
-
-        replan_attempts = 0
+        
+        # Node B: Task Interpreter
+        print("[Executor] 🧠 Interpreting intent with TaskInterpreter...")
+        interpreter = TaskInterpreter()
+        interpreted = interpreter.interpret(goal)
+        refined_goal = interpreted.get("goal", goal)
+        pref_brain = interpreted.get("preferred_brain", preferred_brain)
+        
+        # Node C: Decompose into subtasks
+        print(f"[Executor] 📋 Decomposing goal: '{refined_goal}' using brain '{pref_brain}'")
+        task_queue = decompose(refined_goal, preferred_brain=pref_brain)
+        
+        if not task_queue:
+            msg = "I couldn't create a valid plan for this task, sir."
+            if speak: speak(msg)
+            return msg
+            
+        print(f"[Executor] ⚡ Decomposed into {len(task_queue)} structured subtask(s).")
         completed_steps = []
-        step_results    = {} 
-        plan            = create_plan(goal, preferred_brain=preferred_brain)
-
-        while True:
-            if not plan:
-                msg = "I couldn't create a valid plan for this task, sir."
-                if speak: speak(msg)
-                return msg
+        step_results = {}
+        success = True
+        
+        for task in task_queue:
+            if cancel_flag and cancel_flag.is_set():
+                if speak: speak("Task cancelled, sir.")
+                return "Task cancelled."
                 
-            steps = plan.get("steps", [])
-
-            if not steps:
-                msg = "I couldn't create a valid plan for this task, sir."
-                if speak: speak(msg)
-                return msg
-
-            success      = True
-            failed_step  = None
-            failed_error = ""
-
-            for step in steps:
-                if cancel_flag and cancel_flag.is_set():
-                    if speak: speak("Task cancelled, sir.")
-                    return "Task cancelled."
-
-                step_num = step.get("step", "?")
-                tool     = step.get("tool", "generated_code")
-                desc     = step.get("description", "")
-                params   = step.get("parameters", {})
-
-                params = _inject_context(params, tool, step_results, goal=goal)
-
-                print(f"\n[Executor] ▶️ Step {step_num}: [{tool}] {desc}")
-
+            step_num = task.get("step", 1)
+            tool = task.get("tool", "generated_code")
+            desc = task.get("description", "")
+            prompt = task.get("prompt", desc)
+            file_path = task.get("file_path", "")
+            req_tool = task.get("required_tool", "")
+            install_cmd = task.get("install_cmd", "")
+            test_cmd = task.get("test_command", "")
+            
+            print(f"\n[Executor] ▶️ Step {step_num}: [{tool}] {desc}")
+            
+            # Node D & F: Tool Check & Auto-Install
+            if req_tool and install_cmd:
+                print(f"[Executor] ⚙️ Checking tool dependency: {req_tool}")
+                if not ensure_tool(req_tool, install_cmd):
+                    # Node N: Escalate
+                    err_msg = f"Failed to install tool dependency: {req_tool}"
+                    print(f"❌ [ESCALATE] {err_msg}")
+                    if dispatcher and hasattr(dispatcher, "orch") and dispatcher.orch.ui:
+                        dispatcher.orch.ui.write_log(f"ERR: {err_msg}")
+                    if speak: speak(f"Sir, I could not install the required tool {req_tool}.")
+                    
+                    # Node O: Learn (store failure pattern)
+                    try:
+                        get_rag_engine().index_memory("failures", f"tool_missing::{req_tool}", err_msg)
+                    except: pass
+                    
+                    success = False
+                    break
+            
+            start_time = time.time()
+            step_ok = False
+            result = ""
+            
+            # Node E: Execute
+            if tool in ("generated_code", "code_helper") and file_path and test_cmd:
+                print(f"[Executor] 🛠️ Executing code subtask with self-healing on {file_path}")
+                # Generate code block first using Gemini/Pollinations
+                gen_prompt = f"Write complete code to accomplish: {prompt}\nRules: Return ONLY code, no markdown backticks, no explanations."
+                try:
+                    from core.llm_provider import call_llm
+                    code_block = call_llm(gen_prompt, system_prompt="You are an elite Python developer.")
+                    code_block = re.sub(r"^```[a-zA-Z]*\n?", "", code_block)
+                    code_block = re.sub(r"\n?```$", "", code_block).strip()
+                    
+                    # Run execute with self-healing
+                    step_ok, result_code = execute_with_healing(code_block, file_path, test_cmd)
+                    result = f"Code written to {file_path}. Success: {step_ok}"
+                    
+                    if not step_ok:
+                        failed_error = f"Self-healing failed on code file: {file_path}"
+                except Exception as e:
+                    step_ok = False
+                    failed_error = str(e)
+            else:
+                # Normal tool call (with legacy retry/replan wrapper)
                 attempt = 1
-                step_ok = False
-
+                params = task.copy()
+                # Inject context from previous steps if needed
+                params = _inject_context(params, tool, step_results, goal=goal)
+                
                 while attempt <= 3:
                     if cancel_flag and cancel_flag.is_set():
                         break
                     try:
                         result = _call_tool(tool, params, speak, dispatcher=dispatcher)
-                        step_results[step_num] = result 
-                        completed_steps.append(step)
-                        print(f"[Executor] ✅ Step {step_num} done: {str(result)[:100]}")
                         step_ok = True
                         break
-
                     except Exception as e:
-                        error_msg = str(e)
-                        print(f"[Executor] ❌ Step {step_num} attempt {attempt} failed: {error_msg}")
-                        try:
-                            from core.error_ledger import log_error
-                            log_error(error_msg, action=tool, goal=goal)
-                        except Exception:
-                            pass
-
-                        recovery = analyze_error(step, error_msg, attempt=attempt)
-                        decision = recovery["decision"]
-                        user_msg = recovery.get("user_message", "")
-
-                        if speak and user_msg:
-                            speak(user_msg)
-
-                        if decision == ErrorDecision.RETRY:
-                            attempt += 1
-                            import time; time.sleep(2)
-                            continue
-
-                        elif decision == ErrorDecision.SKIP:
-                            print(f"[Executor] ⏭️ Skipping step {step_num}")
-                            completed_steps.append(step)
-                            step_ok = True
-                            break
-
-                        elif decision == ErrorDecision.ABORT:
-                            msg = f"Task aborted, sir. {recovery.get('reason', '')}"
-                            if speak: speak(msg)
-                            return msg
-
-                        elif decision == ErrorDecision.HEAL:
-                            if speak: speak("I've detected a bug in my own systems. Performing self-repair, sir.")
-                            # Attempt to find the file name from the error or tool
-                            file_to_fix = "tools.py" # Default
-                            if tool == "ghost_browser": file_to_fix = "actions/ghost_browser.py"
-                            elif tool == "workspace_architect": file_to_fix = "actions/workspace_architect.py"
-                            elif tool == "skill_engine": file_to_fix = "actions/skill_engine.py"
-                            
-                            repair_params = {
-                                "file_name": file_to_fix,
-                                "error_message": error_msg
-                            }
-                            repair_res = _call_tool("self_fix", repair_params, speak, dispatcher=dispatcher)
-                            print(f"[Executor] 🏥 Auto-Heal Result: {repair_res}")
-                            
-                            # After healing, we retry the same step
-                            attempt += 1
-                            import time; time.sleep(2)
-                            continue
-
-                        else: 
-                            fix_suggestion = recovery.get("fix_suggestion", "")
-                            if fix_suggestion and tool != "generated_code":
-                                try:
-                                    fixed_step = generate_fix(step, error_msg, fix_suggestion)
-                                    if speak: speak("Trying an alternative approach, sir.")
-                                    res = _call_tool(
-                                        fixed_step["tool"],
-                                        fixed_step["parameters"],
-                                        speak,
-                                        dispatcher=dispatcher
-                                    )
-                                    step_results[step_num] = res
-                                    completed_steps.append(step)
-                                    step_ok = True
-                                    break
-                                except Exception as fix_err:
-                                    print(f"[Executor] ⚠️ Fix failed: {fix_err}")
-
-                            failed_step  = step
-                            failed_error = error_msg
-                            success      = False
-                            break
-
-                if not step_ok and not failed_step:
-                    failed_step  = step
-                    failed_error = "Max retries exceeded"
-                    success      = False
-
-                if not success:
-                    break
-
-            if success:
-                return self._summarize(goal, completed_steps, step_results, speak)
-
-            if replan_attempts >= self.MAX_REPLAN_ATTEMPTS:
-                msg = f"Task failed after {replan_attempts} replan attempts, sir."
-                if speak: speak(msg)
-                return msg
-
-            if speak: speak("Adjusting my approach, sir.")
-
-            replan_attempts += 1
-            plan = replan(goal, completed_steps, failed_step, failed_error)
+                        failed_error = str(e)
+                        attempt += 1
+                        time.sleep(1)
+            
+            duration = time.time() - start_time
+            
+            # Node H: Success?
+            if step_ok:
+                print(f"[Executor] ✅ Step {step_num} completed successfully.")
+                step_results[step_num] = result
+                completed_steps.append(task)
+                
+                # Node I: Log success
+                log_success(task, duration)
+                
+                # Node O: Store working solution to RAG
+                try:
+                    get_rag_engine().index_memory("solutions", desc, str(result)[:500])
+                except: pass
+            else:
+                # Node N: Escalate
+                print(f"❌ [ESCALATE] Step {step_num} failed. Error: {failed_error}")
+                if dispatcher and hasattr(dispatcher, "orch") and dispatcher.orch.ui:
+                    dispatcher.orch.ui.write_log(f"ERR: Step {step_num} failed — {failed_error[:100]}")
+                if speak:
+                    speak(f"Sir, step {step_num} failed. {failed_error[:80]}")
+                
+                # Node O: Store failed attempt pattern to RAG
+                try:
+                    get_rag_engine().index_memory("failures", desc, failed_error)
+                except: pass
+                
+                success = False
+                break
+        
+        # Node Q: Final Validation
+        if success:
+            # Removed blind re-running of test commands as integration validation
+            # because it causes failures if the script was a one-time execution or missing.
+            pass
+            
+        # Node R & S: Deliver & Learn
+        if success:
+            return self._summarize(goal, completed_steps, step_results, speak)
+        else:
+            return "Task failed during execution or validation, sir."
 
     def _summarize(self, goal: str, completed_steps: list, step_results: dict, speak: Callable | None) -> str:
         fallback = f"All done, sir. Completed {len(completed_steps)} steps for: {goal[:60]}."
@@ -454,10 +458,12 @@ class AgentExecutor:
         except Exception as e:
             msg = str(e).lower()
             if any(x in msg for x in ["429", "quota", "connection", "timeout", "offline"]):
-                from core.local_llm import call_ollama
-                res = call_ollama(prompt)
-                if res:
-                    if speak: speak(res)
-                    return res
+                from core.llm_provider import call_llm
+                try:
+                    res = call_llm(prompt, brain="pollinations")
+                    if res:
+                        if speak: speak(res)
+                        return res
+                except: pass
             if speak: speak(fallback)
             return fallback

@@ -98,7 +98,11 @@ def _resolve_path(raw: str) -> Path:
                 return p.resolve(strict=False)
             except Exception:
                 return p
-    return Path(raw).expanduser()
+    p = Path(raw).expanduser()
+    try:
+        return p.resolve(strict=False)
+    except (OSError, IOError) as e:
+        return p
 
 def _format_size(b: int) -> str:
     for unit in ["B", "KB", "MB", "GB", "TB"]:
@@ -319,7 +323,7 @@ def find_files(name: str = "", extension: str = "",
 
         results    = []
         dir_count  = 0
-        max_dirs   = 500  # performans + güvenlik limiti
+        max_dirs   = 500
 
         for item in search_path.rglob("*"):
             if item.is_dir():
@@ -349,7 +353,7 @@ def find_files(name: str = "", extension: str = "",
 
 
 def get_largest_files(path: str = "downloads", count: int = 10) -> str:
-    count = min(count, 50)  # maksimum 50
+    count = min(count, 50)
     try:
         search_path = _resolve_path(path)
         if not _is_safe_path(search_path):
@@ -413,7 +417,6 @@ def organize_desktop() -> str:
 
     try:
         for item in desktop.iterdir():
-            # Klasörlere, gizli dosyalara ve organize klasörlerine dokunma
             if item.is_dir() or item.name.startswith("."):
                 continue
             if item.name in {k for k in type_map}:
@@ -476,7 +479,6 @@ def get_file_info(path: str, name: str = "") -> str:
 
 
 def set_working_directory(path: str) -> str:
-    """Remember a folder for path=cwd / . on later list/find (shell-style cd)."""
     global _last_cwd
     raw = (path or "").strip()
     if not raw:
@@ -503,7 +505,6 @@ def set_working_directory(path: str) -> str:
 
 
 def _log_file_error(action: str, path: str, name: str, error: str):
-    """Persist errors to a learning ledger so JARVIS can self-diagnose later."""
     try:
         import json, datetime as _dt
         ledger_path = Path(__file__).resolve().parent.parent / "memory" / "file_errors.json"
@@ -523,7 +524,7 @@ def _log_file_error(action: str, path: str, name: str, error: str):
         })
         ledger_path.write_text(json.dumps(ledger[-200:], indent=2), encoding="utf-8")
     except Exception:
-        pass  # never crash on logging
+        pass
 
 
 def file_controller(
@@ -537,20 +538,14 @@ def file_controller(
     path   = params.get("path", "desktop")
     name   = params.get("name", "")
 
-    # ── Smart Path/Name Deduplication ────────────────────────────────────────
-    # If the AI sends path="C:\folder\file.html" AND name="file.html",
-    # the filename is already in the path — strip the redundant name.
     if name and path:
         try:
             resolved = _resolve_path(path)
-            # path already ends with the filename or path has a file extension
             if resolved.name == name or (resolved.suffix and not resolved.is_dir()):
                 name = ""
         except Exception:
             pass
 
-    # ── Action Alias Map ─────────────────────────────────────────────────────
-    # Catches every synonym the AI might invent so "Unknown action" never fires.
     _ALIASES = {
         "create":        "create_file",
         "make":          "create_file",
@@ -580,6 +575,7 @@ def file_controller(
         "upload":        "_upload_stub",
         "deploy":        "_upload_stub",
         "publish":       "_upload_stub",
+        "generated_code": "_skip_generated",
     }
     action = _ALIASES.get(action, action)
 
@@ -658,6 +654,12 @@ def file_controller(
                 "upload it manually to a hosting service (e.g. Netlify drop, GitHub Pages)."
             )
 
+        elif action == "_skip_generated":
+            return (
+                "The 'generated_code' action is not supported by file_controller. "
+                "Please use a different action (e.g., create_file, write, etc.) to save any generated code."
+            )
+
         else:
             msg = f"Unknown action: '{action}'"
             _log_file_error(action, path, name, msg)
@@ -665,5 +667,8 @@ def file_controller(
 
     except Exception as e:
         err_msg = str(e)
+        if "getaddrinfo" in err_msg or err_msg == "[Errno 11001] getaddrinfo failed":
+            _log_file_error(action, path, name, err_msg)
+            return f"File controller error: Network-related error occurred while processing '{action}'. Please check the path/name and try again."
         _log_file_error(action, path, name, err_msg)
         return f"File controller error ({action}): {err_msg}"
