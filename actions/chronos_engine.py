@@ -107,9 +107,10 @@ class ChronosEngine:
                     goal_text = goal_entry.get("goal", "")
                     interval_mins = goal_entry.get("interval_minutes", 15)
                     last_run = goal_entry.get("last_run", 0)
+                    is_enabled = goal_entry.get("enabled", True)
                     
-                    # Check if it's time to run
-                    if now - last_run >= (interval_mins * 60):
+                    # Check if it's time to run and if the goal is enabled
+                    if is_enabled and (now - last_run >= (interval_mins * 60)):
                         print(f"[Chronos] 🕒 Time to execute proactive goal: {name}")
                         if self.write_log:
                             self.write_log(f"Chronos: 🎯 Triggering proactive task: '{name}'")

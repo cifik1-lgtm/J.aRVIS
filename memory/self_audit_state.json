@@ -82,7 +82,7 @@
     "actions/youtube_video.py": "cfc0b119ad7c299ca94fc597723456a10907137236296c8a2e1055a2624fb221",
     "agent/__init__.py": "1e1e59cc32d5231ac2af68285220bd040ed25ae4910992c01ad9f88759f5ad08",
     "agent/error_handler.py": "caf84f0c60bd9ca7683a25dbb8a79938650a933910ae02fff180ed9baede2747",
-    "agent/executor.py": "32d32826b41a8c680dcee3afd77cc4a9d712ffaa8f56fec86b1a3bee071ef632",
+    "agent/executor.py": "78a10f6dd0d2280ceed305c01fa7bc47f155614d809f94a2df84a8b983c380d6",
     "agent/intent_classifier.py": "fd5f0d573e69185230d46ab195f1a7c9765c53893f29f872edd78d91a2a8533f",
     "agent/planner.py": "aff204eda2b53982a6e2eb431a118141021bf94a07b0729faeebe3102ec6901f",
     "agent/self_audit.py": "f5e57a4675c793503703d1d7b1fa0c7e80474d3b65d9a522cb0bcb76069f1866",
@@ -99,10 +99,10 @@
     "core/error_ledger.py": "884e58ed8d7831f6f0e4b7d18a4148030a26a26ec16046033ed8f6a7d761c250",
     "core/hive_dna.py": "7fe9f42d2f96bea61cfd4ccf4f7020eb41694ffb192c8faebeb5b65235963e32",
     "core/intent_classifier.py": "fe194258549e387354d7f687e9be1a1fe55cdf0ad5d30a21b9920c0966be1bc2",
-    "core/llm_provider.py": "99dd2bed3a60d723e66b80408fe52f61f435d5071da5ce4dbb5756ac46962cf8",
+    "core/llm_provider.py": "bc0cb53b19447335da155570123a65aa174a0fdf5f54d3c2e7aa2729507b25db",
     "core/local_llm.py": "697e3ec75d15a64200c03aafd4cda64dfd223f15053ae53c0e15206b4698e787",
     "core/logger.py": "164d022f6b9291a6c6733327a80079a6d0f56eb0e67a2bf3446552d371476eaf",
-    "core/master_planner.py": "11903a95e76600d4785070e91fa97b8f6c90098109e9f9f7cfd5f886c20f1190",
+    "core/master_planner.py": "cf78128c4eeb5bd4a9e98718d42dde46a38b3120b4e9f0e6a77b25b05e1aa805",
     "core/self_audit.py": "e182162d320fe0369c615c9fe3b5aa8cf1b788ee7db0d95114819dc5af2f5d19",
     "core/self_healing.py": "187ff57ede35a8364548d96b9b30d9110a1ec6c9eaf20a9a88d05d14e3d80ec0",
     "core/tools.py": "05d4d8c5a859c2f37c308db39d630e64a29108953315cf7cd6d357498cafc394",
@@ -398,5 +398,5 @@
     "skills/xlsx/recalc.py": "26a130298765fb6b188892bdca8c3c82939199275cbc8d5f934e098e0790daf6",
     "ui.py": "3148851ec7234f658d7d1a86dcdc65af0cba6b8d1cdcb28fa7a1068249e35cb0"
   },
-  "last_audit": "2026-05-25T15:56:53.027933"
+  "last_audit": "2026-05-25T20:47:20.784828"
 }

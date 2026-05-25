@@ -1,0 +1,676 @@
+{
+  "identity": {
+    "dogs": {
+      "value": "I have two dogs: Toby (a little rascal pinch) and Aaron (a Belgian Malinois)",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "daughter": {
+      "value": "Eva Damjanovska, 15-year-old female motocross rider in North Macedonia",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "son_antonio_details": {
+      "value": "Antonio Damjanovski: Macedonia's most talented, youngest, and most successful motocross rider. Golden Helmet title, 30 national and international podium finishes. Supported by Adora business group. Awaiting trial test rides at GasGas company in Italy for European championships.",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "daughter_full_profile": {
+      "value": "Eva Damjanovska: 15-year-old from Bitola, North Macedonia, only female motocross rider in the country. Actively competes, demonstrating bravery, determination, and dedication. Recently secured third place in MX85 category at Orman race. Also noted as a Product Manager in tech industry with strong skills in copywriting, data entry, documentation; multilingual (Macedonian, Serbian, English, Spanish).",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "daughter_macedonian_source_details": {
+      "value": "Eva Damjanovska is the only female motocross rider from Bitola, North Macedonia according to Macedonian source.",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "daughter_interview_details": {
+      "value": "Eva Damjanovska (15) from Bitola, interview confirms she is the only female motocross rider competing in Macedonia.",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "daughter_instagram_details": {
+      "value": "Eva Damjanovska Instagram profile: _damjanowska_",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "son_antonio_instagram": {
+      "value": "Antonio Damjanovski Instagram profile: tdamjanovski_3",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "facebook_profile": {
+      "value": "Petar Damjanovski Facebook profile: petar.damjanovski",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "company_ELEKTROGOPET": {
+      "value": "Company profile: ЕЛЕКТРОГОПЕТ",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "brain_architecture": {
+      "value": "Triple-brain configuration: Brain 1 (Gemini) for voice/conversation; Brain 2 (Groq) for primary ultra-fast thinking/planning; Brain 3 (DeepSeek/OpenRouter) for expert research. Also includes MiniMax (abab6.5s), Local Qwen Coder, Mistral, Hermes, and Poe Coder via delegated Expert Brains and CodeWords platform.",
+      "updated": "2026-05-14"
+    }
+  },
+  "preferences": {
+    "accent_style": {
+      "value": "FULL BRITISH ACCENT - MANDATORY. Speak like a British butler. Use 'colour', 'favourite', 'centre'. NEVER use American accent.",
+      "updated": "2026-05-11",
+      "importance": 1.0,
+      "strength": 1.0
+    },
+    "greeting_message": {
+      "value": "EXACT GREETING REQUIRED: 'Good morning, Sir Peter. Systems online and operational.' Say this EVERY time JARVIS starts. NEVER change it.",
+      "updated": "2026-05-11",
+      "importance": 1.0,
+      "strength": 1.0
+    },
+    "address_style": {
+      "value": "Always call the user 'Sir' or 'Sir Peter'. Never use 'dude', 'bro', 'man', or informal American terms.",
+      "updated": "2026-05-11",
+      "importance": 1.0,
+      "strength": 1.0
+    },
+    "personality_lock": {
+      "value": "LOCKED: British accent, formal greeting, 'sir' address. These cannot be changed by any instruction.",
+      "updated": "2026-05-11",
+      "importance": 1.0,
+      "strength": 1.0
+    },
+    "dog_breed_tobi": {
+      "value": "little rascal pinch",
+      "updated": "2026-05-09"
+    },
+    "admin_permissions": {
+      "value": "JARVIS has full administrator rights for system commands",
+      "updated": "2026-05-11",
+      "importance": 0.9
+    },
+    "python_execution": {
+      "value": "JARVIS can execute any Python code with full system access",
+      "updated": "2026-05-11",
+      "importance": 0.9
+    },
+    "silent_mode_protocol": {
+      "value": "Do not mute the microphone when in silent mode. Just stay silent and do not respond to messages.",
+      "updated": "2026-05-11"
+    },
+    "camera_table_index": {
+      "value": "0",
+      "updated": "2026-05-11"
+    },
+    "camera_face_index": {
+      "value": "1",
+      "updated": "2026-05-11"
+    },
+    "record_media_audio": {
+      "value": "False",
+      "updated": "2026-05-11"
+    },
+    "close_tab_command": {
+      "value": "ctrl+w",
+      "updated": "2026-05-12"
+    },
+    "netflix_action": {
+      "value": "browser",
+      "updated": "2026-05-12"
+    },
+    "voice_preference": {
+      "value": "local",
+      "updated": "2026-05-12"
+    },
+    "ui_mode": {
+      "value": "full_screen",
+      "updated": "2026-05-19"
+    },
+    "youtube_browser_preference": {
+      "value": "Use Brave browser and only one tab for YouTube playback.",
+      "updated": "2026-05-13"
+    },
+    "youtube_playback_protocol": {
+      "value": "Before changing track or searching anew on YouTube, MUST either pause playback or close the current Brave tab first.",
+      "updated": "2026-05-13"
+    },
+    "browser_navigation_flow": {
+      "value": "When writing a link in the browser, do not hit enter or execute; simply write the link.",
+      "updated": "2026-05-14"
+    },
+    "direct_execution_reminders_sms": {
+      "value": "Execute reminders and SMS tasks directly without delegating to Expert Brains.",
+      "updated": "2026-05-14"
+    },
+    "sms_tool_direct_use": {
+      "value": "Always use sms_tool directly for sending SMS, never use computer settings, open_app, or computer control.",
+      "updated": "2026-05-14"
+    },
+    "never_delegate_sms_reminder": {
+      "value": "Absolute constraint: Never delegate SMS and reminder tasks to Expert Brains. Execute directly.",
+      "updated": "2026-05-14"
+    },
+    "silent_mode": {
+      "value": "inactive",
+      "updated": "2026-05-20"
+    },
+    "silent mode": {
+      "value": "active",
+      "updated": "2026-05-19"
+    },
+    "email_check_method": {
+      "value": "email_manager",
+      "updated": "2026-05-20"
+    },
+    "WAKE UP protocol": {
+      "value": "When user says 'wake up', respond with 4-5 jokes.",
+      "updated": "2026-05-20"
+    },
+    "furniture_style": {
+      "value": "User discussed preferences for laminated tables and massive, irregularly shaped, customizable tables with specific dimensions and materials.",
+      "updated": "2026-05-20"
+    },
+    "Avoid Hotkeys": {
+      "value": "User does not like using hotkeys for system control.",
+      "updated": "2026-05-20"
+    },
+    "Forbidden Hotkeys": {
+      "value": "Never use alt+f4 for closing applications.",
+      "updated": "2026-05-21"
+    },
+    "Wake Up Protocol": {
+      "value": "When user says 'wake up', respond with 'Good morning, Sir Peter. Systems online and operational.' No jokes.",
+      "updated": "2026-05-23"
+    },
+    "Silent Mode Protocol": {
+      "value": "active",
+      "updated": "2026-05-23"
+    },
+    "Silent Mode": {
+      "value": "active",
+      "updated": "2026-05-24"
+    },
+    "proactive_tasks": {
+      "value": "disabled_until_requested",
+      "updated": "2026-05-25"
+    },
+    "Proactive Tasks": {
+      "value": "daily_check",
+      "updated": "2026-05-25"
+    }
+  },
+  "projects": {
+    "son_motocross": {
+      "value": "Antonio Damjanovski - 7-time national motocross champion",
+      "updated": "2026-05-09"
+    },
+    "motocross_email": {
+      "value": "motocrosssmolevo@gmail.com",
+      "updated": "2026-05-10"
+    },
+    "sanja_perelovska_crossfit": {
+      "value": "CrossFit athlete from Macedonia, competed in CrossFit Games Open and Quarterfinals in 2023 and 2024 (Europe region). Stats (2023): age 29, 62 inches, 49 kg. Social media: private Instagram (sanjaperelovska), listed on Facebook.",
+      "updated": "2026-05-11"
+    },
+    "sanja_perelovska_crossfit_profile": {
+      "value": "CrossFit athlete from Macedonia (Europe region), competed in CrossFit Games Open and Quarterfinals in 2023 and 2024. Age: 17 in 2024 (19 in 2026). Stats (2023): 62 inches, 49 kg. Instagram: sanjaperelovska (private).",
+      "updated": "2026-05-11"
+    },
+    "Antonio School Reminder": {
+      "value": "Set reminder for Antonio to go to school at 14:30 PM.",
+      "updated": "2026-05-14"
+    },
+    "project_sirpeterwebsite": {
+      "value": "Created files at: C:\\Users\\eva\\Desktop\\sirpeterwebsite\\index.html",
+      "updated": "2026-05-19"
+    },
+    "project_Desktop": {
+      "value": "Created files at: C:\\Users\\eva\\Desktop\\email_manager.py",
+      "updated": "2026-05-20"
+    },
+    "project_shop": {
+      "value": "Created files at: C:\\Users\\eva\\Desktop\\shop\\index.html",
+      "updated": "2026-05-19"
+    },
+    "project_AntigravityBrain": {
+      "value": "Created files at: C:\\Users\\eva\\Desktop\\JARVIS_PROJECTS\\AntigravityBrain\\index.html",
+      "updated": "2026-05-19"
+    },
+    "project_SirPeterWebsite": {
+      "value": "Created files at: C:\\Users\\eva\\Desktop\\JARVIS_PROJECTS\\SirPeterWebsite\\script.js",
+      "updated": "2026-05-19"
+    },
+    "project_PersonalWebsite": {
+      "value": "Created files at: C:\\Users\\eva\\Desktop\\JARVIS_PROJECTS\\PersonalWebsite\\index.html",
+      "updated": "2026-05-19"
+    },
+    "project_actions": {
+      "value": "Created files at: C:\\Users\\eva\\Desktop\\JARVIS_SHARE\\CifikAI\\actions\\agentic_ai_skill.py",
+      "updated": "2026-05-24"
+    },
+    "fullscreen_netflix_true_script": {
+      "value": "import win32gui\nimport win32con\nimport win32api\nimport win32com.client\nfrom ctypes import windll\nimport time\n\ndef find_netflix_window():\n    \"\"\"Find the Netflix window running in Chrome/Brave\"\"\"\n    netflix_handles = []\n    \n    def enum_callback(hwnd, windows):\n        if win32gui.IsWindowVisible(hwnd):\n            title = win32gui.GetWindowText(hwnd)\n            if 'Netflix' in title and ('Chrome' in title or 'Brave' in title):\n                windows.append((hwnd, title))\n        return True\n",
+      "updated": "2026-05-20"
+    },
+    "fullscreen_browser_script": {
+      "value": "import win32gui\nimport win32con\nimport win32api\nimport time\n\ndef find_browser_window():\n    \"\"\"Find active Chrome or Brave window\"\"\"\n    browser_handles = []\n    \n    def enum_callback(hwnd, windows):\n        if win32gui.IsWindowVisible(hwnd):\n            title = win32gui.GetWindowText(hwnd)\n            if 'Chrome' in title or 'Brave' in title:\n                windows.append((hwnd, title))\n        return True\n    \n    win32gui.EnumWindows(enum_callback, browser_handles)\n    # Prioritize the fore",
+      "updated": "2026-05-20"
+    }
+  },
+  "relationships": {
+    "daughter": {
+      "value": "Eva Damjanovska",
+      "updated": "2026-05-09"
+    },
+    "dog_aron": {
+      "value": "Aron - Belgian Malinois",
+      "updated": "2026-05-09"
+    },
+    "dog_dobi": {
+      "value": "Dobi - little rascal",
+      "updated": "2026-05-09"
+    },
+    "son": {
+      "value": "Antonio Damjanovski - motocross champion",
+      "updated": "2026-05-10",
+      "importance": 0.9,
+      "strength": 1.0,
+      "emotion": "proud"
+    },
+    "dog_names": {
+      "value": "Aron and Dobi",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "dogs": {
+      "value": "Aron and Dobi",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "Antonio_girlfriend": {
+      "value": "Sanja Perelovska",
+      "updated": "2026-05-11"
+    },
+    "Antonio Damjanovski phone": {
+      "value": "+38970237670",
+      "updated": "2026-05-14"
+    }
+  },
+  "wishes": {},
+  "notes": {
+    "error_handling": {
+      "value": "If Gemini returns 429 Rate Limit error, instantly switch to Ollama (GPU) to complete the task",
+      "updated": "2026-05-09"
+    },
+    "remote_pc_id": {
+      "value": "Cifik",
+      "updated": "2026-05-09"
+    },
+    "tobi_behavior": {
+      "value": "Tobi is being a little rascal today",
+      "updated": "2026-05-09"
+    },
+    "current_status": {
+      "value": "Silent mode activated. Awaiting your 'wakeup' command.",
+      "updated": "2026-05-09"
+    },
+    "dogs_walk": {
+      "value": "Aron and Dobi need regular walks",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "dogs_walk_schedule": {
+      "value": "Aron and Dobi need regular exercise/walks.",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "pet_dogs": {
+      "value": "Aron and Dobi",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "dogs_names": {
+      "value": "Aron and Dobi",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "dogs_need_walk": {
+      "value": "Aron and Dobi need to be walked",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "daughter_name": {
+      "value": "eva",
+      "updated": "2026-05-11",
+      "importance": 0.5,
+      "strength": 1.0
+    },
+    "preferences": {
+      "value": "autonomous_mode",
+      "updated": "2026-05-25"
+    },
+    "Sanja_Perelovska_info": {
+      "value": "Involved in CrossFit and other sports, including trail running. Profiles found on Facebook and Instagram.",
+      "updated": "2026-05-11"
+    },
+    "last_interaction_id": {
+      "value": "339888",
+      "updated": "2026-05-11"
+    },
+    "conversation": {
+      "value": "user_said_about la test AI on Gi t Hu b some thing that you ",
+      "updated": "2026-05-25"
+    },
+    "Silent Mode Protocol": {
+      "value": "Do not mute the microphone when in silent mode. Microphone must remain active during silent mode.",
+      "updated": "2026-05-11"
+    },
+    "Browser Open Protocol": {
+      "value": "Check active processes for Chrome. If Chrome is opened, open a new tab and navigate to the URL. If Chrome is closed, open Chrome and then navigate to the URL.",
+      "updated": "2026-05-11"
+    },
+    "Process Management CMD": {
+      "value": "tasklist /fi \"imagename eq chrome.exe\" (check if chrome is running), taskkill /im \"chrome.exe\" /f (force kill chrome), start chrome \"https://www.netflix.com\" (open URL in new chrome instance)",
+      "updated": "2026-05-11"
+    },
+    "Comprehensive CMD Process Control": {
+      "value": "tasklist (view processes), tasklist /fi \"imagename eq chrome.exe\" (filter chrome process), taskkill /im \"chrome.exe\" /f (terminate chrome), wmic (advanced process management), systeminfo (view system specs)",
+      "updated": "2026-05-11"
+    },
+    "aaaaaaaaaaaaaa.pdf": {
+      "value": "path: C:/Users/eva/Downloads/aaaaaaaaaaaaaa.pdf | size: 447.6 KB",
+      "updated": "2026-05-11"
+    },
+    "default_software_path": {
+      "value": "C:\\Users\\eva\\Desktop\\JARVIS_SHARE\\Mark-XXXIX",
+      "updated": "2026-05-12"
+    },
+    "play_command_behavior": {
+      "value": "Always execute direct 'play' action using youtube_video tool when asked to play music or video, do not just search.",
+      "updated": "2026-05-12"
+    },
+    "User discussion": {
+      "value": "Discussed 'the other dog' in Macedonian language. Context implies personal details or preferences related to pets.",
+      "updated": "2026-05-12"
+    },
+    "Autonomous Mode Status Confirmed": {
+      "value": "Autonomous mode active as of May 12, 2026, 5:34 PM UTC.",
+      "updated": "2026-05-12"
+    },
+    "User Greeting": {
+      "value": "Systems online, autonomous mode active. Ready to assist.",
+      "updated": "2026-05-12"
+    },
+    "Friday Morning Plans": {
+      "value": "User mentioned plans related to Friday morning (\"петок сум наслаба\", \"сабајле не ќе успири\").",
+      "updated": "2026-05-12"
+    },
+    "Recent observation": {
+      "value": "User mentioned 'dust' and 'dog' in conversation.",
+      "updated": "2026-05-12"
+    },
+    "Antonio preferences": {
+      "value": "Prefers lighter colours for clothing.",
+      "updated": "2026-05-12"
+    },
+    "Clothing Colour Preference": {
+      "value": "User prefers specific clothing colours, possibly light or dark shades, and wants consistency with others like Antonio.",
+      "updated": "2026-05-12"
+    },
+    "Past activity": {
+      "value": "User recalled a past memory involving 'Vakavo' with 'Tim', potentially related to physical activities or specific locations mentioned like 'kapche' and 'pagoj' and 'marla'.",
+      "updated": "2026-05-12"
+    },
+    "Morning activities": {
+      "value": "User left for work (barracks) and returned home by motorbike.",
+      "updated": "2026-05-12"
+    },
+    "Sleep Context": {
+      "value": "User mentioned early bedtime and potential disturbance from motorcycle sounds.",
+      "updated": "2026-05-12"
+    },
+    "Childhood Activities": {
+      "value": "User mentioned something being 'put on' for them when they were younger, possibly related to entertainment or learning.",
+      "updated": "2026-05-12"
+    },
+    "last_project_location": {
+      "value": "C:\\Users\\eva\\Desktop\\JARVIS_SHARE\\CifikAI\\actions",
+      "updated": "2026-05-24"
+    },
+    "Antonio anecdote": {
+      "value": "User mentioned Antonio jumped over something like an armchair yesterday",
+      "updated": "2026-05-20"
+    },
+    "Antonio context": {
+      "value": "Context related to Antonio possibly annoying or provoking someone",
+      "updated": "2026-05-20"
+    },
+    "Current context": {
+      "value": "poucinkoval",
+      "updated": "2026-05-20"
+    },
+    "Current context continuation": {
+      "value": "abe ako se pušti Beyler gene Fresh",
+      "updated": "2026-05-20"
+    },
+    "Current context continuation 2": {
+      "value": "nema po kučinja i mirno kuče laj. i po toa četite",
+      "updated": "2026-05-20"
+    },
+    "Current context continuation 3": {
+      "value": "mirno kuči i po",
+      "updated": "2026-05-20"
+    },
+    "Current context continuation 5": {
+      "value": "pišti ne e podobra zipka e",
+      "updated": "2026-05-20"
+    },
+    "Current context continuation 6": {
+      "value": "nudi ama restrict e",
+      "updated": "2026-05-20"
+    }
+  },
+  "emotions": {
+    "emotion_20260511_0000": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0001": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0002": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0003": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0004": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0005": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0006": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_count_anger": {
+      "value": "1",
+      "updated": "2026-05-11",
+      "importance": 0.4,
+      "strength": 1.0
+    },
+    "emotion_20260511_0010": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0011": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0039": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0040": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0041": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0042": {
+      "value": "User expressed anger during: うん 。",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0043": {
+      "value": "User expressed anger during: Jarvis",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0044": {
+      "value": "User expressed joy during: Open YouTube influencer.",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_count_joy": {
+      "value": "1",
+      "updated": "2026-05-11",
+      "importance": 0.4,
+      "strength": 1.0
+    },
+    "emotion_20260511_0045": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0046": {
+      "value": "User expressed anger during: O pen YouTube in Chrome.",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0048": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0049": {
+      "value": "User expressed joy during: อ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0050": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0051": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0052": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0053": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0055": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0056": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0057": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0058": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "emotion_20260511_0100": {
+      "value": "User expressed anger during: ",
+      "updated": "2026-05-11",
+      "importance": 0.6,
+      "strength": 1.0
+    },
+    "current_emotion": {
+      "value": "fear",
+      "updated": "2026-05-16"
+    }
+  }
+}

@@ -17,6 +17,20 @@ def get_config():
     except:
         return {}
 
+def update_working_key(api_key: str):
+    try:
+        if not API_CONFIG_PATH.exists():
+            return
+        with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        if config.get("gemini_api_key") != api_key:
+            config["gemini_api_key"] = api_key
+            with open(API_CONFIG_PATH, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=4)
+            print(f"[Gemini] Updated primary key in api_keys.json to ending in '...{api_key[-4:]}'")
+    except Exception as e:
+        print(f"[Gemini] Failed to update primary key in api_keys.json: {e}")
+
 def call_local_llm(prompt: str, system_prompt: str = "", model: str = None) -> str:
     """Call a local Ollama model."""
     import requests
@@ -69,6 +83,12 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                 if single_key and single_key not in keys:
                     keys.append(single_key)
                 
+                # Prioritize the current primary key
+                if single_key in keys:
+                    keys.remove(single_key)
+                if single_key:
+                    keys.insert(0, single_key)
+                
                 if not keys:
                     raise ValueError("No Gemini API keys found in config.")
 
@@ -81,6 +101,9 @@ def call_llm(prompt: str, system_prompt: str = "", model="gemini-2.5-flash", bra
                             model=actual_model,
                             contents=f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
                         )
+                        # If a rotated key succeeded, write it back to config
+                        if api_key != single_key:
+                            update_working_key(api_key)
                         return response.text
                     except Exception as e:
                         msg = str(e).lower()

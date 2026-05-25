@@ -1,0 +1,11 @@
+{
+  "force_brain": "gemini",
+  "gemini_model": "gemini-2.5-flash",
+  "pollinations_models": {
+    "default": "gpt-5.4-mini",
+    "code": "deepseek",
+    "vision": "qwen-vision-pro",
+    "search": "perplexity-reasoning",
+    "deep_reasoning": "deepseek-r1"
+  }
+}

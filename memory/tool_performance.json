@@ -54,8 +54,8 @@
         "failures": 0
     },
     "computer_control": {
-        "calls": 45,
-        "avg_time": 0.4247701379987929,
+        "calls": 46,
+        "avg_time": 0.41694220770960266,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -66,8 +66,8 @@
         "failures": 0
     },
     "file_controller": {
-        "calls": 47,
-        "avg_time": 0.021707839154182593,
+        "calls": 50,
+        "avg_time": 0.021145749092102047,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -120,8 +120,8 @@
         "failures": 0
     },
     "shell_runner": {
-        "calls": 1062,
-        "avg_time": 0.8369946006103198,
+        "calls": 1318,
+        "avg_time": 0.8147984837183284,
         "success_rate": 100.0,
         "failures": 0
     },
@@ -236,6 +236,36 @@
     "None": {
         "calls": 1,
         "avg_time": 0.003996610641479492,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "JARVIS_INTERNAL_SELF_IMPROVEMENT_ENGINE": {
+        "calls": 1,
+        "avg_time": 0.002000570297241211,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "generative_ai": {
+        "calls": 2,
+        "avg_time": 0.0029985904693603516,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "": {
+        "calls": 1,
+        "avg_time": 0.001998424530029297,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "self": {
+        "calls": 2,
+        "avg_time": 0.0015012025833129883,
+        "success_rate": 100.0,
+        "failures": 0
+    },
+    "delegate_task": {
+        "calls": 1,
+        "avg_time": 0.11647367477416992,
         "success_rate": 100.0,
         "failures": 0
     }

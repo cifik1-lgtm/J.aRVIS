@@ -36,13 +36,10 @@ API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
 
 
 def _get_api_key() -> str:
-    with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)["gemini_api_key"]
+    from core.llm_provider import get_config
+    return get_config().get("gemini_api_key", "")
 
 def _run_generated_code(description: str, speak: Callable | None = None) -> str:
-    from google import genai
-    from google.genai import types
-
     if speak:
         speak("Writing custom code for this task, sir.")
 
@@ -60,29 +57,24 @@ def _run_generated_code(description: str, speak: Callable | None = None) -> str:
         except Exception:
             pass
 
-    client = genai.Client(api_key=_get_api_key())
-    
     try:
         start_time = time.time()
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=f"Write Python code to accomplish this task:\n\n{description}",
-            config=types.GenerateContentConfig(
-                system_instruction=(
-                    "You are an expert Python developer. "
-                    "Write clean, complete, working Python code. "
-                    "Use standard library + common packages. "
-                    "Install missing packages with subprocess + pip if needed. "
-                    "Return ONLY the Python code. No explanation, no markdown, no backticks.\n\n"
-                    f"SYSTEM PATHS:\n"
-                    f"  Desktop   = r'{desktop}'\n"
-                    f"  Downloads = r'{downloads}'\n"
-                    f"  Documents = r'{documents}'\n"
-                    f"  Home      = r'{home}'\n"
-                )
-            )
+        from core.llm_provider import call_llm
+        prompt = f"Write Python code to accomplish this task:\n\n{description}"
+        system_instruction = (
+            "You are an expert Python developer. "
+            "Write clean, complete, working Python code. "
+            "Use standard library + common packages. "
+            "Install missing packages with subprocess + pip if needed. "
+            "Return ONLY the Python code. No explanation, no markdown, no backticks.\n\n"
+            f"SYSTEM PATHS:\n"
+            f"  Desktop   = r'{desktop}'\n"
+            f"  Downloads = r'{downloads}'\n"
+            f"  Documents = r'{documents}'\n"
+            f"  Home      = r'{home}'\n"
         )
-        code = response.text.strip()
+        code = call_llm(prompt, system_prompt=system_instruction, model="gemini-2.5-flash", brain="gemini")
+        code = code.strip()
         code = re.sub(r"```(?:python)?", "", code).strip().rstrip("`").strip()
 
         with tempfile.NamedTemporaryFile(
@@ -148,19 +140,17 @@ def _inject_context(params: dict, tool: str, step_results: dict, goal: str = "")
                 print(f"[Executor] 💉 Injected + translated content")
 
     return params
+
 def _detect_language(text: str) -> str:
-    from google import genai
-    client = genai.Client(api_key=_get_api_key())
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=(
-                f"What language is this text written in? "
-                f"Reply with ONLY the language name in English (e.g. Turkish, English, French).\n\n"
-                f"Text: {text[:200]}"
-            )
+        from core.llm_provider import call_llm
+        prompt = (
+            f"What language is this text written in? "
+            f"Reply with ONLY the language name in English (e.g. Turkish, English, French).\n\n"
+            f"Text: {text[:200]}"
         )
-        return response.text.strip()
+        response_text = call_llm(prompt, model="gemini-2.5-flash-lite", brain="gemini")
+        return response_text.strip()
     except Exception as e:
         msg = str(e).lower()
         if any(x in msg for x in ["429", "quota", "connection", "timeout", "offline"]):
@@ -169,14 +159,10 @@ def _detect_language(text: str) -> str:
             if res: return res
         return "English"
 
-
 def _translate_to_goal_language(content: str, goal: str) -> str:
     if not goal:
         return content
     try:
-        from google import genai
-        client = genai.Client(api_key=_get_api_key())
-
         target_lang = _detect_language(goal)
         print(f"[Executor] 🌐 Translating to: {target_lang}")
 
@@ -190,11 +176,9 @@ def _translate_to_goal_language(content: str, goal: str) -> str:
             f"- Output ONLY the translated text, nothing else\n\n"
             f"Text to translate:\n{content[:4000]}"
         )
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
-        translated = response.text.strip()
+        from core.llm_provider import call_llm
+        translated = call_llm(prompt, model="gemini-2.5-flash", brain="gemini")
+        translated = translated.strip()
         print(f"[Executor] ✅ Translation done ({target_lang})")
         return translated
     except Exception as e:
@@ -446,13 +430,9 @@ class AgentExecutor:
         )
 
         try:
-            from google import genai
-            client = genai.Client(api_key=_get_api_key())
-            response = client.models.generate_content(
-                model="gemini-2.5-flash-lite",
-                contents=prompt
-            )
-            summary  = response.text.strip()
+            from core.llm_provider import call_llm
+            summary = call_llm(prompt, model="gemini-2.5-flash-lite", brain="gemini")
+            summary = summary.strip()
             if speak: speak(summary)
             return summary
         except Exception as e:
