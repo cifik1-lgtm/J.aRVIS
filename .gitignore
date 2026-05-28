@@ -101,6 +101,9 @@ MASTER_CONFIG_BACKUP.json
 # Memory & Data
 memory/conversation_history.json
 memory/faces/
+memory/tiktok_tokens.json
+memory/tiktok_content/
+memory/tiktok_post_log.json
 camera_state.txt
 recordings/
 scratch/

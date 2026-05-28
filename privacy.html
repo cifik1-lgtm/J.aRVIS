@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — Jarvis1</title>
+    <meta name="description" content="Privacy Policy for Jarvis1, an autonomous AI content creation and publishing platform integrated with TikTok.">
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --surface: #111827;
+            --border: #1e293b;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-dim: rgba(56, 189, 248, 0.15);
+            --warning: #f59e0b;
+            --warning-dim: rgba(245, 158, 11, 0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 24px 80px;
+        }
+        .logo-bar {
+            text-align: center;
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+        .logo-bar h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        .logo-bar p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        h2 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 40px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 24px 0 12px;
+        }
+        p, li {
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        ul, ol {
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+        li { margin-bottom: 8px; }
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        a:hover { text-decoration: underline; }
+        .highlight-box {
+            background: var(--accent-dim);
+            border-left: 3px solid var(--accent);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+        .highlight-box p {
+            color: var(--text);
+            margin: 0;
+        }
+        .warning-box {
+            background: var(--warning-dim);
+            border-left: 3px solid var(--warning);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+        .warning-box p {
+            color: var(--text);
+            margin: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.9rem;
+        }
+        th {
+            background: var(--surface);
+            color: var(--accent);
+            text-align: left;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 64px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-bar">
+            <h1>Jarvis1 — Privacy Policy</h1>
+            <p>Last updated: May 29, 2026</p>
+        </div>
+
+        <h2>1. Introduction</h2>
+        <p>This Privacy Policy describes how <strong>Jarvis1</strong> ("the Service"), operated by CIFIK Intelegents ("we", "us", "our"), collects, uses, stores, and protects your information. We are committed to safeguarding your privacy and being transparent about our data practices.</p>
+
+        <div class="highlight-box">
+            <p><strong>TikTok API Integration:</strong> Jarvis1 integrates with the TikTok Content Posting API. This means we access certain TikTok account data with your explicit authorization. This policy explains exactly what data we access and why.</p>
+        </div>
+
+        <h2>2. Information We Collect</h2>
+
+        <h3>2.1 Information You Provide</h3>
+        <p>When you authorize Jarvis1 to connect to your TikTok account, we receive:</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data Type</th>
+                    <th>Description</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>TikTok OAuth Tokens</td>
+                    <td>Access token and refresh token issued by TikTok</td>
+                    <td>To authenticate API requests and post content on your behalf</td>
+                </tr>
+                <tr>
+                    <td>TikTok User ID</td>
+                    <td>Your unique TikTok account identifier (open_id)</td>
+                    <td>To identify which account to post to</td>
+                </tr>
+                <tr>
+                    <td>Creator Info</td>
+                    <td>Posting permissions and available privacy levels</td>
+                    <td>To ensure content is posted with correct privacy settings</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>2.2 Information Generated by the Service</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data Type</th>
+                    <th>Description</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Video Files</td>
+                    <td>AI-generated video content (stored locally)</td>
+                    <td>To create and upload content to TikTok</td>
+                </tr>
+                <tr>
+                    <td>Post Metadata</td>
+                    <td>Captions, hashtags, timestamps, publish IDs</td>
+                    <td>To track posting history and avoid duplicate posts</td>
+                </tr>
+                <tr>
+                    <td>Publishing Logs</td>
+                    <td>API response statuses and error logs</td>
+                    <td>To monitor and troubleshoot the posting pipeline</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>2.3 Information We Do NOT Collect</h3>
+        <ul>
+            <li>We do <strong>not</strong> collect your TikTok password.</li>
+            <li>We do <strong>not</strong> access your TikTok direct messages, followers list, or personal profile information beyond what is listed above.</li>
+            <li>We do <strong>not</strong> use cookies, tracking pixels, or any device data collection tools.</li>
+            <li>We do <strong>not</strong> collect analytics or usage data about your interaction with the Service beyond what is necessary for its operation.</li>
+        </ul>
+
+        <h2>3. How We Use Your Information</h2>
+        <p>We use the collected information solely for the following purposes:</p>
+        <ul>
+            <li><strong>Content Publishing:</strong> To generate and publish AI-created video content to your TikTok account.</li>
+            <li><strong>Authentication:</strong> To maintain an active, authorized connection to TikTok's API.</li>
+            <li><strong>Service Operation:</strong> To schedule posts, track publishing history, and prevent duplicate uploads.</li>
+            <li><strong>Error Resolution:</strong> To diagnose and fix issues with the content pipeline.</li>
+        </ul>
+
+        <div class="warning-box">
+            <p><strong>Purpose Limitation:</strong> We will never use your TikTok data for advertising, profiling, data brokering, or any purpose other than those explicitly listed above.</p>
+        </div>
+
+        <h2>4. Data Storage and Security</h2>
+        <h3>4.1 Where Data is Stored</h3>
+        <p>All data is stored <strong>locally on the machine</strong> where Jarvis1 is installed. Specifically:</p>
+        <ul>
+            <li>OAuth tokens are stored in an encrypted local file (<code>tiktok_tokens.json</code>).</li>
+            <li>Video files are stored in the local <code>memory/tiktok_content/</code> directory.</li>
+            <li>Post logs are stored in the local <code>memory/</code> directory.</li>
+        </ul>
+        <p>We do <strong>not</strong> transmit your data to any third-party servers, cloud storage, or external databases other than TikTok's own API endpoints.</p>
+
+        <h3>4.2 Security Measures</h3>
+        <ul>
+            <li>OAuth tokens are stored in files excluded from version control (via <code>.gitignore</code>).</li>
+            <li>API credentials are stored separately from application code.</li>
+            <li>The Service uses TikTok's official OAuth 2.0 flow with PKCE for secure authentication.</li>
+        </ul>
+
+        <h2>5. Data Sharing</h2>
+        <p>We do <strong>not</strong> share, sell, rent, or trade your personal information with any third parties. The only external data transmission occurs between the Service and TikTok's API endpoints for the purpose of content publishing.</p>
+
+        <h2>6. Data Retention</h2>
+        <ul>
+            <li><strong>OAuth Tokens:</strong> Retained until you revoke access or uninstall the Service.</li>
+            <li><strong>Video Files:</strong> Retained locally until manually deleted by the user.</li>
+            <li><strong>Post Logs:</strong> Retained locally for operational purposes until manually deleted.</li>
+        </ul>
+        <p>You may delete all locally stored data at any time by removing the relevant files from your machine.</p>
+
+        <h2>7. Your Rights</h2>
+        <p>Depending on your jurisdiction, you may have the following rights:</p>
+
+        <h3>7.1 General Rights (All Users)</h3>
+        <ul>
+            <li><strong>Access:</strong> Request a copy of all data the Service holds about you.</li>
+            <li><strong>Deletion:</strong> Request deletion of all your data.</li>
+            <li><strong>Revocation:</strong> Revoke Jarvis1's access to your TikTok account at any time via TikTok's account settings or by contacting us.</li>
+            <li><strong>Portability:</strong> Request your data in a machine-readable format.</li>
+        </ul>
+
+        <h3>7.2 European Economic Area (GDPR)</h3>
+        <p>If you are located in the EEA, you have additional rights under the General Data Protection Regulation, including the right to lodge a complaint with your local data protection authority.</p>
+
+        <h3>7.3 California (CCPA)</h3>
+        <p>California residents have the right to know what personal information is collected, request its deletion, and opt out of its sale. We do not sell personal information.</p>
+
+        <h2>8. Children's Privacy</h2>
+        <p>The Service is not intended for use by individuals under the age of 18. We do not knowingly collect information from minors. If we learn that we have collected data from a minor, we will promptly delete it.</p>
+
+        <h2>9. Changes to This Policy</h2>
+        <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated "Last updated" date. We encourage you to review this policy periodically.</p>
+
+        <h2>10. Contact Us</h2>
+        <p>If you have any questions, concerns, or requests regarding this Privacy Policy or your data, please contact us:</p>
+        <ul>
+            <li><strong>Email:</strong> <a href="mailto:cifik.intelegents@gmail.com">cifik.intelegents@gmail.com</a></li>
+            <li><strong>GitHub:</strong> <a href="https://github.com/cifik1-lgtm/J.aRVIS" target="_blank">github.com/cifik1-lgtm/J.aRVIS</a></li>
+        </ul>
+
+        <div class="footer">
+            <p>&copy; 2026 CIFIK Intelegents. All rights reserved.</p>
+            <p style="margin-top: 8px;"><a href="terms.html">Terms of Service</a></p>
+        </div>
+    </div>
+</body>
+</html>
