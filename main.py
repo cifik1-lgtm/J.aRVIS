@@ -1910,7 +1910,12 @@ def main():
     
     ui = JarvisUI("face.png")
     
+    # Store global reference to close connection cleanly on exit
+    global active_jarvis
+    active_jarvis = None
+    
     def runner():
+        global active_jarvis
         ui.wait_for_api_key()
         try:
             from actions.routines import start_routines
@@ -1962,18 +1967,41 @@ def main():
             traceback.print_exc()
         
         jarvis = JarvisLive(ui)
+        active_jarvis = jarvis
         get_queue().dispatcher = jarvis.tools
         try:
             asyncio.run(jarvis.run())
         except KeyboardInterrupt:
             print("\n🔴 Shutting down...")
+            
+    # Graceful Shutdown Signal Registration
+    import signal
+    def graceful_shutdown(sig, frame):
+        print("\n[INFO] Shutting down JARVIS gracefully...")
+        global active_jarvis
+        if active_jarvis and active_jarvis.session:
+            try:
+                print("[Shutdown] Closing active Gemini Live session...")
+                if active_jarvis._loop and active_jarvis._loop.is_running():
+                    asyncio.run_coroutine_threadsafe(active_jarvis.session.close(), active_jarvis._loop)
+            except Exception as se:
+                print(f"[Shutdown] Error closing session: {se}")
+        try:
+            ui.root.quit()
+            ui.root.destroy()
+        except Exception:
+            pass
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, graceful_shutdown)
+    signal.signal(signal.SIGTERM, graceful_shutdown)
     
     def start_dashboard():
         import subprocess
         import sys
         import os
         try:
-            print("[JARVIS] 🛰️ Launching Hive Dashboard...")
+            print("[JARVIS] Launching Hive Dashboard...")
             env = os.environ.copy()
             env["PYTHONPATH"] = os.getcwd()
             subprocess.Popen([sys.executable, "hive_dashboard.py"], env=env)

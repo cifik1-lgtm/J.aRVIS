@@ -68,8 +68,19 @@ def get_reloads():
     return []
 
 def get_status():
-    # Placeholder for live system status
-    return "🟢 HIVE ONLINE | 🧠 GEMINI 2.0 LIVE | 🎙️ MIC ACTIVE"
+    # Retrieve RAG vector count and circuit breaker health dynamically
+    try:
+        from memory.rag_engine import get_rag_engine
+        rag = get_rag_engine()
+        if rag and rag._ready:
+            count = rag._collection.count()
+            errors = rag._consecutive_errors
+            cb_status = "OPEN 🔌" if errors >= 3 else "CLOSED ✅"
+            return f"🟢 HIVE ONLINE | 🧠 RAG ACTIVE ({count} docs) | Circuit Breaker: {cb_status} (errors: {errors}) | 🎙️ MIC ACTIVE"
+        else:
+            return "🟢 HIVE ONLINE | 🧠 RAG INITIALIZING | 🎙️ MIC ACTIVE"
+    except Exception as e:
+        return f"🟢 HIVE ONLINE | 🧠 RAG ERROR: {str(e)[:30]} | 🎙️ MIC ACTIVE"
 
 # --- Dashboard UI ---
 with gr.Blocks(fill_height=True, title="JARVIS HIVE COMMAND") as demo:
@@ -140,7 +151,7 @@ with gr.Blocks(fill_height=True, title="JARVIS HIVE COMMAND") as demo:
     refresh_tasks.click(update_all, outputs=[task_table, healing_table, reload_table, status_box])
 
 if __name__ == "__main__":
-    print("[HiveDashboard] 🚀 Launching Command Center...")
+    print("[HiveDashboard] Launching Command Center...")
     demo.launch(
         server_name="127.0.0.1", 
         server_port=18788, 
