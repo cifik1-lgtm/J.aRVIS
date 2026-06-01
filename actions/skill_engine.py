@@ -2,6 +2,7 @@ import os
 import subprocess
 import re
 from pathlib import Path
+from core.integration_helper import log_integration_event
 
 def learn_new_skill(skill_name: str, objective: str, jarvis=None):
     """
@@ -48,9 +49,31 @@ def learn_new_skill(skill_name: str, objective: str, jarvis=None):
         
         # 4. Final Installation
         final_path = Path("actions") / f"{skill_name}.py"
+        if final_path.exists():
+            final_path.unlink()
         temp_path.rename(final_path)
         
+        # 5. Dynamic Tool Metadata and Registration
+        metadata = {
+            "name": skill_name,
+            "description": f"Dynamically learned skill: {objective}",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "query": {"type": "STRING", "description": "Search query or input parameter for the skill"}
+                }
+            }
+        }
+        
         jarvis.ui.write_log(f"✅ Skill Engine: New skill '{skill_name}' learned and installed.")
+        
+        # Call JARVIS's registration to append and hot-reload
+        if hasattr(jarvis, "register_new_skill"):
+            jarvis.ui.write_log(f"⚡ Registering new tool '{skill_name}' with live session...")
+            jarvis.register_new_skill(metadata)
+        else:
+            jarvis.ui.write_log(f"⚠️ Dynamic registration not available on orchestrator for '{skill_name}'")
+            
         jarvis.speak(f"Sir, I have successfully learned a new skill: {skill_name}. I can now {objective}.")
         
         return f"Successfully learned and installed '{skill_name}' tool."

@@ -1030,10 +1030,41 @@ class JarvisLive:
         
         # Route through active Gemini Live session to act exactly as voice input
         if self.session and self._loop and self._loop.is_running():
-            print(f"[JARVIS] Sending text command to Gemini Live session: {text}")
+            # Intercept and run dynamic RAG memory query with timeout
+            from core.integration_helper import load_integration_config, log_integration_event
+            integration_cfg = load_integration_config()
+            
+            rag_context = ""
+            if integration_cfg.get("rag_memory_injection", True):
+                try:
+                    from memory.rag_engine import get_rag_engine
+                    import concurrent.futures
+                    rag = get_rag_engine()
+                    if rag and rag._ready:
+                        # Use ThreadPoolExecutor to enforce a strict 2-second timeout
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            future = executor.submit(rag.format_rag_context, text, top_k=3)
+                            rag_context = future.result(timeout=2.0)
+                        
+                        if rag_context:
+                            print(f"[RAG] 🔍 Chat Turn: Injected real-time memories for: '{text[:40]}...'")
+                            log_integration_event("rag_query", {"query": text, "status": "success", "results_count": rag_context.count("•")})
+                except concurrent.futures.TimeoutError:
+                    print("[RAG] ⚠️ RAG query timed out after 2.0s. Falling back to raw message.")
+                    log_integration_event("rag_query", {"query": text, "status": "timeout"})
+                except Exception as re:
+                    print(f"[RAG] ⚠️ RAG query failed: {re}. Falling back to raw message.")
+                    log_integration_event("rag_query", {"query": text, "status": "failed", "error": str(re)})
+
+            # Prepend RAG context if found
+            final_text = text
+            if rag_context:
+                final_text = f"{rag_context}\n[USER_TURN_START]\n{text}"
+
+            print(f"[JARVIS] Sending text command to Gemini Live session: {text[:60]}...")
             asyncio.run_coroutine_threadsafe(
                 self.session.send_client_content(
-                    turns=[{"role": "user", "parts": [{"text": text}]}],
+                    turns={"role": "user", "parts": [{"text": final_text}]},
                     turn_complete=True
                 ),
                 self._loop
@@ -1111,6 +1142,68 @@ class JarvisLive:
             # If no loop, just clear session and hope for the best
             self.session = None
             self.ui.write_log("SYS: ⚠️ Event loop not running. Resetting session state.")
+
+    def register_new_skill(self, metadata: dict):
+        """Dynamically register a newly learned skill and trigger hot-reconnection."""
+        from core.integration_helper import load_integration_config, log_integration_event
+        integration_cfg = load_integration_config()
+        
+        if not integration_cfg.get("dynamic_tool_registration", True):
+            print(f"[Integration] ⏸️ Dynamic tool registration disabled by config. Skipping '{metadata.get('name')}'")
+            return
+            
+        try:
+            name = metadata.get("name")
+            desc = metadata.get("description", "")
+            params = metadata.get("parameters", {"type": "OBJECT", "properties": {}})
+            
+            if not name:
+                print("[Integration] ❌ Cannot register tool: missing name.")
+                return
+                
+            self.ui.write_log(f"⚡ Registering custom tool: '{name}'...")
+            
+            # 1. Update in-memory TOOL_DECLARATIONS
+            from core.tools import TOOL_DECLARATIONS
+            # Check if already declared to avoid duplicates
+            existing = [d for d in TOOL_DECLARATIONS if d.get("name") == name]
+            if existing:
+                TOOL_DECLARATIONS.remove(existing[0])
+            
+            # Format as Types Declaration dictionary
+            new_decl = {
+                "name": name,
+                "description": desc,
+                "parameters": params
+            }
+            TOOL_DECLARATIONS.append(new_decl)
+            
+            # 2. Add to active live_tools
+            if not hasattr(self, 'live_tools') or not self.live_tools:
+                # Force initialize the list using build config defaults
+                self._build_config()
+                
+            if name not in self.live_tools:
+                self.live_tools.append(name)
+                
+            # Log registration event
+            log_integration_event("tool_registration", {
+                "tool_name": name,
+                "description": desc,
+                "status": "registered"
+            })
+            
+            # 3. Trigger asynchronous graceful connection restart to apply the hot configuration
+            self.ui.write_log(f"🔄 Reconnecting to hot-reload '{name}' into active session...")
+            self._restart_connection()
+            
+        except Exception as e:
+            print(f"[Integration] ❌ Dynamic tool registration failed: {e}")
+            log_integration_event("tool_registration", {
+                "tool_name": metadata.get("name", "unknown"),
+                "status": "failed",
+                "error": str(e)
+            })
 
     def _extract_number(self, text: str, default: int = 50) -> int:
         """Extract number from command text"""
@@ -1206,13 +1299,32 @@ class JarvisLive:
             from memory.rag_engine import get_rag_engine
             rag = get_rag_engine()
             if rag and rag._ready:
-                # Use last user text or a generic identity query
                 query = self._last_user_text or "user identity preferences family"
                 rag_context = rag.format_rag_context(query, top_k=5)
+                if rag_context and len(rag_context) > 4000:
+                    rag_context = rag_context[:4000] + "\n...[TRUNCATED FOR LIVE API LIMITS]"
                 if rag_context:
                     print(f"[RAG] 🔍 Injected {rag_context.count('•')} relevant memories into prompt.")
         except Exception:
             pass
+
+        # Checkpoint: Save/Load last 20 turns (40 messages user+jarvis) for reconnection continuity
+        checkpoint_context = ""
+        try:
+            history = _load_conversation_history()
+            if history:
+                recent = history[-20:] # Last 20 turns
+                lines = ["[SESSION CHECKPOINT - RECENT MESSAGES FOR CONTINUITY]"]
+                for conv in recent:
+                    u = conv.get("user", "")
+                    j = conv.get("jarvis", "")
+                    if u: lines.append(f"User: {u[:250]}")
+                    if j: lines.append(f"JARVIS: {j[:250]}")
+                checkpoint_context = "\n".join(lines)
+                if checkpoint_context:
+                    print(f"[Checkpoint] 💾 Injected {len(recent)} turns of conversation history.")
+        except Exception as e:
+            print(f"[Checkpoint] ⚠️ Error loading checkpoint history: {e}")
         
         silent_instruction = ""
         if self.silent_mode:
@@ -1230,6 +1342,8 @@ class JarvisLive:
         parts = [forced_instruction, autonomous_instruction, time_ctx]
         if rag_context:
             parts.append(rag_context)
+        if checkpoint_context:
+            parts.append(checkpoint_context)
         if silent_instruction:
             parts.append(silent_instruction)
         # Core memories (identity, relationships, preferences) from the structured store
@@ -1239,38 +1353,40 @@ class JarvisLive:
         # TRIPLE-BRAIN ARCHITECTURE:
         # Gemini Live gets conversation tools + youtube_manager for direct media control.
         # Heavy tools (Browser, Code, etc.) are only used by Expert Brains (delegated).
-        live_tools = [
-            "delegate_task",      # The primary tool for delegating to other brains
-            "save_memory",        # Core memory for conversation
-            "retrieve_memory",    # Core memory for conversation
-            "preference_manager", # Manage user preferences
-            "get_memory_stats",   # Informational, for conversational responses
-            "forget_weak_memories", # Maintenance, for conversational responses
-            "youtube_manager",    # Direct user interaction for media
-            "netflix_manager",    # Netflix app on chosen monitor; hands-off automation
-            "generate_image",     # Creative output for conversation
-            "codewords_agent",    # Trigger predefined agents/workflows (conversational)
-            "system_control",     # UI/state manipulation (e.g. mute, set state, not reboot/shutdown)
-            "gesture_control",    # Start/stop gesture control
-            "camera_feed",        # Show/hide camera window
-            "external_camera_window",  # Standalone pop-up webcam (renamed from camera_viewer — avoids Live API name glitches)
-            "vision_inspector",   # Analyze webcam/screen (conversational vision)
-            "open_app",           # Open simple desktop applications (background)
-            "shell_runner",       # PRIMARY: Execute shell/terminal commands silently (mkdir, pip, git, scripts)
-            "file_controller",    # File read/write/move/copy/delete via Python (no shell needed)
-            "web_search",         # Quick info lookup for conversation
-            "weather_report",     # Common utility
-            "ip_checker",         # Common utility
-            "sms_tool",           # Conversational messaging
-            "self_fix",           # AI self-diagnosis/simple repair
-            "learn_skill",        # For learning conversational patterns/preferences
-            "hive_status",        # Check status of other networked PCs (informational)
-            "camera_scanner",     # Hardware discovery for camera
-            "detect_monitors",    # Hardware discovery for displays
-            "computer_control",   # Direct mouse/keyboard control, focus/move windows natively
-            "email_manager",      # Native email checking and sending
-        ]
-        filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in live_tools]
+        if not hasattr(self, 'live_tools') or not self.live_tools:
+            self.live_tools = [
+                "delegate_task",      # The primary tool for delegating to other brains
+                "save_memory",        # Core memory for conversation
+                "retrieve_memory",    # Core memory for conversation
+                "preference_manager", # Manage user preferences
+                "get_memory_stats",   # Informational, for conversational responses
+                "forget_weak_memories", # Maintenance, for conversational responses
+                "youtube_manager",    # Direct user interaction for media
+                "netflix_manager",    # Netflix app on chosen monitor; hands-off automation
+                "generate_image",     # Creative output for conversation
+                "codewords_agent",    # Trigger predefined agents/workflows (conversational)
+                "system_control",     # UI/state manipulation (e.g. mute, set state, not reboot/shutdown)
+                "gesture_control",    # Start/stop gesture control
+                "camera_feed",        # Show/hide camera window
+                "external_camera_window",  # Standalone pop-up webcam (renamed from camera_viewer — avoids Live API name glitches)
+                "vision_inspector",   # Analyze webcam/screen (conversational vision)
+                "open_app",           # Open simple desktop applications (background)
+                "shell_runner",       # PRIMARY: Execute shell/terminal commands silently (mkdir, pip, git, scripts)
+                "file_controller",    # File read/write/move/copy/delete via Python (no shell needed)
+                "web_search",         # Quick info lookup for conversation
+                "weather_report",     # Common utility
+                "ip_checker",         # Common utility
+                "sms_tool",           # Conversational messaging
+                "self_fix",           # AI self-diagnosis/simple repair
+                "learn_skill",        # For learning conversational patterns/preferences
+                "hive_status",        # Check status of other networked PCs (informational)
+                "camera_scanner",     # Hardware discovery for camera
+                "detect_monitors",    # Hardware discovery for displays
+                "computer_control",   # Direct mouse/keyboard control, focus/move windows natively
+                "email_manager",      # Native email checking and sending
+                "rag_search",         # Real-time vector memory search tool!
+            ]
+        filtered_decls = [types.FunctionDeclaration(**d) for d in TOOL_DECLARATIONS if d["name"] in self.live_tools]
         print(f"[JARVIS] 🛠️  Registered {len(filtered_decls)} Live tools: {[d.name for d in filtered_decls]}")
 
         # Inject Workspace Context
@@ -1533,16 +1649,17 @@ class JarvisLive:
                             fn_responses.append(fr)
                         await self.session.send_tool_response(function_responses=fn_responses)
         except Exception as e:
-            # Check if this is just a normal connection closure (Code 1000)
+            # Check if this is a normal closure (1000) or transient API error (1008 policy/multiline, 1011 timeout)
             err_msg = str(e)
-            if "1000" in err_msg or "ConnectionClosedOK" in err_msg or "session is None" in err_msg:
-                print("[JARVIS] 🔄 Connection reset (switching modes)")
+            if any(code in err_msg for code in ["1000", "1008", "1011", "ConnectionClosedOK", "session is None"]):
+                print(f"[JARVIS] 🔌 Cloud Error {err_msg[:20]}: Connection resetting gracefully.")
+                raise e
             else:
                 print(f"[JARVIS] ❌ Recv error: {e}")
                 # Re-raise so the TaskGroup catches it and handles reconnection/mode switch
                 raise e
         finally:
-            print("[JARVIS] 🎤 Mic stopped")
+            print("[JARVIS] 👂 Recv stopped")
 
     async def _play_audio(self):
         print("[JARVIS] 🔊 Play started")
@@ -1802,6 +1919,7 @@ def main():
             from actions.skill_cockpit import start_skill_cockpit
             from actions.auto_fetcher import start_auto_fetcher
             from actions.chronos_engine import start_chronos_engine
+            from actions.opportunity_dashboard import start_dashboard as start_opp_dashboard
             
             start_routines(get_queue())
             start_telegram_bot(get_queue(), ui.write_log)
@@ -1809,6 +1927,35 @@ def main():
             start_skill_cockpit(ui.write_log)
             start_auto_fetcher(interval_minutes=15)
             start_chronos_engine(get_queue(), ui.write_log)
+            start_opp_dashboard(player=ui)
+
+            # ── STARTUP RECOVERY: Re-queue any approved opportunities ──
+            # If Jarvis was restarted mid-build or crashed, pick up where we left off.
+            try:
+                import json as _json
+                from pathlib import Path as _Path
+                from agent.task_queue import TaskPriority as _TP
+                _opp_path = _Path(__file__).resolve().parent / "memory" / "validated_opportunities.json"
+                if _opp_path.exists():
+                    _opps = _json.loads(_opp_path.read_text(encoding="utf-8"))
+                    _recovered = 0
+                    for _o in _opps:
+                        if _o.get("status") == "approved":
+                            _title = _o.get("title", "Unknown Project")
+                            _desc  = _o.get("description", "")
+                            _goal  = (
+                                f"Build a complete Python/HTML MVP codebase for the approved opportunity "
+                                f"'{_title}'. Description: {_desc}. Save project to JarvisProjects folder."
+                            )
+                            get_queue().submit(goal=_goal, priority=_TP.HIGH)
+                            _recovered += 1
+                            ui.write_log(f"[Recovery] 🔄 Re-queued approved opportunity: {_title[:60]}")
+                    if _recovered:
+                        ui.write_log(f"[Recovery] ✅ {_recovered} approved task(s) re-queued after restart.")
+            except Exception as _re:
+                print(f"[Recovery] ⚠️ Could not re-queue approved opportunities: {_re}")
+
+
         except Exception as e:
             print(f"Background services could not start: {e}")
             import traceback

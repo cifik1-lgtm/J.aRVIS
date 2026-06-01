@@ -12,6 +12,8 @@ import json
 import os
 import threading
 import gc
+import time
+import numpy as np
 from pathlib import Path
 from datetime import datetime
 from typing import List, Tuple, Optional
@@ -41,6 +43,10 @@ class RAGMemoryEngine:
         self._collection = None
         self._embedder = None
         self._ready = False
+        
+        # Circuit Breaker state for RAG queries
+        self._consecutive_errors = 0
+        self._last_error_time = 0.0
 
         # Boot in background so JARVIS starts instantly
         t = threading.Thread(target=self._initialize, daemon=True)
@@ -183,9 +189,59 @@ class RAGMemoryEngine:
                     metadatas=[meta],
                     embeddings=embedding
                 )
+            # Auto-prune Check if collection exceeds limit
+            if self._ready:
+                self._prune_if_exceeded()
         except Exception as e:
             # Silent fail for individual items to prevent log bloat
             pass
+
+    def _prune_if_exceeded(self):
+        """Auto-pruning: Keep collection size below 8000 documents by removing old conversations."""
+        try:
+            total_count = self._collection.count()
+            if total_count <= 8000:
+                return
+                
+            print(f"[RAG] 🧹 Collection size ({total_count}) exceeds limit of 8000. Pruning old episodic memories...")
+            
+            # Fetch conversation memories
+            results = self._collection.get(
+                where={"category": "conversation"},
+                include=["metadatas"]
+            )
+            
+            ids = results.get("ids", [])
+            metadatas = results.get("metadatas", [])
+            
+            if not ids:
+                print("[RAG] ⚠️ No conversation memories to prune. All documents are static rules/wiki files.")
+                return
+                
+            pairs = []
+            for i in range(len(ids)):
+                doc_id = ids[i]
+                meta = metadatas[i] or {}
+                updated_str = meta.get("updated", "")
+                pairs.append((doc_id, updated_str))
+                
+            # Sort by update date (oldest first), then ID
+            pairs.sort(key=lambda x: (x[1], x[0]))
+            
+            # Target count is 7500 (pruning excess + 500 margin)
+            excess = total_count - 7500
+            if excess <= 0:
+                excess = 100
+                
+            to_delete = [p[0] for p in pairs[:excess]]
+            
+            if to_delete:
+                print(f"[RAG] 🧹 Deleting {len(to_delete)} oldest conversations from index.")
+                with self._lock:
+                    self._collection.delete(ids=to_delete)
+                print(f"[RAG] 🧹 Pruning complete. New size: {self._collection.count()} documents.")
+        except Exception as e:
+            print(f"[RAG] ⚠️ Pruning failed: {e}")
 
     def index_conversation(self, user_text: str, jarvis_text: str):
         """Ingest a conversation turn as episodic memory."""
@@ -200,9 +256,18 @@ class RAGMemoryEngine:
             pass
 
     def search(self, query: str, top_k: int = 5, category_filter: str = None) -> List[dict]:
-        """Semantic search."""
+        """Semantic search with circuit breaker protection."""
         if not self._ready:
             return []
+            
+        import time
+        # Circuit Breaker check
+        if self._consecutive_errors >= 3:
+            current_time = time.time()
+            if current_time - self._last_error_time < 30.0:
+                print(f"[RAG] 🔌 Circuit Breaker OPEN (errors: {self._consecutive_errors}). Fast-failing query: '{query[:40]}'")
+                return []
+                
         try:
             q_emb = self._embedder.encode([query], show_progress_bar=False).tolist()
             where = {"category": category_filter} if category_filter else None
@@ -226,8 +291,14 @@ class RAGMemoryEngine:
                         "value": doc,
                         "score": round(score, 3)
                     })
+            
+            # Reset circuit breaker on success
+            self._consecutive_errors = 0
             return hits
-        except Exception:
+        except Exception as e:
+            self._consecutive_errors += 1
+            self._last_error_time = time.time()
+            print(f"[RAG] ❌ Search failed: {e}. Consecutive errors: {self._consecutive_errors}")
             return []
 
     def format_rag_context(self, query: str, top_k: int = 4) -> str:
