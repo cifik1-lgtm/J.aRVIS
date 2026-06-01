@@ -32,12 +32,15 @@ class MonitorManager:
     def enable_real_time_monitoring(self):
         """Watch for monitor changes (plug/unplug, resolution changes)"""
         try:
-            pymonctl.enableUpdate()
-            
-            # Set up callbacks for changes
-            pymonctl.monitorCountChange = self._on_monitor_count_change
-            pymonctl.monitorPropsChange = self._on_monitor_props_change
-            self.monitoring_enabled = True
+            if hasattr(pymonctl, "enableUpdate"):
+                pymonctl.enableUpdate()
+                
+                # Set up callbacks for changes
+                pymonctl.monitorCountChange = self._on_monitor_count_change
+                pymonctl.monitorPropsChange = self._on_monitor_props_change
+                self.monitoring_enabled = True
+            else:
+                self.monitoring_enabled = False
         except Exception as e:
             print(f"[MonitorManager] Real-time update not supported: {e}")
             self.monitoring_enabled = False

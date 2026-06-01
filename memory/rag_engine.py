@@ -26,7 +26,6 @@ CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 _SAFE_CACHE = "C:\\JarvisCache\\ai_models"
 os.makedirs(_SAFE_CACHE, exist_ok=True)
 os.environ["HF_HOME"] = _SAFE_CACHE
-os.environ["TRANSFORMERS_CACHE"] = _SAFE_CACHE
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = _SAFE_CACHE
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -320,9 +319,12 @@ class RAGMemoryEngine:
 
 
 _rag_engine: Optional[RAGMemoryEngine] = None
+_rag_lock = threading.Lock()
 
 def get_rag_engine() -> RAGMemoryEngine:
     global _rag_engine
     if _rag_engine is None:
-        _rag_engine = RAGMemoryEngine()
+        with _rag_lock:
+            if _rag_engine is None:
+                _rag_engine = RAGMemoryEngine()
     return _rag_engine
